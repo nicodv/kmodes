@@ -179,10 +179,9 @@ class KPrototypes(KModes):
     
     def __init__(self, k):
         '''k-protoypes clustering algorithm for mixed numeric and categorical data.
-        See:
         Huang, Z.: Clustering large data sets with mixed numeric and categorical values,
         Proceedings of the First Pacific Asia Knowledge Discovery and Data Mining Conference,
-        Singapore: World Scientific, pp. 21–34, 1997.
+        Singapore, pp. 21-34, 1997.
         
         Inputs:     k       = number of clusters
         Attributes: Xclust  = cluster numbers [no. points]
@@ -222,16 +221,16 @@ class KPrototypes(KModes):
         #    INIT
         # ----------------------
         print("Init: initializing centroids")
-        cent = [np.mean(Xnum, axis=1) + np.random.randn((k, at)) * np.std(Xnum, axis=1), 
+        cent = [np.mean(Xnum, axis=0) + np.random.randn(self.k, atnum) * np.std(Xnum, axis=0), 
                 self.init_centroids(Xcat)]
         
         print("Init: initializing clusters")
         member = np.zeros((self.k, N), dtype='int64')
         # keep track of the sum of attribute values per cluster
-        clustSum = np.zeros((self.k, at), dtype='float')
+        clustSum = np.zeros((self.k, atnum), dtype='float')
         # clustFreq is a list of lists with dictionaries that contain the
         # frequencies of values per cluster and attribute
-        clustFreq = [[defaultdict(int) for _ in range(at)] for _ in range(self.k)]
+        clustFreq = [[defaultdict(int) for _ in range(atcat)] for _ in range(self.k)]
         for iN in range(N):
             # initial assigns to clusters
             dissim = self.get_dissim_num(cent[0], Xnum[iN]) + \
@@ -245,8 +244,9 @@ class KPrototypes(KModes):
                 clustFreq[cluster][iat][val] += 1
         # perform an initial centroid update
         for ik in range(self.k):
-            for iat in range(at):
+            for iat in range(atnum):
                 cent[0][ik,iat] = clustSum[ik,iat] / sum(member[ik,:])
+            for iat in range(atcat):
                 cent[1][ik,iat] = key_for_max_value(clustFreq[ik][iat])
         
         # ----------------------
@@ -288,25 +288,26 @@ class KPrototypes(KModes):
             if verbose:
                 print("Iteration: {0}/{1}, moves: {2}".format(itr, maxIters, moves))
         
-        self.cost = self.clustering_cost(X, cent, member)
+        self.cost = self.clustering_cost(Xnum, Xcat, cent, member, gamma)
         self.cent = cent
         self.Xclust = np.array([int(np.argwhere(member[:,x])) for x in range(N)])
         self.member = member
     
-    def get_dissim_num(self, Anum, b):
+    def get_dissim_num(self, Anum, bx):
         # Euclidian distance
-        return np.sum((Anum - b)**2, axis=1)
+        return np.sum((Anum - bx)**2, axis=1)
     
-    def get_dissim_cat(self, Acat, b):
+    def get_dissim_cat(self, Acat, bx):
         # simple matching dissimilarity
-        return  np.sum(Acat != b,axis=1)
+        return np.sum(Acat != bx,axis=1)
     
-    def clustering_cost(self, X, cent, member, gamma):
-        cost = 0
+    def clustering_cost(self, Xnum, Xcat, cent, member, gamma):
+        ncost = 0
+        ccost = 0
         for iN, curx in enumerate(Xnum):
-            ncost += np.sum( self.get_dissim_num(cent, curx) * (member[:,iN] ** self.alpha) )
+            ncost += np.sum( self.get_dissim_num(cent[0], curx) * (member[:,iN] ** self.alpha) )
         for iN, curx in enumerate(Xcat):
-            ncost += np.sum( self.get_dissim_cat(cent, curx) * (member[:,iN] ** self.alpha) )
+            ccost += np.sum( self.get_dissim_cat(cent[1], curx) * (member[:,iN] ** self.alpha) )
         return ncost + gamma * ccost
 
 ###################################################################################################
@@ -589,13 +590,13 @@ if __name__ == "__main__":
     kmodes_cao = KModes(4)
     kmodes_cao.cluster(X, init='Cao')
     kproto = KPrototypes(4)
-    kproto.cluster(np.random.randn((X.shape[0], 3)), X, init='Huang')
+    kproto.cluster(np.random.randn(X.shape[0], 3), X, init='Huang')
     fkmodes = FuzzyKModes(4, alpha=1.1)
     fkmodes.cluster(X)
     ffkmodes = FuzzyFuzzyKModes(4, alpha=1.8)
     ffkmodes.cluster(X)
     
-    for result in (kmodes_huang, kmodes_cao, fkmodes, ffkmodes):
+    for result in (kmodes_huang, kmodes_cao, kproto, fkmodes, ffkmodes):
         classtable = np.zeros((4,4), dtype='int64')
         for ii,_ in enumerate(y):
             classtable[int(y[ii][-1])-1,result.Xclust[ii]] += 1
