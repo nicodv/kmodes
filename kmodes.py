@@ -121,9 +121,9 @@ class KModes(object):
                     freq[val] += 1
                 # sample centroids using the probabilities of attributes
                 # (I assume that's what's meant in the Huang [1998] paper; it works, at least)
-                # note: sampling done using population in static list with as many choices as the frequency counts
-                # this works well since (1) we re-use the list k times here, and (2) the counts are small
-                # integers so memory consumption is low
+                # note: sampling using population in static list with as many choices as
+                # frequency counts this works well since (1) we re-use the list k times here,
+                # and (2) the counts are small integers so memory consumption is low
                 choices = [chc for chc, wght in freq.items() for _ in range(wght)]
                 for ik in range(self.k):
                     cent[ik, iat] = random.choice(choices)
@@ -173,7 +173,7 @@ class KModes(object):
             cost += np.sum( self.get_dissim(cent, curx) * (member[:,iN] ** self.alpha) )
         return cost
 
-################################################################################
+####################################################################################################
 
 class KPrototypes(KModes):
     
@@ -234,7 +234,8 @@ class KPrototypes(KModes):
         clustFreq = [[defaultdict(int) for _ in range(at)] for _ in range(self.k)]
         for iN in range(N):
             # initial assigns to clusters
-            dissim = self.get_dissim_num(cent[0], Xnum[iN]) + gamma * self.get_dissim_cat(cent[1], Xcat[iN])
+            dissim = self.get_dissim_num(cent[0], Xnum[iN]) + \
+                     gamma * self.get_dissim_cat(cent[1], Xcat[iN])
             cluster = np.argmin(dissim)
             member[cluster,iN] = 1
             # count attribute values per cluster
@@ -258,7 +259,8 @@ class KPrototypes(KModes):
             itr += 1
             moves = 0
             for iN in range(N):
-                dissim = self.get_dissim_num(cent[0], Xnum[iN]) + gamma * self.get_dissim_cat(cent[1], Xcat[iN])
+                dissim = self.get_dissim_num(cent[0], Xnum[iN]) + \
+                         gamma * self.get_dissim_cat(cent[1], Xcat[iN])
                 cluster = np.argmin(dissim)
                 # if necessary: move point, and update old/new cluster frequencies and centroids
                 if not member[cluster, iN]:
@@ -307,7 +309,7 @@ class KPrototypes(KModes):
             ncost += np.sum( self.get_dissim_cat(cent, curx) * (member[:,iN] ** self.alpha) )
         return ncost + gamma * ccost
 
-################################################################################
+###################################################################################################
 
 class FuzzyKModes(KModes):
     
@@ -409,7 +411,7 @@ class FuzzyKModes(KModes):
             cent.append(k[np.argmax(memvar)])
         return np.array(cent)
 
-################################################################################
+###################################################################################################
 
 class FuzzyFuzzyKModes(KModes):
     
@@ -575,8 +577,8 @@ def opt_kmodes(k, X, preRuns=10, goodPctl=20, **kwargs):
 
 if __name__ == "__main__":
     # reproduce results on small soybean data set
-    X = np.genfromtxt('/home/nico/Code/kaggle/Employee/soybean.csv', dtype='int64', delimiter=',')[:,:-1]
-    y = np.genfromtxt('/home/nico/Code/kaggle/Employee/soybean.csv', dtype='unicode', delimiter=',', usecols=35)
+    X = np.genfromtxt('./soybean.csv', dtype='int64', delimiter=',')[:,:-1]
+    y = np.genfromtxt('./soybean.csv', dtype='unicode', delimiter=',', usecols=35)
     
     # drop columns with single value
     X = X[:,np.std(X, axis=0) > 0.]
@@ -598,9 +600,9 @@ if __name__ == "__main__":
         for ii,_ in enumerate(y):
             classtable[int(y[ii][-1])-1,result.Xclust[ii]] += 1
         
-        print("    | Clust 1 | Clust 2 | Clust 3 | Clust 4 |")
-        print("----|---------|---------|---------|---------|")
+        print("    | Cl. 1 | Cl. 2 | Cl. 3 | Cl. 4 |")
+        print("----|-------|-------|-------|-------|")
         for ii in range(4):
             prargs = tuple([ii+1] + list(classtable[ii,:]))
-            print(" D{0} |      {1:>2} |      {2:>2} |      {3:>2} |      {4:>2} |".format(*prargs))
+            print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |".format(*prargs))
     
