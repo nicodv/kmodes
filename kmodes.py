@@ -162,7 +162,8 @@ class KModes(object):
         
         return cent
     
-    def get_dissim(self, A, b):
+    @staticmethod
+    def get_dissim(A, b):
         # TODO: add other dissimilarity measures?
         # simple matching dissimilarity
         return (A != b).sum(axis=1)
@@ -293,13 +294,10 @@ class KPrototypes(KModes):
         self.Xclust = np.array([int(np.argwhere(member[:,x])) for x in range(N)])
         self.member = member
     
-    def get_dissim_num(self, Anum, bx):
+    @staticmethod
+    def get_dissim_num(Anum, b):
         # Euclidian distance
-        return np.sum((Anum - bx)**2, axis=1)
-    
-    def get_dissim_cat(self, Acat, bx):
-        # simple matching dissimilarity
-        return np.sum(Acat != bx,axis=1)
+        return np.sum((Anum - b)**2, axis=1)
     
     def clustering_cost(self, Xnum, Xcat, cent, member, gamma):
         ncost = 0
@@ -307,7 +305,7 @@ class KPrototypes(KModes):
         for iN, curx in enumerate(Xnum):
             ncost += np.sum( self.get_dissim_num(cent[0], curx) * (member[:,iN] ** self.alpha) )
         for iN, curx in enumerate(Xcat):
-            ccost += np.sum( self.get_dissim_cat(cent[1], curx) * (member[:,iN] ** self.alpha) )
+            ccost += np.sum( self.get_dissim(cent[1], curx) * (member[:,iN] ** self.alpha) )
         return ncost + gamma * ccost
 
 ###################################################################################################
@@ -521,7 +519,8 @@ class FuzzyFuzzyKModes(KModes):
                     omega[ik][iat][k] /= sumomg
         return omega
     
-    def get_fuzzy_dissim(self, omega, x):
+    @staticmethod
+    def get_fuzzy_dissim(omega, x):
         # dissimilarity = sums of all omegas for non-matching attributes
         # see Eqs. 13-15 of Kim et al. [2004]
         dissim = np.zeros(len(omega))
