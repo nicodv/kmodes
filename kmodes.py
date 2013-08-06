@@ -584,7 +584,6 @@ if __name__ == "__main__":
     # drop columns with single value
     X = X[:,np.std(X, axis=0) > 0.]
     
-    #kmodes_h = opt_kmodes(4, X, preRuns=10, goodPctl=20, init='Huang', maxIters=100)
     kmodes_huang = KModes(4)
     kmodes_huang.cluster(X, init='Huang')
     kmodes_cao = KModes(4)
