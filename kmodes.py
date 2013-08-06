@@ -235,7 +235,7 @@ class KPrototypes(KModes):
         for iN in range(N):
             # initial assigns to clusters
             dissim = self.get_dissim_num(cent[0], Xnum[iN]) + \
-                     gamma * self.get_dissim_cat(cent[1], Xcat[iN])
+                     gamma * self.get_dissim(cent[1], Xcat[iN])
             cluster = np.argmin(dissim)
             member[cluster,iN] = 1
             # count attribute values per cluster
@@ -261,7 +261,7 @@ class KPrototypes(KModes):
             moves = 0
             for iN in range(N):
                 dissim = self.get_dissim_num(cent[0], Xnum[iN]) + \
-                         gamma * self.get_dissim_cat(cent[1], Xcat[iN])
+                         gamma * self.get_dissim(cent[1], Xcat[iN])
                 cluster = np.argmin(dissim)
                 # if necessary: move point, and update old/new cluster frequencies and centroids
                 if not member[cluster, iN]:
@@ -331,7 +331,7 @@ class FuzzyKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
         
-    def cluster(self, X, init='Huang', maxIters=200, tol=0.001, costInter=1, verbose=1):
+    def cluster(self, X, init='Huang', maxIters=200, tol=1e-5, costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
                     init        = initialization method ('Huang' for the one described in
                                   Huang [1998], 'Cao' for the one in Cao et al. [2009]).
@@ -435,7 +435,7 @@ class FuzzyFuzzyKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
     
-    def cluster(self, X, maxIters=200, tol = 0.001, costInter=1, verbose=1):
+    def cluster(self, X, maxIters=100, tol=1e-5, costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
                     maxIters    = maximum no. of iterations
                     tol         = tolerance for termination criterion
@@ -513,7 +513,8 @@ class FuzzyFuzzyKModes(KModes):
             for iat in range(X.shape[1]):
                 for iN, curx in enumerate(X[:,iat]):
                     omega[ik][iat][curx] += member[ik,iN] ** self.alpha
-                # normalize (see Yang et al. [2008] for clearer explanation)
+                # normalize so that sum omegas is 1, analogous to k-means
+                # (see Yang et al. [2008] who explain better than the original paper)
                 sumomg = sum(omega[ik][iat].values())
                 for k in omega[ik][iat].keys():
                     omega[ik][iat][k] /= sumomg
@@ -590,9 +591,14 @@ if __name__ == "__main__":
     kmodes_cao.cluster(X, init='Cao')
     kproto = KPrototypes(4)
     kproto.cluster(np.random.randn(X.shape[0], 3), X, init='Huang')
-    fkmodes = FuzzyKModes(4, alpha=1.1)
+    fkmodes = FuzzyKModes(4, alpha=1.1                              )
     fkmodes.cluster(X)
-    ffkmodes = FuzzyFuzzyKModes(4, alpha=1.8)
+    # TODO: Kim et al. [2004] report best results with alpha=1.8,
+    # but I find about 1.01 to 1.3. higher than that: very poor results
+    # what's going on?
+    # alpha 1.05 --> high factor --> differences in distance to centroids
+    # are blown up, forcing convergence
+    ffkmodes = FuzzyFuzzyKModes(4, alpha=1.05)
     ffkmodes.cluster(X)
     
     for result in (kmodes_huang, kmodes_cao, kproto, fkmodes, ffkmodes):
@@ -600,6 +606,7 @@ if __name__ == "__main__":
         for ii,_ in enumerate(y):
             classtable[int(y[ii][-1])-1,result.Xclust[ii]] += 1
         
+        print("\n")
         print("    | Cl. 1 | Cl. 2 | Cl. 3 | Cl. 4 |")
         print("----|-------|-------|-------|-------|")
         for ii in range(4):
