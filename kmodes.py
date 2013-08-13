@@ -6,7 +6,7 @@ Implementation of the k-modes clustering algorithm and several of its variations
 __author__  = 'Nico de Vos'
 __email__   = 'njdevos@gmail.com'
 __license__ = 'MIT'
-__version__ = '0.5'
+__version__ = '0.6'
 
 import random
 import numpy as np
@@ -109,7 +109,7 @@ class KModes(object):
         self.membership = membership
     
     def init_centroids(self, X):
-        assert self.initMethod in ('Huang', 'Cao')
+        assert self.initMethod in ('Huang', 'Cao', 'fasterCao')
         nPoints, nAttrs = X.shape
         centroids = np.empty((self.k, nAttrs))
         if self.initMethod == 'Huang':
@@ -135,6 +135,7 @@ class KModes(object):
                 while np.all(X[ndx[0]] == centroids, axis=1).any():
                     ndx = np.delete(ndx, 0)
                 centroids[ik] = X[ndx[0]]
+        
         elif self.initMethod == 'Cao':
             # Note: O(N * at * k**2), so watch out with k
             # determine densities points
@@ -156,6 +157,31 @@ class KModes(object):
             for ik in range(2,self.k):
                 dd = np.empty((ik, nPoints))
                 for ikk in range(ik):
+                    dd[ikk] = self.get_dissim(X, centroids[ikk]) * dens
+                centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
+        
+        elif self.initMethod == 'fasterCao':
+            # hacked version that is faster for large values of k
+            dens = np.zeros(nPoints)
+            for iAttr in range(nAttrs):
+                freq = defaultdict(int)
+                for val in X[:,iAttr]:
+                    freq[val] += 1
+                for iPoint in range(nPoints):
+                    dens[iPoint] += freq[X[iPoint,iAttr]] / float(nAttrs)
+            dens /= nPoints
+            
+            # choose centroids based on distance and density
+            centroids[0] = X[np.argmax(dens)]
+            dissim = self.get_dissim(X, centroids[0])
+            centroids[1] = X[np.argmax(dissim * dens)]
+            # for the reamining centroids, choose max dens * dissim to a sampling of 
+            # the (already assigned) centroids with the lowest dens * dissim
+            for ik in range(2,self.k):
+                nClus = round(np.sqrt(ik))
+                dd = np.empty((nClus, nPoints))
+                randInts = np.random.shuffle(np.arange(ik))[:nClus]
+                for ikk in randInts:
                     dd[ikk] = self.get_dissim(X, centroids[ikk]) * dens
                 centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
         
@@ -603,12 +629,7 @@ if __name__ == "__main__":
     kproto.cluster(np.random.randn(X.shape[0], 3), X, init='Huang')
     fkmodes = FuzzyKModes(4, alpha=1.1                              )
     fkmodes.cluster(X)
-    # TODO: Kim et al. [2004] report best results with alpha=1.8,
-    # but I find about 1.01 to 1.3. higher than that: very poor results
-    # what's going on?
-    # alpha 1.05 --> high factor --> differences in distance to centroids
-    # are blown up, forcing convergence
-    ffkmodes = FuzzyClustersKModes(4, alpha=1.1)
+    ffkmodes = FuzzyClustersKModes(4, alpha=1.8)
     ffkmodes.cluster(X)
     
     for result in (kmodes_huang, kmodes_cao, kproto, fkmodes, ffkmodes):
