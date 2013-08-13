@@ -35,11 +35,39 @@ class KModes(object):
         # generalized form with alpha. alpha > 1 for fuzzy k-modes
         self.alpha = 1
     
-    def cluster(self, X, initMethod='Huang', maxIters=100, verbose=1):
+    def cluster(self, X, preRuns=None, prePctl=20, *args, **kwargs):
+        '''Shell around _perform_clustering method that tries to ensure a good clustering
+        result by choosing one that has a relatively low clustering cost compared to the
+        costs of a number of pre-runs. (Huang [1998] states that clustering cost can be
+        used to judge the clustering quality.)
+        
+        '''
+        
+        if preRuns and initMethod == 'Cao':
+            print("Initialization method and algorithm are deterministic. Disabling preruns...")
+            preRuns = None
+        
+        if preRuns:
+            preCosts = np.empty(preRuns)
+            for pr in range(preRuns):
+                self._perform_clustering(X, *args, verbose=0, **kwargs)
+                preCosts[pr] = self.cost
+                print("Prerun {0} / {1}, Cost = {2}".format(pr, preRuns, preCosts[pr]))
+            goodCost = np.percentile(preCosts, prePctl)
+        else:
+            goodCost = np.inf
+        
+        while self.cost > goodCost:
+            self._perform_clustering(X, *args, verbose=1, **kwargs)
+    
+    def _perform_clustering(self, X, initMethod='Huang', maxIters=100, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
                     initMethod  = initialization method ('Huang' for the one described in
                                   Huang [1998], 'Cao' for the one in Cao et al. [2009])
                     maxIters    = maximum no. of iterations
+                    verbose     = 0 for minimal and 1 for normal algorithm progress information,
+                                  2 for internal algorithm details
+        
         '''
         # convert to numpy array, if needed
         X = np.asanyarray(X)
@@ -109,7 +137,7 @@ class KModes(object):
         self.membership = membership
     
     def init_centroids(self, X):
-        assert self.initMethod in ('Huang', 'Cao')
+        assert self.initMethod in ('Huang', 'Cao', 'fasterCao')
         nPoints, nAttrs = X.shape
         centroids = np.empty((self.k, nAttrs))
         if self.initMethod == 'Huang':
@@ -135,6 +163,7 @@ class KModes(object):
                 while np.all(X[ndx[0]] == centroids, axis=1).any():
                     ndx = np.delete(ndx, 0)
                 centroids[ik] = X[ndx[0]]
+        
         elif self.initMethod == 'Cao':
             # Note: O(N * at * k**2), so watch out with k
             # determine densities points
@@ -156,6 +185,31 @@ class KModes(object):
             for ik in range(2,self.k):
                 dd = np.empty((ik, nPoints))
                 for ikk in range(ik):
+                    dd[ikk] = self.get_dissim(X, centroids[ikk]) * dens
+                centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
+        
+        elif self.initMethod == 'fasterCao':
+            # hacked version that is faster for large values of k
+            dens = np.zeros(nPoints)
+            for iAttr in range(nAttrs):
+                freq = defaultdict(int)
+                for val in X[:,iAttr]:
+                    freq[val] += 1
+                for iPoint in range(nPoints):
+                    dens[iPoint] += freq[X[iPoint,iAttr]] / float(nAttrs)
+            dens /= nPoints
+            
+            # choose centroids based on distance and density
+            centroids[0] = X[np.argmax(dens)]
+            dissim = self.get_dissim(X, centroids[0])
+            centroids[1] = X[np.argmax(dissim * dens)]
+            # for the reamining centroids, choose max dens * dissim to a sampling of 
+            # the (already assigned) centroids with the lowest dens * dissim
+            for ik in range(2,self.k):
+                nClus = round(np.sqrt(ik))
+                dd = np.empty((nClus, nPoints))
+                randInts = np.random.shuffle(np.arange(ik))[:nClus]
+                for ikk in randInts:
                     dd[ikk] = self.get_dissim(X, centroids[ikk]) * dens
                 centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
         
@@ -202,7 +256,7 @@ class KPrototypes(KModes):
         '''
         super(KPrototypes, self).__init__(k)
     
-    def cluster(self, Xnum, Xcat, gamma=None, initMethod='Huang', maxIters=100, verbose=1):
+    def _perform_clustering(self, Xnum, Xcat, gamma=None, initMethod='Huang', maxIters=100, verbose=1):
         '''Inputs:  Xnum        = numeric data points [no. points * no. numeric attributes]
                     Xcat        = categorical data points [no. points * no. numeric attributes]
                     gamma       = weighing factor that determines relative importance of
@@ -344,7 +398,7 @@ class FuzzyKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
         
-    def cluster(self, X, initMethod='Huang', maxIters=200, tol=1e-5, costInter=1, verbose=1):
+    def _perform_clustering(self, X, initMethod='Huang', maxIters=200, tol=1e-5, costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
                     initMethod  = initialization method ('Huang' for the one described in
                                   Huang [1998], 'Cao' for the one in Cao et al. [2009]).
@@ -448,7 +502,7 @@ class FuzzyCentroidsKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
     
-    def cluster(self, X, maxIters=100, tol=1e-5, costInter=1, verbose=1):
+    def _perform_clustering(self, X, maxIters=100, tol=1e-5, costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
                     maxIters    = maximum no. of iterations
                     tol         = tolerance for termination criterion
@@ -561,39 +615,7 @@ class FuzzyCentroidsKModes(KModes):
         return cost
 
 
-def opt_kmodes(k, X, preRuns=10, goodPctl=20, **kwargs):
-    '''Shell around k-modes algorithm that tries to ensure a good clustering result
-    by choosing one that has a relatively low clustering cost compared to the
-    costs of a number of pre-runs. (Huang [1998] states that clustering cost can be
-    used to judge the clustering quality.)
-    
-    Returns a (good) KModes class instantiation.
-    
-    '''
-    
-    if kwargs['initMethod'] == 'Cao' and kwargs['centUpd'] == 'mode':
-        print("Hint: Cao initialization method + mode updates = deterministic. \
-                No opt_kmodes necessary, run kmodes method directly instead.")
-    
-    preCosts = []
-    print("Starting preruns...")
-    for _ in range(preRuns):
-        kmodes = KModes(k)
-        kmodes.cluster(X, verbose=0, **kwargs)
-        preCosts.append(kmodes.cost)
-        print("Cost = {0}".format(kmodes.cost))
-    
-    while True:
-        kmodes = KModes(k)
-        kmodes.cluster(X, verbose=1, **kwargs)
-        if kmodes.cost <= np.percentile(preCosts, goodPctl):
-            print("Found a good clustering.")
-            print("Cost = {0}".format(kmodes.cost))
-            break
-    
-    return kmodes
-
-if __name__ == "__main__":
+def soybean_test():
     # reproduce results on small soybean data set
     X = np.genfromtxt('./soybean.csv', dtype='int64', delimiter=',')[:,:-1]
     y = np.genfromtxt('./soybean.csv', dtype='unicode', delimiter=',', usecols=35)
@@ -605,6 +627,8 @@ if __name__ == "__main__":
     kmodes_huang.cluster(X, initMethod='Huang')
     kmodes_cao = KModes(4)
     kmodes_cao.cluster(X, initMethod='Cao')
+    kmodes_fcao = KModes(4)
+    kmodes_fcao.cluster(X, initMethod='fasterCao')
     kproto = KPrototypes(4)
     kproto.cluster(np.random.randn(X.shape[0], 3), X, initMethod='Huang')
     fkmodes = FuzzyKModes(4, alpha=1.1)
@@ -612,7 +636,7 @@ if __name__ == "__main__":
     ffkmodes = FuzzyCentroidsKModes(4, alpha=1.8)
     ffkmodes.cluster(X)
     
-    for result in (kmodes_huang, kmodes_cao, kproto, fkmodes, ffkmodes):
+    for result in (kmodes_huang, kmodes_cao, kmodes_fcao, kproto, fkmodes, ffkmodes):
         classtable = np.zeros((4,4), dtype='int64')
         for ii,_ in enumerate(y):
             classtable[int(y[ii][-1])-1,result.clusters[ii]] += 1
@@ -623,4 +647,7 @@ if __name__ == "__main__":
         for ii in range(4):
             prargs = tuple([ii+1] + list(classtable[ii,:]))
             print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |".format(*prargs))
-    
+
+
+if __name__ == "__main__":
+    soybean_test()
