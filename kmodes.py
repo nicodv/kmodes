@@ -6,7 +6,7 @@ Implementation of the k-modes clustering algorithm and several of its variations
 __author__  = 'Nico de Vos'
 __email__   = 'njdevos@gmail.com'
 __license__ = 'MIT'
-__version__ = '0.6'
+__version__ = '0.7'
 
 import random
 import numpy as np
@@ -82,24 +82,24 @@ class KModes(object):
         #    INIT
         # ----------------------
         print("Init: initializing centroids")
-        centroids = self.init_centroids(X)
+        self.init_centroids(X)
         
         print("Init: initializing clusters")
-        membership = np.zeros((self.k, nPoints), dtype='int64')
-        # clustFreq is a list of lists with dictionaries that contain the
+        self.membership = np.zeros((self.k, nPoints), dtype='int64')
+        # self._clustAttrFreq is a list of lists with dictionaries that contain the
         # frequencies of values per cluster and attribute
-        clustAttrFreq = [[defaultdict(int) for _ in range(nAttrs)] for _ in range(self.k)]
+        self._clustAttrFreq = [[defaultdict(int) for _ in range(nAttrs)] for _ in range(self.k)]
         for iPoint, curPoint in enumerate(X):
             # initial assigns to clusters
-            cluster = np.argmin(self.get_dissim(centroids, curPoint))
-            membership[cluster,iPoint] = 1
+            cluster = np.argmin(self.get_dissim(curPoint))
+            self.membership[cluster,iPoint] = 1
             # count attribute values per cluster
             for iAttr, curAttr in enumerate(curPoint):
-                clustAttrFreq[cluster][iAttr][curAttr] += 1
+                self._clustAttrFreq[cluster][iAttr][curAttr] += 1
         # perform an initial centroid update
         for ik in range(self.k):
             for iAttr in range(nAttrs):
-                centroids[ik,iAttr] = self.get_mode(clustAttrFreq[ik][iAttr])
+                self.centroids[ik,iAttr] = self.get_mode(self._clustAttrFreq[ik][iAttr])
         
         # ----------------------
         #    ITERATION
@@ -111,37 +111,43 @@ class KModes(object):
             itr += 1
             moves = 0
             for iPoint, curPoint in enumerate(X):
-                cluster = np.argmin(self.get_dissim(centroids, curPoint))
+                cluster = np.argmin(self.get_dissim(self.centroids, curPoint))
                 # if necessary: move point, and update old/new cluster frequencies and centroids
-                if not membership[cluster, iPoint]:
+                if not self.membership[cluster, iPoint]:
                     moves += 1
-                    oldcluster = np.argwhere(membership[:,iPoint])
-                    membership[oldcluster,iPoint] = 0
-                    membership[cluster,iPoint] = 1
+                    oldCluster = np.argwhere(self.membership[:,iPoint])
+                    self._add_point_to_cluster(curPoint, iPoint, cluster)
+                    self._remove_point_from_cluster(curPoint, iPoint, oldCluster)
+                    # update new and old centroids by choosing most likely attribute
                     for iAttr, curAttr in enumerate(curPoint):
-                        # update frequencies of attributes in clusters
-                        clustAttrFreq[cluster][iAttr][curAttr] += 1
-                        clustAttrFreq[oldcluster][iAttr][curAttr] -= 1
-                        # update new and old centroids by choosing most likely attribute
-                        for curc in (cluster, oldcluster):
-                            centroids[curc, iAttr] = self.get_mode(clustAttrFreq[curc][iAttr])
+                        for curc in (cluster, oldCluster):
+                            self.centroids[curc, iAttr] = \
+								self.get_mode(self._clustAttrFreq[curc][iAttr])
                     if verbose == 2:
-                        print("Move from cluster {0} to {1}".format(oldcluster, cluster))
+                        print("Move from cluster {0} to {1}".format(oldCluster, cluster))
+					
+					# in case of an empty cluster, reinitialize with a random point
+					# that is not a centroid
+					if sum(self.membership[oldCluster,:]) == 0:
+						while True:
+							rIndx = np.random.randint(nPoints)
+							if not all(X[rIndx] == self.centroids).any():
+								break
+						self._add_point_to_cluster(X[rIndx], rIndx, oldCluster)
             
             # all points seen in this iteration
             converged = (moves == 0)
             if verbose:
                 print("Iteration: {0}/{1}, moves: {2}".format(itr, maxIters, moves))
         
-        self.cost       = self.clustering_cost(X, centroids, membership)
-        self.centroids  = centroids
-        self.clusters   = np.array([int(np.argwhere(membership[:,pnt])) for pnt in range(nPoints)])
-        self.membership = membership
-    
+        self.calculate_clustering_cost(X)
+        self.clusters   = np.array([int(np.argwhere(self.membership[:,pt])) \
+						  for pt in range(nPoints)])
+	
     def init_centroids(self, X):
         assert self.initMethod in ('Huang', 'Cao')
         nPoints, nAttrs = X.shape
-        centroids = np.empty((self.k, nAttrs))
+        self.centroids = np.empty((self.k, nAttrs))
         if self.initMethod == 'Huang':
             # determine frequencies of attributes
             for iAttr in range(nAttrs):
@@ -155,16 +161,15 @@ class KModes(object):
                 # and (2) the counts are small integers so memory consumption is low
                 choices = [chc for chc, wght in freq.items() for _ in range(wght)]
                 for ik in range(self.k):
-                    centroids[ik, iAttr] = random.choice(choices)
+                    self.centroids[ik, iAttr] = random.choice(choices)
             # the previously chosen centroids could result in empty clusters,
             # so set centroid to closest point in X
             for ik in range(self.k):
-                dissim = self.get_dissim(X, centroids[ik])
-                ndx = dissim.argsort()
+                ndx = np.argsort(self.get_dissim(X, self.centroids[ik]))
                 # and we want the centroid to be unique
-                while np.all(X[ndx[0]] == centroids, axis=1).any():
+                while np.all(X[ndx[0]] == self.centroids, axis=1).any():
                     ndx = np.delete(ndx, 0)
-                centroids[ik] = X[ndx[0]]
+                self.centroids[ik] = X[ndx[0]]
         
         elif self.initMethod == 'Cao':
             # Note: O(N * at * k**2), so watch out with k
@@ -179,18 +184,32 @@ class KModes(object):
             dens /= nPoints
             
             # choose centroids based on distance and density
-            centroids[0] = X[np.argmax(dens)]
-            dissim = self.get_dissim(X, centroids[0])
-            centroids[1] = X[np.argmax(dissim * dens)]
+            self.centroids[0] = X[np.argmax(dens)]
+            dissim = self.get_dissim(X, self.centroids[0])
+            self.centroids[1] = X[np.argmax(dissim * dens)]
             # for the reamining centroids, choose max dens * dissim to the (already assigned)
             # centroid with the lowest dens * dissim
             for ik in range(2,self.k):
                 dd = np.empty((ik, nPoints))
                 for ikk in range(ik):
-                    dd[ikk] = self.get_dissim(X, centroids[ikk]) * dens
-                centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
+                    dd[ikk] = self.get_dissim(X, self.centroids[ikk]) * dens
+                self.centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
         
-        return centroids
+        return
+    
+    def _add_point_to_cluster(point, iPoint, cluster)
+        self.membership[cluster,iPoint] = 1
+        # update frequencies of attributes in cluster
+        for iAttr, curAttr in enumerate(point):
+            self._clustAttrFreq[cluster][iAttr][curAttr] += 1
+        return
+    
+    def _remove_point_from_cluster(point, iPoint, cluster)
+        self.membership[cluster,iPoint] = 0
+        # update frequencies of attributes in cluster
+        for iAttr, curAttr in enumerate(point):
+            self._clustAttrFreq[cluster][iAttr][curAttr] -= 1
+        return
     
     @staticmethod
     def get_dissim(A, b):
@@ -204,12 +223,12 @@ class KModes(object):
         k = list(d.keys())
         return k[v.index(max(v))]
     
-    def clustering_cost(self, X, centroids, membership):
-        cost = 0
+    def calculate_clustering_cost(self, X):
+        self.cost = 0
         for iPoint, curPoint in enumerate(X):
-            cost += np.sum( self.get_dissim(centroids, curPoint) * \
-                    (membership[:,iPoint] ** self.alpha) )
-        return cost
+            self.cost += np.sum( self.get_dissim(self.centroids, curPoint) * \
+                    (self.membership[:,iPoint] ** self.alpha) )
+        return
 
 ###################################################################################################
 
@@ -241,6 +260,9 @@ class KPrototypes(KModes):
                     initMethod  = initialization method ('Huang' for the one described in
                                   Huang [1998], 'Cao' for the one in Cao et al. [2009])
                     maxIters    = maximum no. of iterations
+                    verbose     = 0 for minimal and 1 for normal algorithm progress information,
+                                  2 for internal algorithm details
+		
         '''
         # convert to numpy arrays, if needed
         Xnum, Xcat = X[0], X[1]
@@ -265,32 +287,32 @@ class KPrototypes(KModes):
         # ----------------------
         print("Init: initializing centroids")
         # list where [0] = numerical part of centroid and [1] = categorical part
-        centroids = [np.mean(Xnum, axis=0) + np.random.randn(self.k, nNumAttrs) * \
-                    np.std(Xnum, axis=0), self.init_centroids(Xcat)]
+        self.centroids = [np.mean(Xnum, axis=0) + np.random.randn(self.k, nNumAttrs) * \
+						 np.std(Xnum, axis=0), self.init_centroids(Xcat)]
         
         print("Init: initializing clusters")
-        membership = np.zeros((self.k, nPoints), dtype='int64')
+        self.membership = np.zeros((self.k, nPoints), dtype='int64')
         # keep track of the sum of attribute values per cluster
-        clustSum = np.zeros((self.k, nNumAttrs), dtype='float')
-        # clustFreq is a list of lists with dictionaries that contain the
-        # frequencies of values per cluster and attribute
-        clustFreq = [[defaultdict(int) for _ in range(nCatAttrs)] for _ in range(self.k)]
+        self._clustAttrSum = np.zeros((self.k, nNumAttrs), dtype='float')
+        # self._clustAttrFreq is a list of lists with dictionaries that contain
+		# the frequencies of values per cluster and attribute
+        self._clustAttrFreq = [[defaultdict(int) for _ in range(nCatAttrs)] for _ in range(self.k)]
         for iPoint in range(nPoints):
             # initial assigns to clusters
-            cluster = np.argmin(self.get_dissim_num(centroids[0], Xnum[iPoint]) + \
-                      self.gamma * self.get_dissim(centroids[1], Xcat[iPoint]))
+            cluster = np.argmin(self.get_dissim_num(self.centroids[0], Xnum[iPoint]) + \
+                      self.gamma * self.get_dissim(self.centroids[1], Xcat[iPoint]))
             membership[cluster,iPoint] = 1
             # count attribute values per cluster
             for iNumAttr, curNumAttr in enumerate(Xnum[iPoint]):
-                clustSum[cluster,iNumAttr] += curNumAttr
+                self._clustAttrSum[cluster,iNumAttr] += curNumAttr
             for iCatAttr, curCatAttr in enumerate(Xcat[iPoint]):
-                clustFreq[cluster][iCatAttr][curCatAttr] += 1
+                self._clustAttrFreq[cluster][iCatAttr][curCatAttr] += 1
         # perform an initial centroid update
         for ik in range(self.k):
             for iNumAttr in range(nNumAttrs):
-                centroids[0][ik,iNumAttr] = clustSum[ik,iNumAttr] / sum(membership[ik,:])
+                self.centroids[0][ik,iNumAttr] = self._clustAttrSum[ik,iNumAttr] / sum(self.membership[ik,:])
             for iCatAttr in range(nCatAttrs):
-                centroids[1][ik,iCatAttr] = self.get_mode(clustFreq[ik][iCatAttr])
+                self.centroids[1][ik,iCatAttr] = self.get_mode(self._clustAttrFreq[ik][iCatAttr])
         
         # ----------------------
         #    ITERATION
@@ -302,55 +324,78 @@ class KPrototypes(KModes):
             itr += 1
             moves = 0
             for iPoint in range(nPoints):
-                cluster = np.argmin(self.get_dissim_num(centroids[0], Xnum[iPoint]) + \
-                          self.gamma * self.get_dissim(centroids[1], Xcat[iPoint]))
+                cluster = np.argmin(self.get_dissim_num(self.centroids[0], Xnum[iPoint]) + \
+                          self.gamma * self.get_dissim(self.centroids[1], Xcat[iPoint]))
                 # if necessary: move point, and update old/new cluster frequencies and centroids
-                if not membership[cluster, iPoint]:
+                if not self.membership[cluster, iPoint]:
                     moves += 1
-                    oldcluster = np.argwhere(membership[:,iPoint])
-                    membership[oldcluster,iPoint] = 0
-                    membership[cluster,iPoint] = 1
+                    oldCluster = np.argwhere(self.membership[:,iPoint])
+                    self._add_point_to_cluster(Xnum[iPoint], Xcat[iPoint], iPoint, cluster)
+                    self._remove_point_from_cluster(Xnum[iPoint], Xcat[iPoint], iPoint, oldCluster)
+                    # update new and old centroids by choosing mean for numerical and
+					# most likely for categorical attributes
                     for iNumAttr, curNumAttr in enumerate(Xnum[iPoint]):
-                        clustSum[cluster,iNumAttr] += curNumAttr
-                        clustSum[oldcluster,iNumAttr] -= curNumAttr
-                        for curc in (cluster, oldcluster):
-                            centroids[0][curc, iNumAttr] = clustSum[ik,iNumAttr] / \
-                                                            sum(membership[curc,:])
+                        for curc in (cluster, oldCluster):
+                            self.centroids[0][curc, iNumAttr] = self._clustAttrSum[ik,iNumAttr] / \
+                                                            sum(self.membership[curc,:])
                     for iCatAttr, curCatAttr in enumerate(Xcat[iPoint]):
-                        # update frequencies of attributes in clusters
-                        clustFreq[cluster][iCatAttr][curCatAttr] += 1
-                        clustFreq[oldcluster][iCatAttr][curCatAttr] -= 1
-                        # update new and old centroids by choosing most likely attribute
-                        for curc in (cluster, oldcluster):
-                            centroids[1][curc, iCatAttr] = \
-                                self.get_mode(clustFreq[curc][iCatAttr])
+                        for curc in (cluster, oldCluster):
+                            self.centroids[1][curc, iCatAttr] = \
+                                self.get_mode(self._clustAttrFreq[curc][iCatAttr])
                     if verbose == 2:
-                        print("Move from cluster {0} to {1}".format(oldcluster, cluster))
+                        print("Move from cluster {0} to {1}".format(oldCluster, cluster))
+					
+					# in case of an empty cluster, reinitialize with a random point
+					# that is not a centroid
+					if sum(self.membership[oldCluster,:]) == 0:
+						while True:
+							rIndx = np.random.randint(nPoints)
+							if not all([Xnum[rIndx], Xcat[rIndx]] == self.centroids).any():
+								break
+						self._add_point_to_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, oldCluster)
             
             # all points seen in this iteration
             converged = (moves == 0)
             if verbose:
                 print("Iteration: {0}/{1}, moves: {2}".format(itr, maxIters, moves))
         
-        self.cost       = self.clustering_cost(Xnum, Xcat, centroids, membership)
-        self.centroids  = centroids
-        self.clusters   = np.array([int(np.argwhere(membership[:,pnt])) for pnt in range(nPoints)])
-        self.membership = membership
+        self.calculate_clustering_cost(Xnum, Xcat)
+        self.clusters = np.array([int(np.argwhere(self.membership[:,pt])) for pt in range(nPoints)])
+    
+    def _add_point_to_cluster(pointNum, pointCat, iPoint, cluster)
+        self.membership[cluster,iPoint] = 1
+        # update sums of attributes in cluster
+        for iAttr, curAttr in enumerate(pointNum):
+            self._clustAttrSum[cluster][iAttr] += curAttr
+        # update frequencies of attributes in cluster
+        for iAttr, curAttr in enumerate(pointCat):
+            self._clustAttrFreq[cluster][iAttr][curAttr] += 1
+        return
+    
+    def _remove_point_from_cluster(pointNum, pointCat, iPoint, cluster)
+        self.membership[cluster,iPoint] = 0
+        # update sums of attributes in cluster
+        for iAttr, curAttr in enumerate(pointNum):
+            self._clustAttrSum[cluster][iAttr] -= curAttr
+        # update frequencies of attributes in cluster
+        for iAttr, curAttr in enumerate(pointCat):
+            self._clustAttrFreq[cluster][iAttr][curAttr] -= 1
+        return
     
     @staticmethod
     def get_dissim_num(Anum, b):
         # Euclidian distance
         return np.sum((Anum - b)**2, axis=1)
     
-    def clustering_cost(self, Xnum, Xcat, centroids, membership):
+    def clustering_cost(self, Xnum, Xcat):
         ncost = 0
         ccost = 0
         for iPoint, curPoint in enumerate(Xnum):
-            ncost += np.sum( self.get_dissim_num(centroids[0], curPoint) * \
-                     (membership[:,iPoint] ** self.alpha) )
+            ncost += np.sum( self.get_dissim_num(self.centroids[0], curPoint) * \
+                     (self.membership[:,iPoint] ** self.alpha) )
         for iPoint, curPoint in enumerate(Xcat):
-            ccost += np.sum( self.get_dissim(centroids[1], curPoint) * \
-                     (membership[:,iPoint] ** self.alpha) )
+            ccost += np.sum( self.get_dissim(self.centroids[1], curPoint) * \
+                     (self.membership[:,iPoint] ** self.alpha) )
         return ncost + self.gamma * ccost
 
 ###################################################################################################
@@ -376,7 +421,8 @@ class FuzzyKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
         
-    def _perform_clustering(self, X, initMethod='Huang', maxIters=200, tol=1e-5, costInter=1, verbose=1):
+    def _perform_clustering(self, X, initMethod='Huang', maxIters=200, tol=1e-5, \
+							costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
                     initMethod  = initialization method ('Huang' for the one described in
                                   Huang [1998], 'Cao' for the one in Cao et al. [2009]).
@@ -384,6 +430,8 @@ class FuzzyKModes(KModes):
                     tol         = tolerance for termination criterion
                     costInter   = frequency with which to check the total cost
                                   (for speeding things up, since it is computationally expensive)
+                    verbose     = 0 for minimal and 1 for normal algorithm progress information,
+                                  2 for internal algorithm details
         
         '''
         
@@ -398,13 +446,13 @@ class FuzzyKModes(KModes):
         #    INIT
         # ----------------------
         print("Init: initializing centroids")
-        centroids = self.init_centroids(X)
+        self.init_centroids(X)
         
         # store for all attributes which points have a certain attribute value
-        domAttrPoints = [defaultdict(list) for _ in range(nAttrs)]
+        self._domAttrPoints = [defaultdict(list) for _ in range(nAttrs)]
         for iPoint, curPoint in enumerate(X):
             for iAttr, curAttr in enumerate(curPoint):
-                domAttrPoints[iAttr][curAttr].append(iPoint)
+                self._domAttrPoints[iAttr][curAttr].append(iPoint)
         
         # ----------------------
         #    ITERATION
@@ -414,50 +462,47 @@ class FuzzyKModes(KModes):
         converged = False
         lastCost = np.inf
         while itr <= maxIters and not converged:
-            membership = self.update_membership(centroids, X)
-            for ik in range(self.k):
-                centroids[ik] = self.update_centroid(domAttrPoints, membership[ik])
+            self.update_membership(X)
+            self.update_centroids()
             
             # computationally expensive, only check every N steps
             if itr % costInter == 0:
-                cost = self.clustering_cost(X, centroids, membership)
-                converged = cost >= lastCost * (1-tol)
-                lastCost = cost
+                self.calculate_clustering_cost(X)
+                converged = self.cost >= lastCost * (1-tol)
+                lastCost = self.cost
                 if verbose:
-                    print("Iteration: {0}/{1}, cost: {2}".format(itr, maxIters, cost))
+                    print("Iteration: {0}/{1}, cost: {2}".format(itr, maxIters, self.cost))
             itr += 1
         
-        self.cost       = cost
-        self.centroids  = centroids
-        self.clusters   = np.array([int(np.argmax(membership[:,pnt])) for pnt in range(nPoints)])
-        self.membership = membership
+        self.clusters = np.array([int(np.argmax(self.membership[:,pt])) for pt in range(nPoints)])
     
-    def update_membership(self, centroids, X, treshold=1e-3):
+    def update_membership(self, X, treshold=1e-3):
         nPoints = X.shape[0]
-        membership = np.empty((self.k, nPoints))
+        self.membership = np.empty((self.k, nPoints))
         for iPoint, curPoint in enumerate(X):
-            dissim = self.get_dissim(centroids, curPoint)
+            dissim = self.get_dissim(curPoint)
             if np.any(dissim <= treshold):
-                membership[:,iPoint] = np.where(dissim <= treshold, 1, treshold)
+                self.membership[:,iPoint] = np.where(dissim <= treshold, 1, treshold)
             else:
-                for ik in range(len(centroids)):
+                for ik in range(len(self.centroids)):
                     factor = 1. / (self.alpha - 1)
-                    membership[ik,iPoint] = 1 / np.sum( (float(dissim[ik]) / dissim)**factor )
-        return membership
+                    self.membership[ik,iPoint] = 1 / np.sum( (float(dissim[ik]) / dissim)**factor )
+        return
     
-    def update_centroid(self, domAttrPoints, membership):
-        centroids = []
-        for iAttr in range(len(domAttrPoints)):
-            # return attribute that maximizes the sum of the memberships
-            v = list(domAttrPoints[iAttr].values())
-            k = list(domAttrPoints[iAttr].keys())
-            memvar = [sum(membership[x]**self.alpha) for x in v]
-            centroids.append(k[np.argmax(memvar)])
-        return np.array(centroids)
+    def update_centroids(self):
+        self.centroids = np.empty((self.k, len(self._self._domAttrPoints)))
+		for ik in range(self.k):
+			for iAttr in range(len(self._self._domAttrPoints)):
+				# return attribute that maximizes the sum of the memberships
+				v = list(self._self._domAttrPoints[iAttr].values())
+				k = list(self._self._domAttrPoints[iAttr].keys())
+				memvar = [sum(self.membership[x]**self.alpha) for x in v]
+				self.centroids[ik, iAttr] = k[np.argmax(memvar)]
+        return
 
 ###################################################################################################
 
-class FuzzyCentroidsKModes(KModes):
+class FuzzyCentroidsKModes(object):
     
     def __init__(self, k, alpha=1.5):
         '''Fuzzy k-modes clustering algorithm for categorical data.
@@ -475,7 +520,8 @@ class FuzzyCentroidsKModes(KModes):
                     cost        = clustering cost
         
         '''
-        super(FuzzyCentroidsKModes, self).__init__(k)
+        assert k > 1, "Choose at least 2 clusters."
+        self.k = k
         
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
@@ -486,7 +532,9 @@ class FuzzyCentroidsKModes(KModes):
                     tol         = tolerance for termination criterion
                     costInter   = frequency with which to check the total cost
                                   (for speeding things up, since it is computationally expensive)
-        
+                    verbose     = 0 for minimal and 1 for normal algorithm progress information,
+                                  2 for internal algorithm details
+		
         '''
         
         # convert to numpy array, if needed
@@ -504,14 +552,14 @@ class FuzzyCentroidsKModes(KModes):
                 freqAttrs[iAttr][curAttr] += 1
         
         # omega = fuzzy set (as dict) for each attribute per cluster
-        omega = [[{} for _ in range(nAttrs)] for _ in range(self.k)]
+        self.omega = [[{} for _ in range(nAttrs)] for _ in range(self.k)]
         for ik in range(self.k):
             for iAttr in range(nAttrs):
                 # a bit unclear form the paper, but this is how they do it in their code
                 # give a random attribute 1.0 membership and the rest 0.0
                 randInt = np.random.randint(len(freqAttrs[iAttr]))
                 for iVal, curVal in enumerate(freqAttrs[iAttr]):
-                    omega[ik][iAttr][curVal] = float(iVal == randInt)
+                    self.omega[ik][iAttr][curVal] = float(iVal == randInt)
         
         # ----------------------
         #    ITERATION
@@ -522,75 +570,72 @@ class FuzzyCentroidsKModes(KModes):
         lastCost = np.inf
         while itr <= maxIters and not converged:
             # O(k*N*at*no. of unique values)
-            membership = self.update_membership(X, omega)
+            self.update_membership(X)
             
             # O(k*N*at)
-            omega = self.update_centroids(X, membership)
+            self.update_centroids(X)
             
             # computationally expensive, only check every N steps
             if itr % costInter == 0:
-                cost = self.clustering_cost(X, membership, omega)
-                converged = cost >= lastCost * (1-tol)
-                lastCost = cost
+                self.calculate_clustering_cost(X)
+                converged = self.cost >= lastCost * (1-tol)
+                lastCost = self.cost
                 if verbose:
-                    print("Iteration: {0}/{1}, cost: {2}".format(itr, maxIters, cost))
+                    print("Iteration: {0}/{1}, cost: {2}".format(itr, maxIters, self.cost))
             itr += 1
         
-        self.cost       = cost
-        self.omega      = omega
-        self.clusters   = np.array([int(np.argmax(membership[:,pnt])) for pnt in range(nPoints)])
-        self.membership = membership
+        self.clusters = np.array([int(np.argmax(self.membership[:,pt])) for pt in range(nPoints)])
     
-    def update_membership(self, X, omega, treshold=1e-3):
+    def update_membership(self, X, treshold=1e-3):
         # Eq. 20 from Kim et al. [2004]
         nPoints = X.shape[0]
-        membership = np.empty((self.k, nPoints))
+        self.membership = np.empty((self.k, nPoints))
         for iPoint, curPoint in enumerate(X):
-            dissim = self.get_fuzzy_dissim(omega, curPoint)
+            dissim = self.get_fuzzy_dissim(curPoint)
             if np.any(dissim <= treshold):
-                membership[:,iPoint] = np.where(dissim <= treshold, 1, treshold)
+                self.membership[:,iPoint] = np.where(dissim <= treshold, 1, treshold)
             else:
                 # NOTE: squaring the distances is not mentioned in the paper, but it is
                 # in the code of Kim et al.; seems to improve performance
                 dissim = dissim ** 2
-                for ik, curc in enumerate(omega):
+                for ik, curc in enumerate(self.omega):
                     factor = 1. / (self.alpha - 1)
-                    membership[ik,iPoint] = 1 / np.sum( (float(dissim[ik]) / dissim)**factor )
-        return membership
+                    self.membership[ik,iPoint] = 1 / np.sum( (float(dissim[ik]) / dissim)**factor )
+        return
     
-    def update_centroids(self, X, membership):
-        omega = [[defaultdict(float) for _ in range(X.shape[1])] for _ in range(self.k)]
+    def update_centroids(self, X):
+        self.omega = [[defaultdict(float) for _ in range(X.shape[1])] for _ in range(self.k)]
         for ik in range(self.k):
             for iAttr in range(X.shape[1]):
                 for iPoint, curPoint in enumerate(X[:,iAttr]):
-                    omega[ik][iAttr][curPoint] += membership[ik,iPoint] ** self.alpha
+                    self.omega[ik][iAttr][curPoint] += self.membership[ik,iPoint] ** self.alpha
                 # normalize so that sum omegas is 1, analogous to k-means
                 # (see e.g. Yang et al. [2008] who explain better than the original paper)
-                sumOmg = sum(omega[ik][iAttr].values())
-                for key in omega[ik][iAttr].keys():
-                    omega[ik][iAttr][key] /= sumOmg
-        return omega
+                sumOmg = sum(self.omega[ik][iAttr].values())
+                for key in self.omega[ik][iAttr].keys():
+                    self.omega[ik][iAttr][key] /= sumOmg
+        return
     
     @staticmethod
-    def get_fuzzy_dissim(omega, x):
+    def get_fuzzy_dissim(x):
         # dissimilarity = sums of all omegas for non-matching attributes
         # see Eqs. 13-15 of Kim et al. [2004]
-        dissim = np.zeros(len(omega))
-        for ik in range(len(omega)):
-            for iAttr in range(len(omega[ik])):
-                attrValues = np.array(omega[ik][iAttr].items())
+        dissim = np.zeros(len(self.omega))
+        for ik in range(len(self.omega)):
+            for iAttr in range(len(self.omega[ik])):
+                attrValues = np.array(self.omega[ik][iAttr].items())
                 nonMatch = [v for k, v in attrValues if k != x[iAttr]]
                 # dissim[ik] += sum(nonMatch)
                 # following the code of Kim et al., seems to work better
                 dissim[ik] += sum(nonMatch) / np.sqrt(np.sum(attrValues ** 2))
         return dissim
     
-    def clustering_cost(self, X, membership, omega):
-        cost = 0
+    def calculate_clustering_cost(self, X):
+        self.cost = 0
         for iPoint, curPoint in enumerate(X):
-            cost += np.sum( self.get_fuzzy_dissim(omega, curPoint) * \
-                    (membership[:,iPoint] ** self.alpha) )
-        return cost
+            self.cost += np.sum( self.get_fuzzy_dissim(curPoint) * \
+                    (self.membership[:,iPoint] ** self.alpha) )
+        return
 
 
 def soybean_test():
