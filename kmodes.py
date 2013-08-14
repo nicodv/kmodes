@@ -387,7 +387,7 @@ class KPrototypes(KModes):
         # Euclidian distance
         return np.sum((Anum - b)**2, axis=1)
     
-    def clustering_cost(self, Xnum, Xcat):
+    def calculate_clustering_cost(self, Xnum, Xcat):
         ncost = 0
         ccost = 0
         for iPoint, curPoint in enumerate(Xnum):
@@ -396,7 +396,8 @@ class KPrototypes(KModes):
         for iPoint, curPoint in enumerate(Xcat):
             ccost += np.sum( self.get_dissim(self.centroids[1], curPoint) * \
                      (self.membership[:,iPoint] ** self.alpha) )
-        return ncost + self.gamma * ccost
+        self.cost = ncost + self.gamma * ccost
+        return
 
 ###################################################################################################
 
