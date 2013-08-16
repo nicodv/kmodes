@@ -373,8 +373,10 @@ class KPrototypes(KModes):
                     if sum(self.membership[oldCluster,:]) == 0:
                         while True:
                             rIndx = np.random.randint(nPoints)
-                            if not all(Xnum[rIndx] == self.centroids[0]).any() and \
-                               not all(Xcat[rIndx] == self.centroids[1]).any():
+                            if not np.all(np.vstack(( \
+                                np.all(Xnum[rIndx] == self.centroids[0], axis=1), \
+                                np.all(Xcat[rIndx] == self.centroids[1], axis=1))), \
+                                axis=0).any():
                                 break
                         self._add_point_to_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, oldCluster)
                         fromCluster = np.argwhere(self.membership[:,rIndx])[0][0]
