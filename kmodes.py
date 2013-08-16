@@ -124,8 +124,7 @@ class KModes(object):
                     # update new and old centroids by choosing most likely attribute
                     for iAttr, curAttr in enumerate(curPoint):
                         for curc in (cluster, oldCluster):
-                            self.centroids[curc, iAttr] = \
-								self.get_mode(self._clustAttrFreq[curc][iAttr])
+                            self.centroids[curc, iAttr] = self.get_mode(self._clustAttrFreq[curc][iAttr])
                     if verbose == 2:
                         print("Move from cluster {0} to {1}".format(oldCluster, cluster))
                         
@@ -137,6 +136,8 @@ class KModes(object):
                                 if not all(X[rIndx] == self.centroids).any():
                                     break
                             self._add_point_to_cluster(X[rIndx], rIndx, oldCluster)
+                            fromCluster = np.argwhere(self.membership[:,rIndx])[0][0]
+                            self._remove_point_from_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, fromCluster)
             
             # all points seen in this iteration
             converged = (moves == 0)
@@ -144,8 +145,8 @@ class KModes(object):
                 print("Iteration: {0}/{1}, moves: {2}".format(itr, maxIters, moves))
         
         self.calculate_clustering_cost(X)
-        self.clusters   = np.array([np.argwhere(self.membership[:,pt])[0] \
-						  for pt in range(nPoints)])
+        self.clusters = np.array([np.argwhere(self.membership[:,pt])[0] \
+                        for pt in range(nPoints)])
 	
     def init_centroids(self, X):
         assert self.initMethod in ('Huang', 'Cao')
@@ -325,6 +326,8 @@ class KPrototypes(KModes):
                        not all(Xcat[rIndx] == self.centroids[1]).any():
                         break
                 self._add_point_to_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, ik)
+                fromCluster = np.argwhere(self.membership[:,rIndx])[0][0]
+                self._remove_point_from_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, fromCluster)
         # perform an initial centroid update
         for ik in range(self.k):
             for iAttr in range(nNumAttrs):
@@ -352,7 +355,7 @@ class KPrototypes(KModes):
                     self._add_point_to_cluster(Xnum[iPoint], Xcat[iPoint], iPoint, cluster)
                     self._remove_point_from_cluster(Xnum[iPoint], Xcat[iPoint], iPoint, oldCluster)
                     # update new and old centroids by choosing mean for numerical and
-					# most likely for categorical attributes
+                    # most likely for categorical attributes
                     for iAttr in range(len(Xnum[iPoint])):
                         for curc in (cluster, oldCluster):
                             self.centroids[0][curc, iAttr] = self._clustAttrSum[ik,iAttr] / \
@@ -373,6 +376,8 @@ class KPrototypes(KModes):
                                not all(Xcat[rIndx] == self.centroids[1]).any():
                                 break
                         self._add_point_to_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, oldCluster)
+                        fromCluster = np.argwhere(self.membership[:,rIndx])[0][0]
+                        self._remove_point_from_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, fromCluster)
             
             # all points seen in this iteration
             converged = (moves == 0)
