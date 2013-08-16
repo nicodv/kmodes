@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-'''
-Implementation of the k-modes clustering algorithm and several of its variations.
-'''
 __author__  = 'Nico de Vos'
 __email__   = 'njdevos@gmail.com'
 __license__ = 'MIT'
@@ -35,7 +32,7 @@ class KModes(object):
         # generalized form with alpha. alpha > 1 for fuzzy k-modes
         self.alpha = 1
     
-    def cluster(self, X, preRuns=50, prePctl=10, *args, **kwargs):
+    def cluster(self, X, preRuns=10, prePctl=20, *args, **kwargs):
         '''Shell around _perform_clustering method that tries to ensure a good clustering
         result by choosing one that has a relatively low clustering cost compared to the
         costs of a number of pre-runs. (Huang [1998] states that clustering cost can be
@@ -137,7 +134,7 @@ class KModes(object):
                                     break
                             self._add_point_to_cluster(X[rIndx], rIndx, oldCluster)
                             fromCluster = np.argwhere(self.membership[:,rIndx])[0][0]
-                            self._remove_point_from_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, fromCluster)
+                            self._remove_point_from_cluster(X[rIndx], rIndx, fromCluster)
             
             # all points seen in this iteration
             converged = (moves == 0)
@@ -147,7 +144,7 @@ class KModes(object):
         self.calculate_clustering_cost(X)
         self.clusters = np.array([np.argwhere(self.membership[:,pt])[0] \
                         for pt in range(nPoints)])
-	
+    
     def init_centroids(self, X):
         assert self.initMethod in ('Huang', 'Cao')
         nPoints, nAttrs = X.shape
@@ -233,7 +230,7 @@ class KModes(object):
         self.cost = 0
         for iPoint, curPoint in enumerate(X):
             self.cost += np.sum( self.get_dissim(self.centroids, curPoint) * \
-                    (self.membership[:,iPoint] ** self.alpha) )
+                         (self.membership[:,iPoint] ** self.alpha) )
         return
 
 ###################################################################################################
@@ -268,7 +265,7 @@ class KPrototypes(KModes):
                     maxIters    = maximum no. of iterations
                     verbose     = 0 for no and 1 for normal algorithm progress information,
                                   2 for internal algorithm details
-		
+        
         '''
         # convert to numpy arrays, if needed
         Xnum, Xcat = X[0], X[1]
@@ -296,7 +293,7 @@ class KPrototypes(KModes):
         # list where [0] = numerical part of centroid and [1] = categorical part
         self.init_centroids(Xcat)
         self.centroids = [np.mean(Xnum, axis=0) + np.random.randn(self.k, nNumAttrs) * \
-						 np.std(Xnum, axis=0), self.centroids]
+                         np.std(Xnum, axis=0), self.centroids]
         
         if verbose:
             print("Init: initializing clusters")
@@ -304,7 +301,7 @@ class KPrototypes(KModes):
         # keep track of the sum of attribute values per cluster
         self._clustAttrSum = np.zeros((self.k, nNumAttrs), dtype='float')
         # self._clustAttrFreq is a list of lists with dictionaries that contain
-		# the frequencies of values per cluster and attribute
+        # the frequencies of values per cluster and attribute
         self._clustAttrFreq = [[defaultdict(int) for _ in range(nCatAttrs)] for _ in range(self.k)]
         for iPoint in range(nPoints):
             # initial assigns to clusters
@@ -322,8 +319,9 @@ class KPrototypes(KModes):
             if sum(self.membership[ik,:]) == 0:
                 while True:
                     rIndx = np.random.randint(nPoints)
-                    if not all(Xnum[rIndx] == self.centroids[0]).any() and \
-                       not all(Xcat[rIndx] == self.centroids[1]).any():
+                    if not np.all(np.vstack((np.all(Xnum[rIndx] == self.centroids[0], axis=1), \
+                                             np.all(Xcat[rIndx] == self.centroids[1], axis=1))), \
+                                             axis=0).any():
                         break
                 self._add_point_to_cluster(Xnum[rIndx], Xcat[rIndx], rIndx, ik)
                 fromCluster = np.argwhere(self.membership[:,rIndx])[0][0]
@@ -358,8 +356,11 @@ class KPrototypes(KModes):
                     # most likely for categorical attributes
                     for iAttr in range(len(Xnum[iPoint])):
                         for curc in (cluster, oldCluster):
-                            self.centroids[0][curc, iAttr] = self._clustAttrSum[ik,iAttr] / \
-                                                            sum(self.membership[curc,:])
+                            if sum(self.membership[curc,:]):
+                                self.centroids[0][curc, iAttr] = self._clustAttrSum[ik,iAttr] / \
+                                                                 sum(self.membership[curc,:])
+                            else:
+                                self.centroids[0][curc, iAttr] = 0
                     for iAttr in range(len(Xcat[iPoint])):
                         for curc in (cluster, oldCluster):
                             self.centroids[1][curc, iAttr] = \
@@ -450,7 +451,7 @@ class FuzzyKModes(KModes):
         self.alpha = alpha
         
     def _perform_clustering(self, X, initMethod='Huang', maxIters=200, tol=1e-5, \
-							costInter=1, verbose=1):
+                            costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
                     initMethod  = initialization method ('Huang' for the one described in
                                   Huang [1998], 'Cao' for the one in Cao et al. [2009]).
@@ -564,7 +565,7 @@ class FuzzyCentroidsKModes(KModes):
                                   (for speeding things up, since it is computationally expensive)
                     verbose     = 0 for no and 1 for normal algorithm progress information,
                                   2 for internal algorithm details
-		
+        
         '''
         
         # convert to numpy array, if needed
@@ -666,7 +667,7 @@ class FuzzyCentroidsKModes(KModes):
         self.cost = 0
         for iPoint, curPoint in enumerate(X):
             self.cost += np.sum( self.get_fuzzy_dissim(curPoint) * \
-                    (self.membership[:,iPoint] ** self.alpha) )
+                         (self.membership[:,iPoint] ** self.alpha) )
         return
 
 
