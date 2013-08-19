@@ -1,14 +1,16 @@
 kmodes
 ======
 
+Description
+-----------
 Implementation of the k-modes clustering algorithm for categorical data, and several of its variations.
 
 Implemented are:
-- k-modes [1][2]
-- k-modes with initialization based on density [3]
-- k-prototypes [1]
-- fuzzy k-modes [4]
-- fuzzy k-modes with fuzzy centroids [5]
+* k-modes [1][2]
+* k-modes with initialization based on density [3]
+* k-prototypes [1]
+* fuzzy k-modes [4]
+* fuzzy k-modes with fuzzy centroids [5]
 
 [1] Huang, Z.: Clustering large data sets with mixed numeric and categorical values,
 Proceedings of the First Pacific Asia Knowledge Discovery and Data Mining Conference,
@@ -24,3 +26,8 @@ IEEE Transactions on Fuzzy Systems 7(4), pp. 446-452, 1999.
 
 [5] Kim, D.-W., Lee, K.H., Lee, D.: Fuzzy clustering of categorical data using fuzzy centroids, Pattern
 Recognition Letters 25, 1262-1271, 2004.
+
+Requirements
+------------
+* Python 2.7
+* Numpy
