@@ -40,7 +40,7 @@ class KModes(object):
         
         '''
         
-        if preRuns and kwargs.has_key('initMethod') and kwargs['initMethod'] == 'Cao':
+        if preRuns and 'initMethod' in kwargs and kwargs['initMethod'] == 'Cao':
             print("Initialization method and algorithm are deterministic. Disabling preruns...")
             preRuns = None
         
