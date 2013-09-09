@@ -675,6 +675,7 @@ class FuzzyCentroidsKModes(KModes):
         for ik in range(len(self.omega)):
             for iAttr in range(len(self.omega[ik])):
                 attrValues = np.array(self.omega[ik][iAttr].items())
+                #TODO: iteration over 0-d array, fix this
                 nonMatch = [v for k, v in attrValues if k != x[iAttr]]
                 # dissim[ik] += sum(nonMatch)
                 # following the code of Kim et al., seems to work better
