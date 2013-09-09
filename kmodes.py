@@ -31,6 +31,10 @@ class KModes(object):
         
         # generalized form with alpha. alpha > 1 for fuzzy k-modes
         self.alpha = 1
+        
+        # init some empty values
+        self.initMethod = self.membership = self._clustAttrFreq = self.clusters = self.centroids = None
+        self.cost = np.Inf
     
     def cluster(self, X, preRuns=10, prePctl=20, *args, **kwargs):
         '''Shell around _perform_clustering method that tries to ensure a good clustering
@@ -254,6 +258,9 @@ class KPrototypes(KModes):
         
         '''
         super(KPrototypes, self).__init__(k)
+        
+        # init some empty values
+        self.gamma = self._clustAttrSum = None
     
     def _perform_clustering(self, X, gamma=None, initMethod='Huang', maxIters=100, verbose=1):
         '''Inputs:  Xnum        = numeric data points [no. points * no. numeric attributes]
@@ -436,7 +443,7 @@ class FuzzyKModes(KModes):
     def __init__(self, k, alpha=1.5):
         '''Fuzzy k-modes clustering algorithm for categorical data.
         Uses traditional, hard centroids, following Huang, Z., Ng, M.K.:
-        A fuzzy k-modes algorithm for clustering categorical data, 
+        A fuzzy k-modes algorithm for clustering categorical data,
         IEEE Transactions on Fuzzy Systems 7(4), 1999.
         
         Inputs:     k           = number of clusters
@@ -452,6 +459,9 @@ class FuzzyKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
         
+        # init some empty values
+        self._domAttrPoints = None
+    
     def _perform_clustering(self, X, initMethod='Huang', maxIters=200, tol=1e-5, \
                             costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
@@ -548,16 +558,21 @@ class FuzzyCentroidsKModes(KModes):
         Attributes: clusters    = cluster numbers with max. membership [no. points]
                     membership  = membership matrix [k * no. points]
                     omega       = fuzzy centroids [dicts with element values as keys,
-                                  element memberships as values, inside lists for 
+                                  element memberships as values, inside lists for
                                   attributes inside list for centroids]
                     cost        = clustering cost
         
         '''
+        super(FuzzyCentroidsKModes, self).__init__(k)
+        
         assert k > 1, "Choose at least 2 clusters."
         self.k = k
         
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
+        
+        # init some empty values
+        self.omega = None
     
     def _perform_clustering(self, X, maxIters=100, tol=1e-5, costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
@@ -634,7 +649,7 @@ class FuzzyCentroidsKModes(KModes):
                 # NOTE: squaring the distances is not mentioned in the paper, but it is
                 # in the code of Kim et al.; seems to improve performance
                 dissim = dissim ** 2
-                for ik, curc in enumerate(self.omega):
+                for ik in range(len(self.omega)):
                     factor = 1. / (self.alpha - 1)
                     self.membership[ik,iPoint] = 1 / np.sum( (float(dissim[ik]) / dissim)**factor )
         return
@@ -703,6 +718,7 @@ def soybean_test():
         print("----|-------|-------|-------|-------|")
         for ii in range(4):
             prargs = tuple([ii+1] + list(classtable[ii,:]))
+            #IGNORE:W
             print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |".format(*prargs))
 
 
