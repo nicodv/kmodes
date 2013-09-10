@@ -663,17 +663,16 @@ class FuzzyCentroidsKModes(KModes):
         return
     
     def get_fuzzy_dissim(self, x):
-        #TODO: slow, could it be faster?
+        # TODO: slow, could it be faster?
         # dissimilarity = sums of all omegas for non-matching attributes
         # see Eqs. 13-15 of Kim et al. [2004]
         dissim = np.zeros(len(self.omega))
         for ik in range(len(self.omega)):
-            for iAttr in range(len(self.omega[ik])):
-                attrValues = np.array(self.omega[ik][iAttr].items())
-                nonMatch = [v for k, v in attrValues if k != x[iAttr]]
+            for iAttr, curAttr in enumerate(self.omega[ik]):
+                nonMatch = [v for k, v in curAttr.items() if k != x[iAttr]]
                 # dissim[ik] += sum(nonMatch)
                 # following the code of Kim et al., seems to work better
-                dissim[ik] += sum(nonMatch) / np.sqrt(np.sum(attrValues ** 2))
+                dissim[ik] += sum(nonMatch) / np.sqrt(np.sum(np.array(list(curAttr.values())) ** 2))
         return dissim
     
     def calculate_clustering_cost(self, X):
