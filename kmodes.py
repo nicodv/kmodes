@@ -668,14 +668,13 @@ class FuzzyCentroidsKModes(KModes):
         return
     
     def get_fuzzy_dissim(self, x):
-        #TODO: very slow, could it be faster?
+        #TODO: slow, could it be faster?
         # dissimilarity = sums of all omegas for non-matching attributes
         # see Eqs. 13-15 of Kim et al. [2004]
         dissim = np.zeros(len(self.omega))
         for ik in range(len(self.omega)):
             for iAttr in range(len(self.omega[ik])):
                 attrValues = np.array(self.omega[ik][iAttr].items())
-                #TODO: iteration over 0-d array, fix this
                 nonMatch = [v for k, v in attrValues if k != x[iAttr]]
                 # dissim[ik] += sum(nonMatch)
                 # following the code of Kim et al., seems to work better
