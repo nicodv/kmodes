@@ -32,9 +32,8 @@ class KModes(object):
         # generalized form with alpha. alpha > 1 for fuzzy k-modes
         self.alpha = 1
         
-        # init some empty values
-        self.initMethod = self.membership = self._clustAttrFreq = self.clusters = self.centroids = None
-        self.cost = np.Inf
+        # init some variables
+        self.membership = self.clusters = self.centroids = self.cost = None
     
     def cluster(self, X, preRuns=10, prePctl=20, *args, **kwargs):
         '''Shell around _perform_clustering method that tries to ensure a good clustering
@@ -259,8 +258,7 @@ class KPrototypes(KModes):
         '''
         super(KPrototypes, self).__init__(k)
         
-        # init some empty values
-        self.gamma = self._clustAttrSum = None
+        self.gamma = None
     
     def _perform_clustering(self, X, gamma=None, initMethod='Huang', maxIters=100, verbose=1):
         '''Inputs:  Xnum        = numeric data points [no. points * no. numeric attributes]
@@ -459,8 +457,7 @@ class FuzzyKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
         
-        # init some empty values
-        self._domAttrPoints = None
+        self.omega = None
     
     def _perform_clustering(self, X, initMethod='Huang', maxIters=200, tol=1e-5, \
                             costInter=1, verbose=1):
@@ -571,8 +568,6 @@ class FuzzyCentroidsKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
         
-        # init some empty values
-        self.omega = None
     
     def _perform_clustering(self, X, maxIters=100, tol=1e-5, costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
@@ -668,14 +663,13 @@ class FuzzyCentroidsKModes(KModes):
         return
     
     def get_fuzzy_dissim(self, x):
-        #TODO: very slow, could it be faster?
+        #TODO: slow, could it be faster?
         # dissimilarity = sums of all omegas for non-matching attributes
         # see Eqs. 13-15 of Kim et al. [2004]
         dissim = np.zeros(len(self.omega))
         for ik in range(len(self.omega)):
             for iAttr in range(len(self.omega[ik])):
                 attrValues = np.array(self.omega[ik][iAttr].items())
-                #TODO: iteration over 0-d array, fix this
                 nonMatch = [v for k, v in attrValues if k != x[iAttr]]
                 # dissim[ik] += sum(nonMatch)
                 # following the code of Kim et al., seems to work better
