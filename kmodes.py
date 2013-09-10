@@ -33,8 +33,7 @@ class KModes(object):
         self.alpha = 1
         
         # init some empty values
-        self.initMethod = self.membership = self._clustAttrFreq = self.clusters = self.centroids = None
-        self.cost = np.Inf
+        self.initMethod = self.membership = self.clusters = self.centroids = self.cost = None
     
     def cluster(self, X, preRuns=10, prePctl=20, *args, **kwargs):
         '''Shell around _perform_clustering method that tries to ensure a good clustering
@@ -260,7 +259,7 @@ class KPrototypes(KModes):
         super(KPrototypes, self).__init__(k)
         
         # init some empty values
-        self.gamma = self._clustAttrSum = None
+        self.gamma = None
     
     def _perform_clustering(self, X, gamma=None, initMethod='Huang', maxIters=100, verbose=1):
         '''Inputs:  Xnum        = numeric data points [no. points * no. numeric attributes]
@@ -458,9 +457,6 @@ class FuzzyKModes(KModes):
         
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
-        
-        # init some empty values
-        self._domAttrPoints = None
     
     def _perform_clustering(self, X, initMethod='Huang', maxIters=200, tol=1e-5, \
                             costInter=1, verbose=1):
@@ -571,8 +567,8 @@ class FuzzyCentroidsKModes(KModes):
         assert alpha > 1, "alpha should be > 1 (alpha = 1 equals regular k-modes)."
         self.alpha = alpha
         
-        # init some empty values
-        self.omega = None
+        # omega = fuzzy set (as dict) for each attribute per cluster
+        self.omega = [[{} for _ in range(nAttrs)] for _ in range(self.k)]
     
     def _perform_clustering(self, X, maxIters=100, tol=1e-5, costInter=1, verbose=1):
         '''Inputs:  X           = data points [no. points * no. attributes]
@@ -601,8 +597,6 @@ class FuzzyCentroidsKModes(KModes):
             for iAttr, curAttr in enumerate(curPoint):
                 freqAttrs[iAttr][curAttr] += 1
         
-        # omega = fuzzy set (as dict) for each attribute per cluster
-        self.omega = [[{} for _ in range(nAttrs)] for _ in range(self.k)]
         for ik in range(self.k):
             for iAttr in range(nAttrs):
                 # a bit unclear form the paper, but this is how they do it in their code
