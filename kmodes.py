@@ -692,8 +692,8 @@ class FuzzyCentroidsKModes(KModes):
 
 def soybean_test():
     # reproduce results on small soybean data set
-    X = np.genfromtxt('./soybean.csv', dtype='int64', delimiter=',')[:,:-1]
-    y = np.genfromtxt('./soybean.csv', dtype='unicode', delimiter=',', usecols=35)
+    X = np.genfromtxt('/home/nico/Code/kmodes/soybean.csv', dtype='int64', delimiter=',')[:,:-1]
+    y = np.genfromtxt('/home/nico/Code/kmodes/soybean.csv', dtype='unicode', delimiter=',', usecols=35)
     
     # drop columns with single value
     X = X[:,np.std(X, axis=0) > 0.]
