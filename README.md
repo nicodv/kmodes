@@ -29,5 +29,5 @@ Recognition Letters 25, 1262-1271, 2004.
 
 Requirements
 ------------
-* Python 2.7
+* Python 2.7+
 * Numpy
