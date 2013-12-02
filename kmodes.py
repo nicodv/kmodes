@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __author__ = 'Nico de Vos'
 __email__ = 'njdevos@gmail.com'
@@ -699,10 +699,10 @@ def soybean_test():
     kproto.cluster([np.random.randn(X.shape[0], 3), X], initMethod='Huang')
     fkmodes = FuzzyKModes(4, alpha=1.1)
     fkmodes.cluster(X)
-    ffkmodes = FuzzyCentroidsKModes(4, alpha=1.8)
-    ffkmodes.cluster(X)
+    #ffkmodes = FuzzyCentroidsKModes(4, alpha=1.8)
+    #ffkmodes.cluster(X)
 
-    for result in (kmodes_huang, kmodes_cao, kproto, fkmodes, ffkmodes):
+    for result in (kmodes_huang, kmodes_cao, kproto, fkmodes):
         classtable = np.zeros((4, 4), dtype='int64')
         for ii, _ in enumerate(y):
             classtable[int(y[ii][-1])-1, result.clusters[ii]] += 1
@@ -712,7 +712,6 @@ def soybean_test():
         print("----|-------|-------|-------|-------|")
         for ii in range(4):
             prArgs = tuple([ii+1] + list(classtable[ii, :]))
-            #IGNORE:W
             print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |".format(*prArgs))
 
 
