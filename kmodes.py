@@ -10,6 +10,7 @@ import numpy as np
 from collections import defaultdict
 
 
+# noinspection PyNoneFunctionAssignment,PyTypeChecker,PyUnresolvedReferences
 class KModes(object):
 
     def __init__(self, k):
@@ -52,7 +53,7 @@ class KModes(object):
             for pr in range(pre_runs):
                 self._perform_clustering(x, *args, verbose=0, **kwargs)
                 precosts[pr] = self.cost
-                print("Prerun {0} / {1}, Cost = {2}".format(pr+1, pre_runs, precosts[pr]))
+                print("Prerun {0} / {1}, Cost = {2}".format(pr + 1, pre_runs, precosts[pr]))
             goodcost = np.percentile(precosts, pre_pctl)
         else:
             goodcost = np.inf
@@ -237,6 +238,7 @@ class KModes(object):
         return
 
 
+# noinspection PyUnresolvedReferences,PyTypeChecker,PyMethodOverriding
 class KPrototypes(KModes):
 
     def __init__(self, k):
@@ -286,7 +288,7 @@ class KPrototypes(KModes):
         # estimate a good value for gamma, which determines the weighing of
         # categorical values in clusters (see Huang [1997])
         if gamma is None:
-            gamma = 0.5 * np.std(xnum)
+            gamma = 0.5 * xnum.std()
         self.gamma = gamma
 
         # ----------------------
@@ -420,7 +422,7 @@ class KPrototypes(KModes):
     @staticmethod
     def get_dissim_num(anum, b):
         # Euclidean distance
-        return np.sum((anum - b)**2, axis=1)
+        return np.sum((anum - b) ** 2, axis=1)
 
     def calculate_clustering_cost(self, xnum, xcat):
         ncost = 0
@@ -437,6 +439,7 @@ class KPrototypes(KModes):
         return
 
 
+# noinspection PyNoneFunctionAssignment,PyTypeChecker
 class FuzzyKModes(KModes):
 
     def __init__(self, k, alpha=1.5):
@@ -509,7 +512,7 @@ class FuzzyKModes(KModes):
             # computationally expensive, only check every N steps
             if itr % cost_inter == 0:
                 self.calculate_clustering_cost(x)
-                converged = self.cost >= lastcost * (1-tol)
+                converged = self.cost >= lastcost * (1 - tol)
                 lastcost = self.cost
                 if verbose:
                     print("Iteration: {0}/{1}, cost: {2}".format(itr, max_iters, self.cost))
@@ -527,7 +530,8 @@ class FuzzyKModes(KModes):
             else:
                 for ik in range(len(self.centroids)):
                     factor = 1. / (self.alpha - 1)
-                    self.membership[ik, ipoint] = 1 / np.sum((float(dissim[ik]) / dissim)**factor)
+                    # noinspection PyTypeChecker
+                    self.membership[ik, ipoint] = 1 / np.sum((float(dissim[ik]) / dissim) ** factor)
         return
 
     def update_centroids(self):
@@ -537,11 +541,13 @@ class FuzzyKModes(KModes):
                 # return attribute that maximizes the sum of the memberships
                 v = list(self._domAttrPoints[iattr].values())
                 k = list(self._domAttrPoints[iattr].keys())
-                memvar = [sum(self.membership[ik, x]**self.alpha) for x in v]
+                memvar = [sum(self.membership[ik, x] ** self.alpha) for x in v]
+                # noinspection PyTypeChecker
                 self.centroids[ik, iattr] = k[np.argmax(memvar)]
         return
 
 
+# noinspection PyTypeChecker,PyNoneFunctionAssignment,PyUnresolvedReferences
 class FuzzyCentroidsKModes(KModes):
 
     def __init__(self, k, alpha=1.5):
@@ -623,7 +629,7 @@ class FuzzyCentroidsKModes(KModes):
             # computationally expensive, only check every N steps
             if itr % cost_inter == 0:
                 self.calculate_clustering_cost(x)
-                converged = self.cost >= lastcost * (1-tol)
+                converged = self.cost >= lastcost * (1 - tol)
                 lastcost = self.cost
                 if verbose:
                     print("Iteration: {0}/{1}, cost: {2}".format(itr, max_iters, self.cost))
@@ -645,10 +651,11 @@ class FuzzyCentroidsKModes(KModes):
                 dissim **= 2
                 for ik in range(len(self.omega)):
                     factor = 1. / (self.alpha - 1)
-                    self.membership[ik, ipoint] = 1 / np.sum((float(dissim[ik]) / dissim)**factor)
+                    self.membership[ik, ipoint] = 1 / np.sum((float(dissim[ik]) / dissim) ** factor)
         return
 
     def update_centroids(self, x):
+        # noinspection PyAttributeOutsideInit
         self.omega = [[defaultdict(float) for _ in range(x.shape[1])] for _ in range(self.k)]
         for ik in range(self.k):
             for iattr in range(x.shape[1]):
@@ -682,6 +689,7 @@ class FuzzyCentroidsKModes(KModes):
         return
 
 
+# noinspection PyUnresolvedReferences,PyTypeChecker
 def soybean_test():
     # reproduce results on small soybean data set
     x = np.genfromtxt('./soybean.csv', dtype=int, delimiter=',')[:, :-1]
@@ -696,21 +704,21 @@ def soybean_test():
     kmodes_cao.cluster(x, init_method='Cao')
     kproto = KPrototypes(4)
     kproto.cluster([np.random.randn(x.shape[0], 3), x], init_method='Huang')
-    fkmodes = FuzzyKModes(4, alpha=1.1)
-    fkmodes.cluster(x)
-    ffkmodes = FuzzyCentroidsKModes(4, alpha=1.8)
-    ffkmodes.cluster(x)
+    # fkmodes = FuzzyKModes(4, alpha=1.1)
+    # fkmodes.cluster(x)
+    # ffkmodes = FuzzyCentroidsKModes(4, alpha=1.8)
+    # ffkmodes.cluster(x)
 
-    for result in (kmodes_huang, kmodes_cao, kproto, fkmodes, ffkmodes):
+    for result in (kmodes_huang, kmodes_cao, kproto):
         classtable = np.zeros((4, 4), dtype=int)
         for ii, _ in enumerate(y):
-            classtable[int(y[ii][-1])-1, result.clusters[ii]] += 1
+            classtable[int(y[ii][-1]) - 1, result.clusters[ii]] += 1
 
         print("\n")
         print("    | Cl. 1 | Cl. 2 | Cl. 3 | Cl. 4 |")
         print("----|-------|-------|-------|-------|")
         for ii in range(4):
-            prargs = tuple([ii+1] + list(classtable[ii, :]))
+            prargs = tuple([ii + 1] + list(classtable[ii, :]))
             print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |".format(*prargs))
 
 
