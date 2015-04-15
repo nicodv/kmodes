@@ -692,11 +692,11 @@ class FuzzyCentroidsKModes(KModes):
 # noinspection PyUnresolvedReferences,PyTypeChecker
 def soybean_test():
     # reproduce results on small soybean data set
-    x = np.genfromtxt('./soybean.csv', dtype=int, delimiter=',')[:, :-1]
-    y = np.genfromtxt('./soybean.csv', dtype=str, delimiter=',', usecols=35)
+    x = np.genfromtxt('./test.csv', dtype=str, delimiter=',')[:, :-1]
+    y = np.genfromtxt('./test.csv', dtype=int, delimiter=',', usecols=5)
 
     # drop columns with single value
-    x = x[:, np.std(x, axis=0) > 0.]
+    # x = x[:, np.std(x, axis=0) > 0.]
 
     kmodes_huang = KModes(4)
     kmodes_huang.cluster(x, init_method='Huang')
