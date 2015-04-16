@@ -158,7 +158,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membership):
             curpoint, ipoint, cl_attr_freq, oldcluster, membership)
 
         # update new and old centroids by choosing most likely attribute
-        for iattr, curattr in enumerate(curpoint):
+        for iattr in range(len(curpoint)):
             for curc in (cluster, oldcluster):
                 centroids[curc, iattr] = _get_mode(cl_attr_freq[curc][iattr])
 
@@ -441,8 +441,8 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
-                print("Iteration: {}/{}, moves: {}, ncost: {}"
-                      .format(itr, max_iter, moves, ncost))
+                print("Run: {}, iteration: {}/{}, moves: {}, ncost: {}"
+                      .format(init_no + 1, itr, max_iter, moves, ncost))
 
         # store
         all_centroids.append(centroids)
