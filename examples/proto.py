@@ -2,7 +2,7 @@
 import numpy as np
 from kmodes import kmodes
 
-# reproduce results on small soybean data set
+# stocks with their market caps, sectors and countries
 syms = np.genfromtxt('proto.csv', dtype=str, delimiter=',')[:, 0]
 xnum = np.genfromtxt('proto.csv', dtype=float, delimiter=',')[:, 1]
 xnum = np.atleast_2d(xnum).T
