@@ -19,7 +19,7 @@ def _euclidean_dissim_num(a, b):
 
 def _init_huang(X, n_clusters):
     """Init n_clusters according to method by Huang [1997]."""
-    npoints, nattrs = X.shape
+    nattrs = X.shape[1]
     centroids = np.empty((n_clusters, nattrs), dtype='object')
     # determine frequencies of attributes
     for iattr in range(nattrs):
@@ -125,7 +125,7 @@ def _labels_cost_kmodes(X, centroids):
     a list of centroids.
     """
 
-    npoints, nattrs = X.shape
+    npoints = X.shape[0]
     membership = np.zeros((len(centroids), npoints), dtype='int64')
     cost = 0.
     for ipoint, curpoint in enumerate(X):
@@ -139,6 +139,46 @@ def _labels_cost_kmodes(X, centroids):
     return labels, cost
 
 
+def _k_modes_iter(X, centroids, cl_attr_freq, membership):
+    """Single iteration of k-modes"""
+    moves = 0
+    for ipoint, curpoint in enumerate(X):
+        cluster = np.argmin(_matching_dissim(centroids, curpoint))
+        if membership[cluster, ipoint]:
+            # point is already in its right place
+            continue
+
+        # move point, and update old/new cluster frequencies and centroids
+        moves += 1
+        oldcluster = np.argwhere(membership[:, ipoint])[0][0]
+
+        cl_attr_freq, membership = _add_point_to_cat_cluster(
+            curpoint, ipoint, cl_attr_freq, cluster, membership)
+        cl_attr_freq, membership = _remove_point_from_cat_cluster(
+            curpoint, ipoint, cl_attr_freq, oldcluster, membership)
+
+        # update new and old centroids by choosing most likely attribute
+        for iattr, curattr in enumerate(curpoint):
+            for curc in (cluster, oldcluster):
+                centroids[curc, iattr] = _get_mode(cl_attr_freq[curc][iattr])
+
+        # in case of an empty cluster, reinitialize with a random point
+        # from the largest cluster (that is not a centroid)
+        if sum(membership[oldcluster, :]) == 0:
+            fromcluster = membership.sum(axis=1).argmax()
+            choices = \
+                [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
+            rindx = np.random.choice(choices)
+
+            cl_attr_freq, membership = \
+                _add_point_to_cat_cluster(
+                    X[rindx], rindx, cl_attr_freq, oldcluster, membership)
+            cl_attr_freq, membership = _remove_point_from_cat_cluster(
+                X[rindx], rindx, cl_attr_freq, fromcluster, membership)
+
+    return centroids, moves
+
+
 def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
 
     # convert to numpy array, if needed
@@ -146,93 +186,72 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
     npoints, nattrs = X.shape
     assert n_clusters < npoints, "More clusters than data points?"
 
-    # _____ INIT _____
-    if verbose:
-        print("Init: initializing centroids")
-    if init == 'Huang':
-        centroids = _init_huang(X, n_clusters)
-    elif init == 'Cao':
-        centroids = _init_cao(X, n_clusters)
-    elif init == 'random':
-        seeds = np.random.choice(range(npoints), n_clusters)
-        centroids = X[seeds]
-    elif hasattr(init, '__array__'):
-        centroids = init
-    else:
-        raise NotImplementedError
+    all_centroids = []
+    all_labels = []
+    all_costs = []
+    for init_no in range(n_init):
 
-    if verbose:
-        print("Init: initializing clusters")
-    membership = np.zeros((n_clusters, npoints), dtype='int64')
-    # cl_attr_freq is a list of lists with dictionaries that contain the
-    # frequencies of values per cluster and attribute
-    cl_attr_freq = [[defaultdict(int) for _ in range(nattrs)]
-                    for _ in range(n_clusters)]
-    for ipoint, curpoint in enumerate(X):
-        # initial assigns to clusters
-        cluster = np.argmin(_matching_dissim(centroids, curpoint))
-        membership[cluster, ipoint] = 1
-        # count attribute values per cluster
-        for iattr, curattr in enumerate(curpoint):
-            cl_attr_freq[cluster][iattr][curattr] += 1
-    # perform an initial centroid update
-    for ik in range(n_clusters):
-        for iattr in range(nattrs):
-            centroids[ik, iattr] = _get_mode(cl_attr_freq[ik][iattr])
-
-    # _____ ITERATION _____
-    if verbose:
-        print("Starting iterations...")
-    itr = 0
-    converged = False
-    cost = np.Inf
-    while itr <= max_iter and not converged:
-        itr += 1
-        moves = 0
-        for ipoint, curpoint in enumerate(X):
-            cluster = np.argmin(_matching_dissim(centroids, curpoint))
-            if membership[cluster, ipoint]:
-                continue
-
-            # move point, and update old/new cluster frequencies and centroids
-            moves += 1
-            oldcluster = np.argwhere(membership[:, ipoint])[0][0]
-
-            cl_attr_freq, membership = _add_point_to_cat_cluster(
-                curpoint, ipoint, cl_attr_freq, cluster, membership)
-            cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                curpoint, ipoint, cl_attr_freq, oldcluster, membership)
-
-            # update new and old centroids by choosing most likely attribute
-            for iattr, curattr in enumerate(curpoint):
-                for curc in (cluster, oldcluster):
-                    centroids[curc, iattr] = \
-                        _get_mode(cl_attr_freq[curc][iattr])
-            if verbose >= 2:
-                print("Move from cluster {} to {}".format(oldcluster, cluster))
-
-            # in case of an empty cluster, reinitialize with a random point
-            # from the largest cluster
-            if sum(membership[oldcluster, :]) == 0:
-                fromcluster = membership.sum(axis=1).argmax()
-                choices = [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
-                rindx = np.random.choice(choices)
-
-                cl_attr_freq, membership = \
-                    _add_point_to_cat_cluster(
-                        X[rindx], rindx, cl_attr_freq, oldcluster, membership)
-                cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                    X[rindx], rindx, cl_attr_freq, fromcluster, membership)
-
-        # all points seen in this iteration
-        labels, ncost = _labels_cost_kmodes(X, centroids)
-        converged = (moves == 0) or (ncost >= cost)
-        cost = ncost
+        # _____ INIT _____
         if verbose:
-            print("Iteration: {}/{}, moves: {}, cost: {}"
-                  .format(itr, max_iter, moves, cost))
+            print("Init: initializing centroids")
+        if init == 'Huang':
+            centroids = _init_huang(X, n_clusters)
+        elif init == 'Cao':
+            centroids = _init_cao(X, n_clusters)
+        elif init == 'random':
+            seeds = np.random.choice(range(npoints), n_clusters)
+            centroids = X[seeds]
+        elif hasattr(init, '__array__'):
+            centroids = init
+        else:
+            raise NotImplementedError
 
-    return centroids, labels, cost
+        if verbose:
+            print("Init: initializing clusters")
+        membership = np.zeros((n_clusters, npoints), dtype='int64')
+        # cl_attr_freq is a list of lists with dictionaries that contain the
+        # frequencies of values per cluster and attribute
+        cl_attr_freq = [[defaultdict(int) for _ in range(nattrs)]
+                        for _ in range(n_clusters)]
+        for ipoint, curpoint in enumerate(X):
+            # initial assigns to clusters
+            cluster = np.argmin(_matching_dissim(centroids, curpoint))
+            membership[cluster, ipoint] = 1
+            # count attribute values per cluster
+            for iattr, curattr in enumerate(curpoint):
+                cl_attr_freq[cluster][iattr][curattr] += 1
+        # perform an initial centroid update
+        for ik in range(n_clusters):
+            for iattr in range(nattrs):
+                centroids[ik, iattr] = _get_mode(cl_attr_freq[ik][iattr])
+
+        # _____ ITERATION _____
+        if verbose:
+            print("Starting iterations...")
+        itr = 0
+        converged = False
+        cost = np.Inf
+        while itr <= max_iter and not converged:
+            itr += 1
+            centroids, moves = \
+                _k_modes_iter(X, centroids, cl_attr_freq, membership)
+            # all points seen in this iteration
+            labels, ncost = _labels_cost_kmodes(X, centroids)
+            converged = (moves == 0) or (ncost >= cost)
+            cost = ncost
+            if verbose:
+                print("Run {}, iteration: {}/{}, moves: {}, cost: {}"
+                      .format(init_no + 1, itr, max_iter, moves, cost))
+        # store
+        all_centroids.append(centroids)
+        all_labels.append(labels)
+        all_costs.append(cost)
+
+    best = np.argmin(all_costs)
+    if n_init > 1 and verbose:
+        print("Best run was number {}".format(best + 1))
+
+    return all_centroids[best], all_labels[best], all_costs[best]
 
 
 def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
@@ -261,6 +280,65 @@ def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
     return labels, cost
 
 
+def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
+                       membership, gamma):
+    moves = 0
+    for ipoint in range(Xnum.shape[0]):
+        cluster = np.argmin(
+            _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
+            gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
+        if membership[cluster, ipoint]:
+            continue
+
+        # move point, and update old/new cluster frequencies and centroids
+        moves += 1
+        oldcluster = np.argwhere(membership[:, ipoint])[0][0]
+
+        cl_attr_sum, membership = _add_point_to_num_cluster(
+            Xnum[ipoint], ipoint, cl_attr_sum, cluster, membership)
+        cl_attr_freq, membership = _add_point_to_cat_cluster(
+            Xcat[ipoint], ipoint, cl_attr_freq, cluster, membership)
+
+        cl_attr_sum, membership = _remove_point_from_num_cluster(
+            Xnum[ipoint], ipoint, cl_attr_sum, oldcluster, membership)
+        cl_attr_freq, membership = _remove_point_from_cat_cluster(
+            Xcat[ipoint], ipoint, cl_attr_freq, oldcluster, membership)
+
+        # update new and old centroids by choosing mean for numerical
+        # and most likely for categorical attributes
+        for iattr in range(len(Xnum[ipoint])):
+            for curc in (cluster, oldcluster):
+                if sum(membership[curc, :]):
+                    centroids[0][curc, iattr] = \
+                        cl_attr_sum[curc, iattr] / sum(membership[curc, :])
+                else:
+                    centroids[0][curc, iattr] = 0
+        for iattr in range(len(Xcat[ipoint])):
+            for curc in (cluster, oldcluster):
+                centroids[1][curc, iattr] = \
+                    _get_mode(cl_attr_freq[curc][iattr])
+
+        # in case of an empty cluster, reinitialize with a random point
+        # from largest cluster
+        if sum(membership[oldcluster, :]) == 0:
+            fromcluster = membership.sum(axis=1).argmax()
+            choices = \
+                [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
+            rindx = np.random.choice(choices)
+
+            cl_attr_sum, membership = _add_point_to_num_cluster(
+                Xnum[rindx], rindx, cl_attr_sum, oldcluster, membership)
+            cl_attr_freq, membership = _add_point_to_cat_cluster(
+                Xcat[rindx], rindx, cl_attr_freq, oldcluster, membership)
+
+            cl_attr_sum, membership = _remove_point_from_num_cluster(
+                Xnum[rindx], rindx, cl_attr_sum, fromcluster, membership)
+            cl_attr_freq, membership = _remove_point_from_cat_cluster(
+                Xcat[rindx], rindx, cl_attr_freq, fromcluster, membership)
+
+    return centroids, moves
+
+
 def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
 
     assert len(X) == 2, "X should be a list of Xnum and Xcat arrays"
@@ -280,146 +358,102 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
     if gamma is None:
         gamma = 0.5 * Xnum.std()
 
-    # _____ INIT _____
-    # numerical is initialized randomly, categorical following the
-    # k-modes methods
-    if verbose:
-        print("Init: initializing centroids")
-    if init == 'Huang':
-        centroids = _init_huang(Xcat, n_clusters)
-    elif init == 'Cao':
-        centroids = _init_cao(Xcat, n_clusters)
-    elif init == 'random':
-        seeds = np.random.choice(range(npoints), n_clusters)
-        centroids = Xcat[seeds]
-    elif hasattr(init, '__array__'):
-        centroids = init
-    else:
-        raise NotImplementedError
+    all_centroids = []
+    all_labels = []
+    all_costs = []
+    for init_no in range(n_init):
 
-    # list where [0] = numerical part of centroid and [1] = categorical part
-    centroids = [np.mean(Xnum, axis=0) +
-                 np.random.randn(n_clusters, nnumattrs) * np.std(Xnum, axis=0),
-                 centroids]
+        # for numerical part of initialization, we don't have a guarantee
+        # that there is not an empty cluster, so we need this
+        while True:
+            # _____ INIT _____
+            # numerical is initialized randomly, categorical following the
+            # k-modes methods
+            if verbose:
+                print("Init: initializing centroids")
+            if init == 'Huang':
+                centroids = _init_huang(Xcat, n_clusters)
+            elif init == 'Cao':
+                centroids = _init_cao(Xcat, n_clusters)
+            elif init == 'random':
+                seeds = np.random.choice(range(npoints), n_clusters)
+                centroids = Xcat[seeds]
+            elif hasattr(init, '__array__'):
+                centroids = init
+            else:
+                raise NotImplementedError
 
-    if verbose:
-        print("Init: initializing clusters")
-    membership = np.zeros((n_clusters, npoints), dtype='int64')
-    # keep track of the sum of attribute values per cluster
-    cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype='float')
-    # cl_attr_freq is a list of lists with dictionaries that contain the
-    # frequencies of values per cluster and attribute
-    cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
-                    for _ in range(n_clusters)]
-    for ipoint in range(npoints):
-        # initial assigns to clusters
-        cluster = np.argmin(
-            _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
-            gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
-        membership[cluster, ipoint] = 1
-        # count attribute values per cluster
-        for iattr, curattr in enumerate(Xnum[ipoint]):
-            cl_attr_sum[cluster, iattr] += curattr
-        for iattr, curattr in enumerate(Xcat[ipoint]):
-            cl_attr_freq[cluster][iattr][curattr] += 1
-    for ik in range(n_clusters):
-        # In case of an empty cluster, reinitialize with a random point
-        # from largest cluster
-        if sum(membership[ik, :]) == 0:
-            fromcluster = membership.sum(axis=1).argmax()
-            choices = [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
-            rindx = np.random.choice(choices)
+            # list where [0] = numerical part of centroid and
+            # [1] = categorical part
+            meanX = np.mean(Xnum, axis=0)
+            stdX = np.std(Xnum, axis=0)
+            centroids = [meanX + np.random.randn(n_clusters, nnumattrs) * stdX,
+                         centroids]
 
-            cl_attr_sum, membership = _add_point_to_num_cluster(
-                Xnum[rindx], rindx, cl_attr_sum, ik, membership)
-            cl_attr_freq, membership = _add_point_to_cat_cluster(
-                Xcat[rindx], rindx, cl_attr_freq, ik, membership)
+            if verbose:
+                print("Init: initializing clusters")
+            membership = np.zeros((n_clusters, npoints), dtype='int64')
+            # keep track of the sum of attribute values per cluster
+            cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype='float')
+            # cl_attr_freq is a list of lists with dictionaries that contain
+            # the frequencies of values per cluster and attribute
+            cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
+                            for _ in range(n_clusters)]
+            for ipoint in range(npoints):
+                # initial assigns to clusters
+                cluster = np.argmin(
+                    _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
+                    gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
+                membership[cluster, ipoint] = 1
+                # count attribute values per cluster
+                for iattr, curattr in enumerate(Xnum[ipoint]):
+                    cl_attr_sum[cluster, iattr] += curattr
+                for iattr, curattr in enumerate(Xcat[ipoint]):
+                    cl_attr_freq[cluster][iattr][curattr] += 1
 
-            cl_attr_sum, membership = _remove_point_from_num_cluster(
-                Xnum[rindx], rindx, cl_attr_sum, fromcluster, membership)
-            cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                Xcat[rindx], rindx, cl_attr_freq, fromcluster, membership)
+            # if no empty clusters, then consider init finalized
+            if membership.sum(axis=1).min() > 0:
+                break
 
-    # perform an initial centroid update
-    for ik in range(n_clusters):
-        for iattr in range(nnumattrs):
-            centroids[0][ik, iattr] =  \
-                cl_attr_sum[ik, iattr] / sum(membership[ik, :])
-        for iattr in range(ncatattrs):
-            centroids[1][ik, iattr] = _get_mode(cl_attr_freq[ik][iattr])
+        # perform an initial centroid update
+        for ik in range(n_clusters):
+            for iattr in range(nnumattrs):
+                centroids[0][ik, iattr] =  \
+                    cl_attr_sum[ik, iattr] / sum(membership[ik, :])
+            for iattr in range(ncatattrs):
+                centroids[1][ik, iattr] = _get_mode(cl_attr_freq[ik][iattr])
 
-    # _____ ITERATION _____
-    if verbose:
-        print("Starting iterations...")
-    itr = 0
-    converged = False
-    cost = np.Inf
-    while itr <= max_iter and not converged:
-        itr += 1
-        moves = 0
-        for ipoint in range(npoints):
-            cluster = np.argmin(
-                _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
-                gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
-            if membership[cluster, ipoint]:
-                continue
-
-            # move point, and update old/new cluster frequencies and centroids
-            moves += 1
-            oldcluster = np.argwhere(membership[:, ipoint])[0][0]
-
-            cl_attr_sum, membership = _add_point_to_num_cluster(
-                Xnum[ipoint], ipoint, cl_attr_sum, cluster, membership)
-            cl_attr_freq, membership = _add_point_to_cat_cluster(
-                Xcat[ipoint], ipoint, cl_attr_freq, cluster, membership)
-
-            cl_attr_sum, membership = _remove_point_from_num_cluster(
-                Xnum[ipoint], ipoint, cl_attr_sum, oldcluster, membership)
-            cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                Xcat[ipoint], ipoint, cl_attr_freq, oldcluster, membership)
-
-            # update new and old centroids by choosing mean for numerical and
-            # most likely for categorical attributes
-            for iattr in range(len(Xnum[ipoint])):
-                for curc in (cluster, oldcluster):
-                    if sum(membership[curc, :]):
-                        centroids[0][curc, iattr] = \
-                            cl_attr_sum[curc, iattr] / sum(membership[curc, :])
-                    else:
-                        centroids[0][curc, iattr] = 0
-            for iattr in range(len(Xcat[ipoint])):
-                for curc in (cluster, oldcluster):
-                    centroids[1][curc, iattr] = \
-                        _get_mode(cl_attr_freq[curc][iattr])
-            if verbose == 2:
-                print("Move from cluster {} to {}".format(oldcluster, cluster))
-
-            # in case of an empty cluster, reinitialize with a random point
-            # from largest cluster
-            if sum(membership[oldcluster, :]) == 0:
-                fromcluster = membership.sum(axis=1).argmax()
-                choices = [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
-                rindx = np.random.choice(choices)
-
-                cl_attr_sum, membership = _add_point_to_num_cluster(
-                    Xnum[rindx], rindx, cl_attr_sum, oldcluster, membership)
-                cl_attr_freq, membership = _add_point_to_cat_cluster(
-                    Xcat[rindx], rindx, cl_attr_freq, oldcluster, membership)
-
-                cl_attr_sum, membership = _remove_point_from_num_cluster(
-                    Xnum[rindx], rindx, cl_attr_sum, fromcluster, membership)
-                cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                    Xcat[rindx], rindx, cl_attr_freq, fromcluster, membership)
-
-        # all points seen in this iteration
-        labels, ncost = _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma)
-        converged = (moves == 0) or (ncost >= cost)
-        cost = ncost
+        # _____ ITERATION _____
         if verbose:
-            print("Iteration: {}/{}, moves: {}, ncost: {}"
-                  .format(itr, max_iter, moves, ncost))
+            print("Starting iterations...")
+        itr = 0
+        converged = False
+        cost = np.Inf
+        while itr <= max_iter and not converged:
+            itr += 1
+            centroids, moves = _k_prototypes_iter(
+                Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
+                membership, gamma)
 
-    return centroids, labels, cost
+            # all points seen in this iteration
+            labels, ncost = \
+                _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma)
+            converged = (moves == 0) or (ncost >= cost)
+            cost = ncost
+            if verbose:
+                print("Iteration: {}/{}, moves: {}, ncost: {}"
+                      .format(itr, max_iter, moves, ncost))
+
+        # store
+        all_centroids.append(centroids)
+        all_labels.append(labels)
+        all_costs.append(cost)
+
+    best = np.argmin(all_costs)
+    if n_init > 1 and verbose:
+        print("Best run was number {}".format(best + 1))
+
+    return all_centroids[best], all_labels[best], all_costs[best]
 
 
 class KModes(object):
@@ -485,7 +519,8 @@ class KModes(object):
         self.init = init
         self.n_init = n_init
         self.verbose = verbose
-        if self.init == 'Cao' and self.n_init > 1:
+        if (self.init == 'Cao' or hasattr(self.init, '__array__')) and \
+                self.n_init > 1:
             if self.verbose:
                 print("Initialization method and algorithm are deterministic. "
                       "Setting n_init to 1.")

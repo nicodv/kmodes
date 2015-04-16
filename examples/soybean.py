@@ -6,7 +6,7 @@ from kmodes import kmodes
 x = np.genfromtxt('soybean.csv', dtype=int, delimiter=',')[:, :-1]
 y = np.genfromtxt('soybean.csv', dtype=str, delimiter=',', usecols=35)
 
-kmodes_huang = kmodes.KModes(n_clusters=4, init='Huang', verbose=0)
+kmodes_huang = kmodes.KModes(n_clusters=4, init='Huang', verbose=1)
 kmodes_huang.fit_predict(x)
 kmodes_cao = kmodes.KModes(n_clusters=4, init='Cao', verbose=1)
 kmodes_cao.fit_predict(x)
