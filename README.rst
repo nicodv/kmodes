@@ -11,6 +11,7 @@ Python implementation of the k-modes clustering algorithm for categorical data,
 and several of its variations.
 
 Implemented are:
+
 - k-modes [1][2]
 - k-modes with initialization based on density [3]
 - k-prototypes [1]
@@ -30,5 +31,6 @@ data clustering, Expert Systems with Applications 36(7), pp. 10223-10228.,
 Requirements
 ------------
 Tested on:
+
 - Python 2.7/3.4
 - NumPy 1.9
