@@ -186,6 +186,7 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         print("Starting iterations...")
     itr = 0
     converged = False
+    cost = np.Inf
     while itr <= max_iter and not converged:
         itr += 1
         moves = 0
@@ -212,28 +213,26 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
                 print("Move from cluster {} to {}".format(oldcluster, cluster))
 
             # in case of an empty cluster, reinitialize with a random point
-            # that is not a centroid
+            # from the largest cluster
             if sum(membership[oldcluster, :]) == 0:
-                while True:
-                    rindx = np.random.randint(npoints)
-                    if not np.all(X[rindx] == centroids).any():
-                        break
+                fromcluster = membership.sum(axis=1).argmax()
+                choices = [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
+                rindx = np.random.choice(choices)
 
                 cl_attr_freq, membership = \
                     _add_point_to_cat_cluster(
                         X[rindx], rindx, cl_attr_freq, oldcluster, membership)
-                fromcluster = np.argwhere(membership[:, rindx])[0][0]
                 cl_attr_freq, membership = _remove_point_from_cat_cluster(
                     X[rindx], rindx, cl_attr_freq, fromcluster, membership)
 
         # all points seen in this iteration
-        labels, cost = _labels_cost_kmodes(X, centroids)
-        converged = (moves == 0)
+        labels, ncost = _labels_cost_kmodes(X, centroids)
+        converged = (moves == 0) or (ncost >= cost)
+        cost = ncost
         if verbose:
             print("Iteration: {}/{}, moves: {}, cost: {}"
                   .format(itr, max_iter, moves, cost))
 
-    # noinspection PyUnboundLocalVariable
     return centroids, labels, cost
 
 
@@ -243,6 +242,12 @@ def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
     """
     npoints = Xnum.shape[0]
     membership = np.zeros((len(centroids[0]), npoints), dtype='int64')
+    for ipoint in range(npoints):
+        cluster = np.argmin(
+            _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
+            gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
+        membership[cluster, ipoint] = 1
+
     ncost, ccost = 0., 0.
     for ipoint, curpoint in enumerate(Xnum):
         ncost += np.sum(_euclidean_dissim_num(centroids[0], curpoint) *
@@ -250,12 +255,6 @@ def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
     for ipoint, curpoint in enumerate(Xcat):
         ccost += np.sum(_matching_dissim(centroids[1], curpoint) *
                         (membership[:, ipoint]))
-
-    for ipoint in range(npoints):
-        cluster = np.argmin(
-            _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
-            gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
-        membership[cluster, ipoint] = 1
 
     labels = np.array([np.argwhere(membership[:, pt])[0]
                        for pt in range(npoints)])
@@ -325,27 +324,22 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
         for iattr, curattr in enumerate(Xcat[ipoint]):
             cl_attr_freq[cluster][iattr][curattr] += 1
     for ik in range(n_clusters):
-        # in case of an empty cluster, reinitialize with a random point
-        # that is not a centroid
+        # In case of an empty cluster, reinitialize with a random point
+        # from largest cluster
         if sum(membership[ik, :]) == 0:
-            while True:
-                rindex = np.random.randint(npoints)
-                if not np.all(np.vstack(
-                        (np.all(Xnum[rindex] == centroids[0], axis=1),
-                         np.all(Xcat[rindex] == centroids[1], axis=1))),
-                        axis=0).any():
-                    break
+            fromcluster = membership.sum(axis=1).argmax()
+            choices = [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
+            rindx = np.random.choice(choices)
 
             cl_attr_sum, membership = _add_point_to_num_cluster(
-                Xnum[rindex], rindex, cl_attr_sum, ik, membership)
+                Xnum[rindx], rindx, cl_attr_sum, ik, membership)
             cl_attr_freq, membership = _add_point_to_cat_cluster(
-                Xcat[rindex], rindex, cl_attr_freq, ik, membership)
+                Xcat[rindx], rindx, cl_attr_freq, ik, membership)
 
-            fromcluster = np.argwhere(membership[:, rindex])[0][0]
             cl_attr_sum, membership = _remove_point_from_num_cluster(
-                Xnum[rindex], rindex, cl_attr_sum, fromcluster, membership)
+                Xnum[rindx], rindx, cl_attr_sum, fromcluster, membership)
             cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                Xcat[rindex], rindex, cl_attr_freq, fromcluster, membership)
+                Xcat[rindx], rindx, cl_attr_freq, fromcluster, membership)
 
     # perform an initial centroid update
     for ik in range(n_clusters):
@@ -360,6 +354,7 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
         print("Starting iterations...")
     itr = 0
     converged = False
+    cost = np.Inf
     while itr <= max_iter and not converged:
         itr += 1
         moves = 0
@@ -401,35 +396,30 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
                 print("Move from cluster {} to {}".format(oldcluster, cluster))
 
             # in case of an empty cluster, reinitialize with a random point
-            # that is not a centroid
+            # from largest cluster
             if sum(membership[oldcluster, :]) == 0:
-                while True:
-                    rindex = np.random.randint(npoints)
-                    if not np.all(np.vstack((
-                            np.all(Xnum[rindex] == centroids[0], axis=1),
-                            np.all(Xcat[rindex] == centroids[1], axis=1))),
-                            axis=0).any():
-                        break
+                fromcluster = membership.sum(axis=1).argmax()
+                choices = [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
+                rindx = np.random.choice(choices)
 
                 cl_attr_sum, membership = _add_point_to_num_cluster(
-                    Xnum[rindex], rindex, cl_attr_sum, oldcluster, membership)
+                    Xnum[rindx], rindx, cl_attr_sum, oldcluster, membership)
                 cl_attr_freq, membership = _add_point_to_cat_cluster(
-                    Xcat[rindex], rindex, cl_attr_freq, oldcluster, membership)
+                    Xcat[rindx], rindx, cl_attr_freq, oldcluster, membership)
 
-                fromcluster = np.argwhere(membership[:, rindex])[0][0]
                 cl_attr_sum, membership = _remove_point_from_num_cluster(
-                    Xnum[rindex], rindex, cl_attr_sum, fromcluster, membership)
+                    Xnum[rindx], rindx, cl_attr_sum, fromcluster, membership)
                 cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                    Xcat[rindex], rindex, cl_attr_freq, fromcluster, membership)
+                    Xcat[rindx], rindx, cl_attr_freq, fromcluster, membership)
 
         # all points seen in this iteration
-        labels, cost = _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma)
-        converged = (moves == 0)
+        labels, ncost = _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma)
+        converged = (moves == 0) or (ncost >= cost)
+        cost = ncost
         if verbose:
-            print("Iteration: {}/{}, moves: {}, cost: {}"
-                  .format(itr, max_iter, moves, cost))
+            print("Iteration: {}/{}, moves: {}, ncost: {}"
+                  .format(itr, max_iter, moves, ncost))
 
-    # noinspection PyUnboundLocalVariable
     return centroids, labels, cost
 
 
@@ -485,7 +475,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
     """
 
-    def __init__(self, n_clusters=8, init='Huang', n_init=10, max_iter=100,
+    def __init__(self, n_clusters=8, init='Cao', n_init=10, max_iter=100,
                  verbose=0):
 
         if hasattr(init, '__array__'):
@@ -539,7 +529,7 @@ class KModes(BaseEstimator, ClusterMixin):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
-        return self.labels_cost(X, self.cluster_centroids_)[0]
+        return _labels_cost_kmodes(X, self.cluster_centroids_)[0]
 
 
 class KPrototypes(KModes):
@@ -619,38 +609,3 @@ class KPrototypes(KModes):
             k_prototypes(X, self.n_clusters, self.gamma, self.init,
                          self.n_init, self.max_iter, self.verbose)
         return self
-
-
-def soybean_test():
-    # reproduce results on small soybean data set
-    x = np.genfromtxt('./soybean.csv', dtype=int, delimiter=',')[:, :-1]
-    y = np.genfromtxt('./soybean.csv', dtype=str, delimiter=',', usecols=35)
-    # x = np.genfromtxt('./test.csv', dtype=str, delimiter=',')[:, :-1]
-    # y = np.genfromtxt('./test.csv', dtype=str, delimiter=',', usecols=5)
-
-    # drop columns with single value
-    # x = x[:, np.std(x, axis=0) > 0.]
-
-    kmodes_huang = KModes(n_clusters=4, init='Huang', verbose=0)
-    kmodes_huang.fit_predict(x)
-    kmodes_cao = KModes(n_clusters=4, init='Cao', verbose=1)
-    kmodes_cao.fit_predict(x)
-    kproto = KPrototypes(n_clusters=4, init='Cao', verbose=2)
-    kproto.fit_predict([0.1 * np.random.randn(x.shape[0], 2), x])
-
-    for result in (kmodes_huang, kmodes_cao, kproto):
-        classtable = np.zeros((4, 4), dtype=int)
-        for ii, _ in enumerate(y):
-            classtable[int(y[ii][-1]) - 1, result.labels_[ii][0]] += 1
-
-        print("\n")
-        print("    | Cl. 1 | Cl. 2 | Cl. 3 | Cl. 4 |")
-        print("----|-------|-------|-------|-------|")
-        for ii in range(4):
-            prargs = tuple([ii + 1] + list(classtable[ii, :]))
-            print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |"
-                  .format(*prargs))
-
-
-if __name__ == "__main__":
-    soybean_test()
