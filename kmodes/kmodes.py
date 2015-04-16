@@ -12,7 +12,7 @@ def _matching_dissim(a, b):
     return (a != b).sum(axis=1)
 
 
-def _euclidean_dissim_num(a, b):
+def _euclidean_dissim(a, b):
     """Euclidean distance dissimilarity function."""
     return np.sum((a - b) ** 2, axis=1)
 
@@ -77,46 +77,32 @@ def _init_cao(X, n_clusters):
     return centroids
 
 
-def _get_mode(dic):
+def _mode_from_dict(dic):
     """Fast method to get key for maximum value in dict."""
     v = list(dic.values())
     k = list(dic.keys())
     return k[v.index(max(v))]
 
 
-def _add_point_to_cat_cluster(point, ipoint, cl_attr_freq, cluster,
-                              membership):
-    membership[cluster, ipoint] = 1
+def _move_point_cat(point, ipoint, to_clust, from_clust,
+                    cl_attr_freq, membership):
+    membership[to_clust, ipoint] = 1
+    membership[from_clust, ipoint] = 0
     # update frequencies of attributes in cluster
     for iattr, curattr in enumerate(point):
-        cl_attr_freq[cluster][iattr][curattr] += 1
+        cl_attr_freq[to_clust][iattr][curattr] += 1
+        cl_attr_freq[from_clust][iattr][curattr] -= 1
     return cl_attr_freq, membership
 
 
-def _remove_point_from_cat_cluster(point, ipoint, cl_attr_freq, cluster,
-                                   membership):
-    membership[cluster, ipoint] = 0
-    # update frequencies of attributes in cluster
-    for iattr, curattr in enumerate(point):
-        cl_attr_freq[cluster][iattr][curattr] -= 1
-    return cl_attr_freq, membership
-
-
-def _add_point_to_num_cluster(point, ipoint, cl_attr_sum, cluster,
-                              membership):
-    membership[cluster, ipoint] = 1
+def _move_point_num(point, ipoint, to_clust, from_clust,
+                    cl_attr_sum, membership):
+    membership[to_clust, ipoint] = 1
+    membership[from_clust, ipoint] = 0
     # update sum of attributes in cluster
     for iattr, curattr in enumerate(point):
-        cl_attr_sum[cluster][iattr] += curattr
-    return cl_attr_sum, membership
-
-
-def _remove_point_from_num_cluster(point, ipoint, cl_attr_sum, cluster,
-                                   membership):
-    membership[cluster, ipoint] = 0
-    # update sum of attributes in cluster
-    for iattr, curattr in enumerate(point):
-        cl_attr_sum[cluster][iattr] -= curattr
+        cl_attr_sum[to_clust][iattr] += curattr
+        cl_attr_sum[from_clust][iattr] -= curattr
     return cl_attr_sum, membership
 
 
@@ -129,8 +115,8 @@ def _labels_cost_kmodes(X, centroids):
     membership = np.zeros((len(centroids), npoints), dtype='int64')
     cost = 0.
     for ipoint, curpoint in enumerate(X):
-        cluster = np.argmin(_matching_dissim(centroids, curpoint))
-        membership[cluster, ipoint] = 1
+        clust = np.argmin(_matching_dissim(centroids, curpoint))
+        membership[clust, ipoint] = 1
         cost += np.sum(_matching_dissim(centroids, curpoint) *
                        (membership[:, ipoint]))
 
@@ -143,38 +129,34 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membership):
     """Single iteration of k-modes"""
     moves = 0
     for ipoint, curpoint in enumerate(X):
-        cluster = np.argmin(_matching_dissim(centroids, curpoint))
-        if membership[cluster, ipoint]:
+        clust = np.argmin(_matching_dissim(centroids, curpoint))
+        if membership[clust, ipoint]:
             # point is already in its right place
             continue
 
         # move point, and update old/new cluster frequencies and centroids
         moves += 1
-        oldcluster = np.argwhere(membership[:, ipoint])[0][0]
+        old_clust = np.argwhere(membership[:, ipoint])[0][0]
 
-        cl_attr_freq, membership = _add_point_to_cat_cluster(
-            curpoint, ipoint, cl_attr_freq, cluster, membership)
-        cl_attr_freq, membership = _remove_point_from_cat_cluster(
-            curpoint, ipoint, cl_attr_freq, oldcluster, membership)
+        cl_attr_freq, membership = _move_point_cat(
+            curpoint, ipoint, clust, old_clust, cl_attr_freq, membership)
 
         # update new and old centroids by choosing most likely attribute
         for iattr in range(len(curpoint)):
-            for curc in (cluster, oldcluster):
-                centroids[curc, iattr] = _get_mode(cl_attr_freq[curc][iattr])
+            for curc in (clust, old_clust):
+                centroids[curc, iattr] = _mode_from_dict(cl_attr_freq[curc][iattr])
 
         # in case of an empty cluster, reinitialize with a random point
         # from the largest cluster (that is not a centroid)
-        if sum(membership[oldcluster, :]) == 0:
-            fromcluster = membership.sum(axis=1).argmax()
+        if sum(membership[old_clust, :]) == 0:
+            from_clust = membership.sum(axis=1).argmax()
             choices = \
-                [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
+                [ii for ii, ch in enumerate(membership[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_freq, membership = \
-                _add_point_to_cat_cluster(
-                    X[rindx], rindx, cl_attr_freq, oldcluster, membership)
-            cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                X[rindx], rindx, cl_attr_freq, fromcluster, membership)
+            cl_attr_freq, membership = _move_point_cat(
+                X[rindx], rindx, old_clust, from_clust, cl_attr_freq,
+                membership)
 
     return centroids, moves
 
@@ -215,15 +197,15 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
                         for _ in range(n_clusters)]
         for ipoint, curpoint in enumerate(X):
             # initial assigns to clusters
-            cluster = np.argmin(_matching_dissim(centroids, curpoint))
-            membership[cluster, ipoint] = 1
+            clust = np.argmin(_matching_dissim(centroids, curpoint))
+            membership[clust, ipoint] = 1
             # count attribute values per cluster
             for iattr, curattr in enumerate(curpoint):
-                cl_attr_freq[cluster][iattr][curattr] += 1
+                cl_attr_freq[clust][iattr][curattr] += 1
         # perform an initial centroid update
         for ik in range(n_clusters):
             for iattr in range(nattrs):
-                centroids[ik, iattr] = _get_mode(cl_attr_freq[ik][iattr])
+                centroids[ik, iattr] = _mode_from_dict(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
@@ -261,14 +243,14 @@ def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
     npoints = Xnum.shape[0]
     membership = np.zeros((len(centroids[0]), npoints), dtype='int64')
     for ipoint in range(npoints):
-        cluster = np.argmin(
-            _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
+        clust = np.argmin(
+            _euclidean_dissim(centroids[0], Xnum[ipoint]) +
             gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
-        membership[cluster, ipoint] = 1
+        membership[clust, ipoint] = 1
 
     ncost, ccost = 0., 0.
     for ipoint, curpoint in enumerate(Xnum):
-        ncost += np.sum(_euclidean_dissim_num(centroids[0], curpoint) *
+        ncost += np.sum(_euclidean_dissim(centroids[0], curpoint) *
                         (membership[:, ipoint]))
     for ipoint, curpoint in enumerate(Xcat):
         ccost += np.sum(_matching_dissim(centroids[1], curpoint) *
@@ -284,57 +266,51 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                        membership, gamma):
     moves = 0
     for ipoint in range(Xnum.shape[0]):
-        cluster = np.argmin(
-            _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
+        clust = np.argmin(
+            _euclidean_dissim(centroids[0], Xnum[ipoint]) +
             gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
-        if membership[cluster, ipoint]:
+        if membership[clust, ipoint]:
             continue
 
         # move point, and update old/new cluster frequencies and centroids
         moves += 1
-        oldcluster = np.argwhere(membership[:, ipoint])[0][0]
+        old_clust = np.argwhere(membership[:, ipoint])[0][0]
 
-        cl_attr_sum, membership = _add_point_to_num_cluster(
-            Xnum[ipoint], ipoint, cl_attr_sum, cluster, membership)
-        cl_attr_freq, membership = _add_point_to_cat_cluster(
-            Xcat[ipoint], ipoint, cl_attr_freq, cluster, membership)
-
-        cl_attr_sum, membership = _remove_point_from_num_cluster(
-            Xnum[ipoint], ipoint, cl_attr_sum, oldcluster, membership)
-        cl_attr_freq, membership = _remove_point_from_cat_cluster(
-            Xcat[ipoint], ipoint, cl_attr_freq, oldcluster, membership)
+        cl_attr_sum, membership = _move_point_num(
+            Xnum[ipoint], ipoint, clust, old_clust, cl_attr_sum,
+            membership)
+        cl_attr_freq, membership = _move_point_cat(
+            Xcat[ipoint], ipoint, clust, old_clust, cl_attr_freq,
+            membership)
 
         # update new and old centroids by choosing mean for numerical
         # and most likely for categorical attributes
         for iattr in range(len(Xnum[ipoint])):
-            for curc in (cluster, oldcluster):
+            for curc in (clust, old_clust):
                 if sum(membership[curc, :]):
                     centroids[0][curc, iattr] = \
                         cl_attr_sum[curc, iattr] / sum(membership[curc, :])
                 else:
                     centroids[0][curc, iattr] = 0
         for iattr in range(len(Xcat[ipoint])):
-            for curc in (cluster, oldcluster):
+            for curc in (clust, old_clust):
                 centroids[1][curc, iattr] = \
-                    _get_mode(cl_attr_freq[curc][iattr])
+                    _mode_from_dict(cl_attr_freq[curc][iattr])
 
         # in case of an empty cluster, reinitialize with a random point
         # from largest cluster
-        if sum(membership[oldcluster, :]) == 0:
-            fromcluster = membership.sum(axis=1).argmax()
+        if sum(membership[old_clust, :]) == 0:
+            from_clust = membership.sum(axis=1).argmax()
             choices = \
-                [ii for ii, ch in enumerate(membership[fromcluster, :]) if ch]
+                [ii for ii, ch in enumerate(membership[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_sum, membership = _add_point_to_num_cluster(
-                Xnum[rindx], rindx, cl_attr_sum, oldcluster, membership)
-            cl_attr_freq, membership = _add_point_to_cat_cluster(
-                Xcat[rindx], rindx, cl_attr_freq, oldcluster, membership)
-
-            cl_attr_sum, membership = _remove_point_from_num_cluster(
-                Xnum[rindx], rindx, cl_attr_sum, fromcluster, membership)
-            cl_attr_freq, membership = _remove_point_from_cat_cluster(
-                Xcat[rindx], rindx, cl_attr_freq, fromcluster, membership)
+            cl_attr_freq, membership = _move_point_num(
+                Xnum[rindx], rindx, old_clust, from_clust, cl_attr_sum,
+                membership)
+            cl_attr_freq, membership = _move_point_cat(
+                Xcat[rindx], rindx, old_clust, from_clust, cl_attr_freq,
+                membership)
 
     return centroids, moves
 
@@ -401,15 +377,15 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
                             for _ in range(n_clusters)]
             for ipoint in range(npoints):
                 # initial assigns to clusters
-                cluster = np.argmin(
-                    _euclidean_dissim_num(centroids[0], Xnum[ipoint]) +
+                clust = np.argmin(
+                    _euclidean_dissim(centroids[0], Xnum[ipoint]) +
                     gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
-                membership[cluster, ipoint] = 1
+                membership[clust, ipoint] = 1
                 # count attribute values per cluster
                 for iattr, curattr in enumerate(Xnum[ipoint]):
-                    cl_attr_sum[cluster, iattr] += curattr
+                    cl_attr_sum[clust, iattr] += curattr
                 for iattr, curattr in enumerate(Xcat[ipoint]):
-                    cl_attr_freq[cluster][iattr][curattr] += 1
+                    cl_attr_freq[clust][iattr][curattr] += 1
 
             # if no empty clusters, then consider init finalized
             if membership.sum(axis=1).min() > 0:
@@ -421,7 +397,7 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
                 centroids[0][ik, iattr] =  \
                     cl_attr_sum[ik, iattr] / sum(membership[ik, :])
             for iattr in range(ncatattrs):
-                centroids[1][ik, iattr] = _get_mode(cl_attr_freq[ik][iattr])
+                centroids[1][ik, iattr] = _mode_from_dict(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
