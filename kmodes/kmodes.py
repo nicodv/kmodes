@@ -8,17 +8,17 @@ import numpy as np
 
 
 def _matching_dissim(a, b):
-    """Simple matching dissimilarity function."""
-    return (a != b).sum(axis=1)
+    """Simple matching dissimilarity function"""
+    return (np.atleast_2d(a) != b).sum(axis=1)
 
 
 def _euclidean_dissim(a, b):
-    """Euclidean distance dissimilarity function."""
-    return np.sum((a - b) ** 2, axis=1)
+    """Euclidean distance dissimilarity function"""
+    return np.sum((np.atleast_2d(a) - b) ** 2, axis=1)
 
 
 def _init_huang(X, n_clusters):
-    """Init n_clusters according to method by Huang [1997]."""
+    """Initialize n_clusters according to method by Huang [1997]."""
     nattrs = X.shape[1]
     centroids = np.empty((n_clusters, nattrs), dtype='object')
     # determine frequencies of attributes
@@ -26,20 +26,19 @@ def _init_huang(X, n_clusters):
         freq = defaultdict(int)
         for curattr in X[:, iattr]:
             freq[curattr] += 1
-        # sample centroids using the probabilities of attributes
+        # Sample centroids using the probabilities of attributes.
         # (I assume that's what's meant in the Huang [1998] paper; it works,
         # at least)
         # Note: sampling using population in static list with as many choices
-        # as frequency counts this works well since (1) we re-use the list k
-        # times here, and (2) the counts are small integers so memory
-        # consumption is low
+        # as frequency counts. Since the counts are small integers,
+        # memory consumption is low.
         choices = [chc for chc, wght in freq.items() for _ in range(wght)]
         centroids[:, iattr] = np.random.choice(choices, n_clusters)
-    # the previously chosen centroids could result in empty clusters,
-    # so set centroid to closest point in x
+    # The previously chosen centroids could result in empty clusters,
+    # so set centroid to closest point in X.
     for ik in range(n_clusters):
         ndx = np.argsort(_matching_dissim(X, centroids[ik]))
-        # and we want the centroid to be unique
+        # We want the centroid to be unique.
         while np.all(X[ndx[0]] == centroids, axis=1).any():
             ndx = np.delete(ndx, 0)
         centroids[ik] = X[ndx[0]]
@@ -48,11 +47,13 @@ def _init_huang(X, n_clusters):
 
 
 def _init_cao(X, n_clusters):
-    """Init n_clusters according to method by Cao et al. [2009]."""
+    """Initialize n_clusters according to method by Cao et al. [2009].
+
+    Note: O(N * attr * n_clusters**2), so watch out with large n_clusters
+    """
     npoints, nattrs = X.shape
     centroids = np.empty((n_clusters, nattrs), dtype='object')
-    # Note: O(N * at * k**2), so watch out with k
-    # determine densities points
+    # Method is base don determining density of points.
     dens = np.zeros(npoints)
     for iattr in range(nattrs):
         freq = defaultdict(int)
@@ -62,17 +63,16 @@ def _init_cao(X, n_clusters):
             dens[ipoint] += freq[X[ipoint, iattr]] / float(nattrs)
     dens /= npoints
 
-    # choose centroids based on distance and density
+    # Choose initial centroids based on distance and density.
     centroids[0] = X[np.argmax(dens)]
-    dissim = _matching_dissim(X, centroids[0])
-    centroids[1] = X[np.argmax(dissim * dens)]
-    # for the reamining centroids, choose max dens * dissim to the (already
-    # assigned) centroid with the lowest dens * dissim
-    for ik in range(2, n_clusters):
-        dd = np.empty((ik, npoints))
-        for ikk in range(ik):
-            dd[ikk] = _matching_dissim(X, centroids[ikk]) * dens
-        centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
+    if n_clusters > 1:
+        # For the remaining centroids, choose maximum dens * dissim to the
+        # (already assigned) centroid with the lowest dens * dissim.
+        for ik in range(1, n_clusters):
+            dd = np.empty((ik, npoints))
+            for ikk in range(ik):
+                dd[ikk] = _matching_dissim(X, centroids[ikk]) * dens
+            centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
 
     return centroids
 
@@ -86,9 +86,10 @@ def _mode_from_dict(dic):
 
 def _move_point_cat(point, ipoint, to_clust, from_clust,
                     cl_attr_freq, membership):
+    """Move point between clusters, categorical attributes."""
     membership[to_clust, ipoint] = 1
     membership[from_clust, ipoint] = 0
-    # update frequencies of attributes in cluster
+    # Update frequencies of attributes in cluster.
     for iattr, curattr in enumerate(point):
         cl_attr_freq[to_clust][iattr][curattr] += 1
         cl_attr_freq[from_clust][iattr][curattr] -= 1
@@ -97,9 +98,10 @@ def _move_point_cat(point, ipoint, to_clust, from_clust,
 
 def _move_point_num(point, ipoint, to_clust, from_clust,
                     cl_attr_sum, membership):
+    """Move point between clusters, numerical attributes."""
     membership[to_clust, ipoint] = 1
     membership[from_clust, ipoint] = 0
-    # update sum of attributes in cluster
+    # Update sum of attributes in cluster.
     for iattr, curattr in enumerate(point):
         cl_attr_sum[to_clust][iattr] += curattr
         cl_attr_sum[from_clust][iattr] -= curattr
@@ -108,46 +110,45 @@ def _move_point_num(point, ipoint, to_clust, from_clust,
 
 def _labels_cost_kmodes(X, centroids):
     """Calculate labels and cost function given a matrix of points and
-    a list of centroids.
+    a list of centroids for the k-modes algorithm.
     """
 
     npoints = X.shape[0]
-    membership = np.zeros((len(centroids), npoints), dtype='int64')
     cost = 0.
+    labels = np.empty(npoints, dtype='int64')
     for ipoint, curpoint in enumerate(X):
-        clust = np.argmin(_matching_dissim(centroids, curpoint))
-        membership[clust, ipoint] = 1
-        cost += np.sum(_matching_dissim(centroids, curpoint) *
-                       (membership[:, ipoint]))
+        diss = _matching_dissim(centroids, curpoint)
+        clust = np.argmin(diss)
+        labels[ipoint] = clust
+        cost += diss[clust]
 
-    labels = np.array([np.argwhere(membership[:, pt])[0][0]
-                       for pt in range(npoints)])
     return labels, cost
 
 
 def _k_modes_iter(X, centroids, cl_attr_freq, membership):
-    """Single iteration of k-modes"""
+    """Single iteration of k-modes clustering algorithm."""
     moves = 0
     for ipoint, curpoint in enumerate(X):
         clust = np.argmin(_matching_dissim(centroids, curpoint))
         if membership[clust, ipoint]:
-            # point is already in its right place
+            # Point is already in its right place.
             continue
 
-        # move point, and update old/new cluster frequencies and centroids
+        # Move point, and update old/new cluster frequencies and centroids.
         moves += 1
         old_clust = np.argwhere(membership[:, ipoint])[0][0]
 
         cl_attr_freq, membership = _move_point_cat(
             curpoint, ipoint, clust, old_clust, cl_attr_freq, membership)
 
-        # update new and old centroids by choosing most likely attribute
+        # Update new and old centroids by choosing mode of attribute.
         for iattr in range(len(curpoint)):
             for curc in (clust, old_clust):
-                centroids[curc, iattr] = _mode_from_dict(cl_attr_freq[curc][iattr])
+                centroids[curc, iattr] = \
+                    _mode_from_dict(cl_attr_freq[curc][iattr])
 
-        # in case of an empty cluster, reinitialize with a random point
-        # from the largest cluster (that is not a centroid)
+        # In case of an empty cluster, reinitialize with a random point
+        # from the largest cluster.
         if sum(membership[old_clust, :]) == 0:
             from_clust = membership.sum(axis=1).argmax()
             choices = \
@@ -162,8 +163,9 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membership):
 
 
 def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
+    """k-modes algorithm"""
 
-    # convert to numpy array, if needed
+    # Convert to numpy array, if needed.
     X = np.asanyarray(X)
     npoints, nattrs = X.shape
     assert n_clusters < npoints, "More clusters than data points?"
@@ -192,17 +194,17 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
             print("Init: initializing clusters")
         membership = np.zeros((n_clusters, npoints), dtype='int64')
         # cl_attr_freq is a list of lists with dictionaries that contain the
-        # frequencies of values per cluster and attribute
+        # frequencies of values per cluster and attribute.
         cl_attr_freq = [[defaultdict(int) for _ in range(nattrs)]
                         for _ in range(n_clusters)]
         for ipoint, curpoint in enumerate(X):
-            # initial assigns to clusters
+            # Initial assignment to clusters
             clust = np.argmin(_matching_dissim(centroids, curpoint))
             membership[clust, ipoint] = 1
-            # count attribute values per cluster
+            # Count attribute values per cluster.
             for iattr, curattr in enumerate(curpoint):
                 cl_attr_freq[clust][iattr][curattr] += 1
-        # perform an initial centroid update
+        # Perform an initial centroid update.
         for ik in range(n_clusters):
             for iattr in range(nattrs):
                 centroids[ik, iattr] = _mode_from_dict(cl_attr_freq[ik][iattr])
@@ -217,14 +219,15 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
             itr += 1
             centroids, moves = \
                 _k_modes_iter(X, centroids, cl_attr_freq, membership)
-            # all points seen in this iteration
+            # All points seen in this iteration
             labels, ncost = _labels_cost_kmodes(X, centroids)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
                 print("Run {}, iteration: {}/{}, moves: {}, cost: {}"
                       .format(init_no + 1, itr, max_iter, moves, cost))
-        # store
+
+        # Store result of current run.
         all_centroids.append(centroids)
         all_labels.append(labels)
         all_costs.append(cost)
@@ -238,42 +241,38 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
 
 def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
     """Calculate labels and cost function given a matrix of points and
-    a list of centroids.
+    a list of centroids for the k-prototypes algorithm.
     """
+
     npoints = Xnum.shape[0]
-    membership = np.zeros((len(centroids[0]), npoints), dtype='int64')
+    cost = 0.
+    labels = np.empty(npoints, dtype='int64')
     for ipoint in range(npoints):
-        clust = np.argmin(
-            _euclidean_dissim(centroids[0], Xnum[ipoint]) +
-            gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
-        membership[clust, ipoint] = 1
+        # Numerical cost = sum of Euclidean distances
+        num_costs = _euclidean_dissim(centroids[0], Xnum[ipoint])
+        cat_costs = _matching_dissim(centroids[1], Xcat[ipoint])
+        # Gamma relates the categorical cost to the numerical cost.
+        tot_costs = num_costs + gamma * cat_costs
+        clust = np.argmin(tot_costs)
+        labels[ipoint] = clust
+        cost += tot_costs[clust]
 
-    ncost, ccost = 0., 0.
-    for ipoint, curpoint in enumerate(Xnum):
-        ncost += np.sum(_euclidean_dissim(centroids[0], curpoint) *
-                        (membership[:, ipoint]))
-    for ipoint, curpoint in enumerate(Xcat):
-        ccost += np.sum(_matching_dissim(centroids[1], curpoint) *
-                        (membership[:, ipoint]))
-
-    labels = np.array([np.argwhere(membership[:, pt])[0][0]
-                       for pt in range(npoints)])
-    cost = ncost + gamma * ccost
     return labels, cost
 
 
 def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                        membership, gamma):
+    """Single iteration of the k-prototypes algorithm."""
     moves = 0
     for ipoint in range(Xnum.shape[0]):
         clust = np.argmin(
             _euclidean_dissim(centroids[0], Xnum[ipoint]) +
             gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
         if membership[clust, ipoint]:
-            # point is already in its right place
+            # Point is already in its right place.
             continue
 
-        # move point, and update old/new cluster frequencies and centroids
+        # Move point, and update old/new cluster frequencies and centroids.
         moves += 1
         old_clust = np.argwhere(membership[:, ipoint])[0][0]
 
@@ -284,8 +283,8 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
             Xcat[ipoint], ipoint, clust, old_clust, cl_attr_freq,
             membership)
 
-        # update new and old centroids by choosing mean for numerical
-        # and most likely for categorical attributes
+        # Update new and old centroids by choosing mean for numerical
+        # and mode for categorical attributes.
         for iattr in range(len(Xnum[ipoint])):
             for curc in (clust, old_clust):
                 if sum(membership[curc, :]):
@@ -298,8 +297,8 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                 centroids[1][curc, iattr] = \
                     _mode_from_dict(cl_attr_freq[curc][iattr])
 
-        # in case of an empty cluster, reinitialize with a random point
-        # from largest cluster
+        # In case of an empty cluster, reinitialize with a random point
+        # from largest cluster.
         if sum(membership[old_clust, :]) == 0:
             from_clust = membership.sum(axis=1).argmax()
             choices = \
@@ -317,10 +316,13 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
 
 
 def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
+    """k-prototypes algorithm"""
 
     assert len(X) == 2, "X should be a list of Xnum and Xcat arrays"
-    # convert to numpy arrays, if needed
+    # List where [0] = numerical part of centroid and
+    # [1] = categorical part. Same for centroids.
     Xnum, Xcat = X
+    # Convert to numpy arrays, if needed.
     Xnum = np.asanyarray(Xnum)
     Xcat = np.asanyarray(Xcat)
     nnumpoints, nnumattrs = Xnum.shape
@@ -330,8 +332,8 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
     npoints = nnumpoints
     assert n_clusters < npoints, "More clusters than data points?"
 
-    # estimate a good value for gamma, which determines the weighing of
-    # categorical values in clusters (see Huang [1997])
+    # Estimate a good value for gamma, which determines the weighing of
+    # categorical values in clusters (see Huang [1997]).
     if gamma is None:
         gamma = 0.5 * Xnum.std()
 
@@ -340,12 +342,11 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
     all_costs = []
     for init_no in range(n_init):
 
-        # for numerical part of initialization, we don't have a guarantee
-        # that there is not an empty cluster, so we need this
+        # For numerical part of initialization, we don't have a guarantee
+        # that there is not an empty cluster, so we need to retry until
+        # there is none.
         while True:
             # _____ INIT _____
-            # numerical is initialized randomly, categorical following the
-            # k-modes methods
             if verbose:
                 print("Init: initializing centroids")
             if init == 'Huang':
@@ -360,8 +361,8 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
             else:
                 raise NotImplementedError
 
-            # list where [0] = numerical part of centroid and
-            # [1] = categorical part
+            # Numerical is initialized by drawing from normal distribution,
+            # categorical following the k-modes methods.
             meanX = np.mean(Xnum, axis=0)
             stdX = np.std(Xnum, axis=0)
             centroids = [meanX + np.random.randn(n_clusters, nnumattrs) * stdX,
@@ -370,35 +371,37 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
             if verbose:
                 print("Init: initializing clusters")
             membership = np.zeros((n_clusters, npoints), dtype='int64')
-            # keep track of the sum of attribute values per cluster
+            # Keep track of the sum of attribute values per cluster so that we
+            # can do k-means on the numerical attributes.
             cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype='float')
             # cl_attr_freq is a list of lists with dictionaries that contain
-            # the frequencies of values per cluster and attribute
+            # the frequencies of values per cluster and attribute.
             cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
                             for _ in range(n_clusters)]
             for ipoint in range(npoints):
-                # initial assigns to clusters
+                # Initial assignment to clusters
                 clust = np.argmin(
                     _euclidean_dissim(centroids[0], Xnum[ipoint]) +
                     gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
                 membership[clust, ipoint] = 1
-                # count attribute values per cluster
+                # Count attribute values per cluster.
                 for iattr, curattr in enumerate(Xnum[ipoint]):
                     cl_attr_sum[clust, iattr] += curattr
                 for iattr, curattr in enumerate(Xcat[ipoint]):
                     cl_attr_freq[clust][iattr][curattr] += 1
 
-            # if no empty clusters, then consider init finalized
+            # If no empty clusters, then consider initialization finalized.
             if membership.sum(axis=1).min() > 0:
                 break
 
-        # perform an initial centroid update
+        # Perform an initial centroid update.
         for ik in range(n_clusters):
             for iattr in range(nnumattrs):
                 centroids[0][ik, iattr] =  \
                     cl_attr_sum[ik, iattr] / sum(membership[ik, :])
             for iattr in range(ncatattrs):
-                centroids[1][ik, iattr] = _mode_from_dict(cl_attr_freq[ik][iattr])
+                centroids[1][ik, iattr] = \
+                    _mode_from_dict(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
@@ -412,7 +415,7 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
                 Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                 membership, gamma)
 
-            # all points seen in this iteration
+            # All points seen in this iteration
             labels, ncost = \
                 _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma)
             converged = (moves == 0) or (ncost >= cost)
@@ -421,7 +424,7 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
                 print("Run: {}, iteration: {}/{}, moves: {}, ncost: {}"
                       .format(init_no + 1, itr, max_iter, moves, ncost))
 
-        # store
+        # Store results of current run.
         all_centroids.append(centroids)
         all_labels.append(labels)
         all_costs.append(cost)
