@@ -7,8 +7,8 @@ kmodes
 
 Description
 -----------
-Python implementation of the k-modes clustering algorithm for categorical data,
-and several of its variations.
+Pure Python implementations of the k-modes clustering algorithm for categorical data,
+and the k-prototypes algorithm for mixed numerical/categorical data.
 
 Implemented are:
 
