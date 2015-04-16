@@ -1,6 +1,10 @@
 kmodes
 ======
 
+.. image:: https://landscape.io/github/nicodv/kmodes/master/landscape.svg?style=flat
+    :target: https://landscape.io/github/nicodv/kmodes/master
+    :alt: Code Health
+
 Description
 -----------
 Python implementation of the k-modes clustering algorithm for categorical data,
