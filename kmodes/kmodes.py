@@ -270,6 +270,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
             _euclidean_dissim(centroids[0], Xnum[ipoint]) +
             gamma * _matching_dissim(centroids[1], Xcat[ipoint]))
         if membership[clust, ipoint]:
+            # point is already in its right place
             continue
 
         # move point, and update old/new cluster frequencies and centroids
@@ -291,7 +292,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                     centroids[0][curc, iattr] = \
                         cl_attr_sum[curc, iattr] / sum(membership[curc, :])
                 else:
-                    centroids[0][curc, iattr] = 0
+                    centroids[0][curc, iattr] = 0.
         for iattr in range(len(Xcat[ipoint])):
             for curc in (clust, old_clust):
                 centroids[1][curc, iattr] = \
