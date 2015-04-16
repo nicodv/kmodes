@@ -14,7 +14,7 @@ kmodes_cao.fit_predict(x)
 for result in (kmodes_huang, kmodes_cao):
     classtable = np.zeros((4, 4), dtype=int)
     for ii, _ in enumerate(y):
-        classtable[int(y[ii][-1]) - 1, result.labels_[ii][0]] += 1
+        classtable[int(y[ii][-1]) - 1, result.labels_[ii]] += 1
 
     print("\n")
     print("    | Cl. 1 | Cl. 2 | Cl. 3 | Cl. 4 |")

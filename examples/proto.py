@@ -12,4 +12,4 @@ kproto = kmodes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
 clusters = kproto.fit_predict([xnum, xcat])
 
 for s, c in zip(syms, clusters):
-    print("Symbol: {}, cluster:{}".format(s, c[0]))
+    print("Symbol: {}, cluster:{}".format(s, c))

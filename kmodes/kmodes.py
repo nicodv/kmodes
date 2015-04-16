@@ -5,7 +5,6 @@
 
 from collections import defaultdict
 import numpy as np
-from sklearn.base import BaseEstimator, ClusterMixin
 
 
 def _matching_dissim(a, b):
@@ -135,7 +134,7 @@ def _labels_cost_kmodes(X, centroids):
         cost += np.sum(_matching_dissim(centroids, curpoint) *
                        (membership[:, ipoint]))
 
-    labels = np.array([np.argwhere(membership[:, pt])[0]
+    labels = np.array([np.argwhere(membership[:, pt])[0][0]
                        for pt in range(npoints)])
     return labels, cost
 
@@ -256,7 +255,7 @@ def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
         ccost += np.sum(_matching_dissim(centroids[1], curpoint) *
                         (membership[:, ipoint]))
 
-    labels = np.array([np.argwhere(membership[:, pt])[0]
+    labels = np.array([np.argwhere(membership[:, pt])[0][0]
                        for pt in range(npoints)])
     cost = ncost + gamma * ccost
     return labels, cost
@@ -423,7 +422,7 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
     return centroids, labels, cost
 
 
-class KModes(BaseEstimator, ClusterMixin):
+class KModes(object):
 
     """k-modes clustering algorithm for categorical data.
 
