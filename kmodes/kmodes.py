@@ -7,6 +7,13 @@ from collections import defaultdict
 import numpy as np
 
 
+def _mode_from_dict(dic):
+    """Fast method to get key for maximum value in dict."""
+    v = list(dic.values())
+    k = list(dic.keys())
+    return k[v.index(max(v))]
+
+
 def _matching_dissim(a, b):
     """Simple matching dissimilarity function"""
     return (np.atleast_2d(a) != b).sum(axis=1)
@@ -77,13 +84,6 @@ def _init_cao(X, n_clusters):
     return centroids
 
 
-def _mode_from_dict(dic):
-    """Fast method to get key for maximum value in dict."""
-    v = list(dic.values())
-    k = list(dic.keys())
-    return k[v.index(max(v))]
-
-
 def _move_point_cat(point, ipoint, to_clust, from_clust,
                     cl_attr_freq, membership):
     """Move point between clusters, categorical attributes."""
@@ -126,7 +126,7 @@ def _labels_cost_kmodes(X, centroids):
 
 
 def _k_modes_iter(X, centroids, cl_attr_freq, membership):
-    """Single iteration of k-modes clustering algorithm."""
+    """Single iteration of k-modes clustering algorithm"""
     moves = 0
     for ipoint, curpoint in enumerate(X):
         clust = np.argmin(_matching_dissim(centroids, curpoint))
@@ -262,7 +262,7 @@ def _labels_cost_kprototypes(Xnum, Xcat, centroids, gamma):
 
 def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                        membership, gamma):
-    """Single iteration of the k-prototypes algorithm."""
+    """Single iteration of the k-prototypes algorithm"""
     moves = 0
     for ipoint in range(Xnum.shape[0]):
         clust = np.argmin(
@@ -543,7 +543,7 @@ class KModes(object):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
-        return _labels_cost_kmodes(X, self.cluster_centroids_)[0]
+        return self._labels_cost_kmodes(X, self.cluster_centroids_)[0]
 
 
 class KPrototypes(KModes):
@@ -623,3 +623,19 @@ class KPrototypes(KModes):
             k_prototypes(X, self.n_clusters, self.gamma, self.init,
                          self.n_init, self.max_iter, self.verbose)
         return self
+
+    def predict(self, X):
+        """Predict the closest cluster each sample in X belongs to.
+
+        Parameters
+        ----------
+        X : list of array-like, shape=[[n_num_samples, n_features],
+                                       [n_cat_samples, n_features]]
+
+        Returns
+        -------
+        labels : array, shape [n_samples,]
+            Index of the cluster each sample belongs to.
+        """
+        assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
+        return self._labels_cost_kprototypes(X, self.cluster_centroids_)[0]
