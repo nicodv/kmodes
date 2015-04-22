@@ -433,7 +433,8 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
-    return all_centroids[best], all_labels[best], all_costs[best]
+    # Note: return gamma in case it was automatically determined.
+    return all_centroids[best], all_labels[best], all_costs[best], gamma
 
 
 class KModes(object):
@@ -619,7 +620,9 @@ class KPrototypes(KModes):
                                        [n_cat_samples, n_features]]
         """
 
-        self.cluster_centroids_, self.labels_, self.cost_ = \
+        # If self.gamma is None, gamma will be automatically determined from
+        # the data. The function below returns its value.
+        self.cluster_centroids_, self.labels_, self.cost_, self.gamma = \
             k_prototypes(X, self.n_clusters, self.gamma, self.init,
                          self.n_init, self.max_iter, self.verbose)
         return self
