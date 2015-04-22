@@ -543,7 +543,7 @@ class KModes(object):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
-        return self._labels_cost_kmodes(X, self.cluster_centroids_)[0]
+        return _labels_cost_kmodes(X, self.cluster_centroids_)[0]
 
 
 class KPrototypes(KModes):
@@ -606,7 +606,7 @@ class KPrototypes(KModes):
                  max_iter=100, verbose=0):
 
         super(KPrototypes, self).__init__(n_clusters, init, n_init, max_iter,
-                                    verbose)
+                                          verbose)
 
         self.gamma = gamma
 
@@ -638,4 +638,5 @@ class KPrototypes(KModes):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
-        return self._labels_cost_kprototypes(X, self.cluster_centroids_)[0]
+        return _labels_cost_kprototypes(X[0], X[1], self.cluster_centroids_,
+                                        self.gamma)[0]
