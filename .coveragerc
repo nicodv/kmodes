@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = kmodes
+include = */kmodes/*
+omit =
+    */examples/*
