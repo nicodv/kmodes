@@ -10,7 +10,6 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install coveralls
-  - pip install nose
 # command to run tests
 script:
   - nosetests --with-coverage
