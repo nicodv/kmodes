@@ -6,7 +6,7 @@
 
 from collections import defaultdict
 import numpy as np
-import kmodes
+from . import kmodes
 
 
 def euclidean_dissim(a, b):
