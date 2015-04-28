@@ -1,3 +1,9 @@
+.. image:: https://travis-ci.org/nicodv/kmodes.svg?branch=master
+    :target: https://travis-ci.org/nicodv/kmodes
+    :alt: Test Status
+.. image:: https://coveralls.io/repos/nicodv/kmodes/badge.svg
+    :target: https://coveralls.io/r/nicodv/kmodes
+    :alt: Test Coverage
 .. image:: https://landscape.io/github/nicodv/kmodes/master/landscape.svg?style=flat
     :target: https://landscape.io/github/nicodv/kmodes/master
     :alt: Code Health
@@ -48,10 +54,3 @@ pp. 283-304, 1998.
 [3] Cao, F., Liang, J, Bai, L.: A new initialization method for categorical
 data clustering, Expert Systems with Applications 36(7), pp. 10223-10228.,
 2009.
-
-Requirements
-------------
-Tested on:
-
-- Python 2.7 / 3.4
-- NumPy 1.9
