@@ -7,7 +7,7 @@ from collections import defaultdict
 import numpy as np
 
 
-def mode_from_dict(dic):
+def get_max_value_key(dic):
     """Fast method to get key for maximum value in dict."""
     v = list(dic.values())
     k = list(dic.keys())
@@ -128,7 +128,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membership):
         for iattr in range(len(curpoint)):
             for curc in (clust, old_clust):
                 centroids[curc, iattr] = \
-                    mode_from_dict(cl_attr_freq[curc][iattr])
+                    get_max_value_key(cl_attr_freq[curc][iattr])
 
         # In case of an empty cluster, reinitialize with a random point
         # from the largest cluster.
@@ -190,7 +190,8 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         # Perform an initial centroid update.
         for ik in range(n_clusters):
             for iattr in range(nattrs):
-                centroids[ik, iattr] = mode_from_dict(cl_attr_freq[ik][iattr])
+                centroids[ik, iattr] = get_max_value_key(
+                    cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:

@@ -82,7 +82,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
         for iattr in range(len(Xcat[ipoint])):
             for curc in (clust, old_clust):
                 centroids[1][curc, iattr] = \
-                    kmodes.mode_from_dict(cl_attr_freq[curc][iattr])
+                    kmodes.get_max_value_key(cl_attr_freq[curc][iattr])
 
         # In case of an empty cluster, reinitialize with a random point
         # from largest cluster.
@@ -188,7 +188,7 @@ def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
                     cl_attr_sum[ik, iattr] / sum(membership[ik, :])
             for iattr in range(ncatattrs):
                 centroids[1][ik, iattr] = \
-                    kmodes.mode_from_dict(cl_attr_freq[ik][iattr])
+                    kmodes.get_max_value_key(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
