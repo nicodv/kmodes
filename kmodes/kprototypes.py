@@ -11,7 +11,7 @@ from . import kmodes
 
 def euclidean_dissim(a, b):
     """Euclidean distance dissimilarity function"""
-    return np.sum((np.atleast_2d(a) - b) ** 2, axis=1)
+    return np.sum((a - b) ** 2, axis=1)
 
 
 def move_point_num(point, ipoint, to_clust, from_clust,

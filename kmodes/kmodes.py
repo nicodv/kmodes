@@ -16,7 +16,7 @@ def get_max_value_key(dic):
 
 def matching_dissim(a, b):
     """Simple matching dissimilarity function"""
-    return (np.atleast_2d(a) != b).sum(axis=1)
+    return np.sum(a != b, axis=1)
 
 
 def init_huang(X, n_clusters):
