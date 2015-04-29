@@ -11,7 +11,8 @@
 kmodes
 ======
 
-##Description
+Description
+-----------
 
 Python implementations of the k-modes and k-prototypes clustering
 algorithms. Relies on numpy for a lot of the heavy lifting.
@@ -40,7 +41,8 @@ feedback on my implementation.
 
 Enjoy!
 
-##References
+References
+----------
 
 [1] Huang, Z.: Clustering large data sets with mixed numeric and categorical
 values, Proceedings of the First Pacific Asia Knowledge Discovery and Data
