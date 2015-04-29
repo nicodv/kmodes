@@ -26,9 +26,9 @@ categorical data.
 
 Implemented are:
 
-- k-modes [1]_ [#]_
-- k-modes with initialization based on density [#]_
-- k-prototypes [1]_
+- k-modes [HUANG97]_ [HUANG98]_
+- k-modes with initialization based on density [CAO09]_
+- k-prototypes [HUANG97]_
 
 The code is modeled after the k-means module in scikit-learn and has the
 same familiar interface.
@@ -57,12 +57,12 @@ Usage
 References
 ----------
 
-.. [1] Huang, Z.: Clustering large data sets with mixed numeric and categorical values,
+.. [HUANG97] Huang, Z.: Clustering large data sets with mixed numeric and categorical values,
    Proceedings of the First Pacific Asia Knowledge Discovery and Data Mining Conference,
    Singapore, pp. 21-34, 1997.
 
-.. [#] Huang, Z.: Extensions to the k-modes algorithm for clustering large data sets
+.. [HUANG98] Huang, Z.: Extensions to the k-modes algorithm for clustering large data sets
    with categorical values, Data Mining and Knowledge Discovery 2(3), pp. 283-304, 1998.
 
-.. [#] Cao, F., Liang, J, Bai, L.: A new initialization method for categorical data
+.. [CAO09] Cao, F., Liang, J, Bai, L.: A new initialization method for categorical data
    clustering, Expert Systems with Applications 36(7), pp. 10223-10228., 2009.
