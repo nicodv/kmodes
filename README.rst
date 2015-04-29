@@ -14,7 +14,7 @@ kmodes
 Description
 -----------
 Python implementations of the k-modes and k-prototypes clustering
-algorithms. Relies on `numpy` for most of the heavy lifting.
+algorithms. Relies on numpy for a lot of the heavy lifting.
 
 k-modes is used for clustering categorical variables. It defines clusters
 based on the number of matching categories between data points. (This is
