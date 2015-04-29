@@ -26,7 +26,7 @@ categorical data.
 
 Implemented are:
 
-- k-modes [1]_[2]
+- k-modes [1]_ [2]
 - k-modes with initialization based on density [3]
 - k-prototypes [1]
 
