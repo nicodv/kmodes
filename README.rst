@@ -26,7 +26,7 @@ categorical data.
 
 Implemented are:
 
-- k-modes [1][2]
+- k-modes [1]_[2]
 - k-modes with initialization based on density [3]
 - k-prototypes [1]
 
@@ -57,7 +57,7 @@ Usage
 References
 ----------
 
-[1] Huang, Z.: Clustering large data sets with mixed numeric and categorical
+.. [1] Huang, Z.: Clustering large data sets with mixed numeric and categorical
 values, Proceedings of the First Pacific Asia Knowledge Discovery and Data
 Mining Conference, Singapore, pp. 21-34, 1997.
 
