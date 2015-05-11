@@ -20,7 +20,7 @@ def matching_dissim(a, b):
 
 
 def init_huang(X, n_clusters):
-    """Initialize n_clusters according to method by Huang [1997]."""
+    """Initialize K according to method by Huang [1997]."""
     nattrs = X.shape[1]
     centroids = np.empty((n_clusters, nattrs), dtype='object')
     # determine frequencies of attributes
@@ -49,9 +49,9 @@ def init_huang(X, n_clusters):
 
 
 def init_cao(X, n_clusters):
-    """Initialize n_clusters according to method by Cao et al. [2009].
+    """Initialize K according to method by Cao et al. [2009].
 
-    Note: O(N * attr * n_clusters**2), so watch out with large n_clusters
+    Note: O(N * attr * K**2), so watch out with large K
     """
     npoints, nattrs = X.shape
     centroids = np.empty((n_clusters, nattrs), dtype='object')
@@ -229,7 +229,7 @@ class KModes(object):
 
     Parameters
     -----------
-    n_clusters : int, optional, default: 8
+    K : int, optional, default: 8
         The number of clusters to form as well as the number of
         centroids to generate.
 
@@ -248,7 +248,7 @@ class KModes(object):
         'Cao': Method in Cao et al. [2009]
         'random': choose k observations (rows) at random from data for
         the initial centroids.
-        If an ndarray is passed, it should be of shape (n_clusters, n_features)
+        If an ndarray is passed, it should be of shape (K, n_features)
         and gives the initial centroids.
 
     verbose : boolean, optional
@@ -256,7 +256,7 @@ class KModes(object):
 
     Attributes
     ----------
-    cluster_centroids_ : array, [n_clusters, n_features]
+    cluster_centroids_ : array, [K, n_features]
         Categories of cluster centroids
 
     labels_ :
@@ -308,13 +308,13 @@ class KModes(object):
                     self.max_iter, self.verbose)
         return self
 
-    def fit_predict(self, X, y=None, **kwargs):
+    def fit_predict(self, X, **kwargs):
         """Compute cluster centroids and predict cluster index for each sample.
 
         Convenience method; equivalent to calling fit(X) followed by
         predict(X).
         """
-        return self.fit(X).labels_
+        return self.fit(X, **kwargs).labels_
 
     def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.

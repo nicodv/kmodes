@@ -1,5 +1,5 @@
 
-"""K-prototypes clustering"""
+"""T-prototypes clustering"""
 
 # Author: Nico de Vos <njdevos@gmail.com>
 # License: MIT
@@ -26,12 +26,27 @@ def move_point_num(point, ipoint, to_clust, from_clust,
     return cl_attr_sum, membership
 
 
-def _labels_cost(Xnum, Xcat, centroids, gamma):
+def _split_num_cat(X, categorical):
+    """Extract numerical and categorical columns.
+    Convert to numpy arrays, if needed.
+
+    :param X: Feature matrix
+    :param categorical: Indices of categorical columns
+    """
+    Xnum = np.asanyarray(X[:, [ii for ii in range(X.shape[1])
+                               if ii not in categorical]]).astype(float)
+    Xcat = np.asanyarray(X[:, categorical])
+    return Xnum, Xcat
+
+
+def _labels_cost(X, categorical, centroids, gamma):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-prototypes algorithm.
     """
 
-    npoints = Xnum.shape[0]
+    npoints = X.shape[0]
+    Xnum, Xcat = _split_num_cat(X, categorical)
+
     cost = 0.
     labels = np.empty(npoints, dtype='int64')
     for ipoint in range(npoints):
@@ -120,11 +135,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
     npoints = X.shape[0]
     assert n_clusters < npoints, "More clusters than data points?"
 
-    # Extract numerical and categorical columns.
-    # Convert to numpy arrays, if needed.
-    Xnum = np.asanyarray(X[:, [ii for ii in range(X.shape[1])
-                               if ii not in categorical]]).astype(float)
-    Xcat = np.asanyarray(X[:, categorical])
+    Xnum, Xcat = _split_num_cat(X, categorical)
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
@@ -210,8 +221,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                 membership, gamma)
 
             # All points seen in this iteration
-            labels, ncost = \
-                _labels_cost(Xnum, Xcat, centroids, gamma)
+            labels, ncost = _labels_cost(X, categorical, centroids, gamma)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
@@ -236,7 +246,7 @@ class KPrototypes(kmodes.KModes):
 
     Parameters
     -----------
-    n_clusters : int, optional, default: 8
+    K : int, optional, default: 8
         The number of clusters to form as well as the number of
         centroids to generate.
 
@@ -260,7 +270,7 @@ class KPrototypes(kmodes.KModes):
         'Cao': Method in Cao et al. [2009]
         'random': choose k observations (rows) at random from data for
         the initial centroids.
-        If an ndarray is passed, it should be of shape (n_clusters, n_features)
+        If an ndarray is passed, it should be of shape (K, n_features)
         and gives the initial centroids.
 
     verbose : boolean, optional
@@ -268,7 +278,7 @@ class KPrototypes(kmodes.KModes):
 
     Attributes
     ----------
-    cluster_centroids_ : array, [n_clusters, n_features]
+    cluster_centroids_ : array, [K, n_features]
         Categories of cluster centroids
 
     labels_ :
@@ -295,7 +305,7 @@ class KPrototypes(kmodes.KModes):
 
         self.gamma = gamma
 
-    def fit(self, X, categorical=None):
+    def fit(self, X, **kwargs):
         """Compute k-prototypes clustering.
 
         Parameters
@@ -304,6 +314,8 @@ class KPrototypes(kmodes.KModes):
         categorical : Index of columns that contain categorical data
         """
 
+        categorical = kwargs.get('categorical', None)
+
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self.cluster_centroids_, self.labels_, self.cost_, self.gamma = \
@@ -311,15 +323,7 @@ class KPrototypes(kmodes.KModes):
                          self.init, self.n_init, self.max_iter, self.verbose)
         return self
 
-    def fit_predict(self, X, y=None, categorical=None):
-        """Compute cluster centroids and predict cluster index for each sample.
-
-        Convenience method; equivalent to calling fit(X) followed by
-        predict(X).
-        """
-        return self.fit(X, categorical=categorical).labels_
-
-    def predict(self, X, categorical=None):
+    def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
@@ -334,5 +338,8 @@ class KPrototypes(kmodes.KModes):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
-        return _labels_cost(X[0], X[1], self.cluster_centroids_,
-                            self.gamma)[0]
+
+        categorical = kwargs.get('categorical', None)
+
+        return _labels_cost(X, categorical,
+                            self.cluster_centroids_, self.gamma)[0]
