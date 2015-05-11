@@ -102,22 +102,29 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
     return centroids, moves
 
 
-def k_prototypes(X, n_clusters, gamma, init, n_init, max_iter, verbose):
+def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
+                 max_iter, verbose):
     """k-prototypes algorithm"""
 
-    assert len(X) == 2, "X should be a list of Xnum and Xcat arrays"
-    # List where [0] = numerical part of centroid and
-    # [1] = categorical part. Same for centroids.
-    Xnum, Xcat = X
-    # Convert to numpy arrays, if needed.
-    Xnum = np.asanyarray(Xnum)
-    Xcat = np.asanyarray(Xcat)
-    nnumpoints, nnumattrs = Xnum.shape
-    ncatpoints, ncatattrs = Xcat.shape
-    assert nnumpoints == ncatpoints,\
-        "Uneven number of numerical and categorical points"
-    npoints = nnumpoints
+    if categorical is None or not categorical and verbose:
+        print("No categorical data selected, effectively doing k-means.")
+    assert len(categorical) != X.shape[1], \
+        "All columns are categorical, use k-modes instead of k-prototypes."
+    assert max(categorical) < len(X), \
+        "Categorical index larger than number of columns."
+
+    if isinstance(categorical, int):
+        categorical = [categorical]
+    ncatattrs = len(categorical)
+    nnumattrs = X.shape[1] - ncatattrs
+    npoints = X.shape[0]
     assert n_clusters < npoints, "More clusters than data points?"
+
+    # Extract numerical and categorical columns.
+    # Convert to numpy arrays, if needed.
+    Xnum = np.asanyarray(X[:, [ii for ii in range(X.shape[1])
+                               if ii not in categorical]]).astype(float)
+    Xcat = np.asanyarray(X[:, categorical])
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
@@ -288,29 +295,38 @@ class KPrototypes(kmodes.KModes):
 
         self.gamma = gamma
 
-    def fit(self, X):
+    def fit(self, X, categorical=None):
         """Compute k-prototypes clustering.
 
         Parameters
         ----------
-        X : list of array-like, shape=[[n_num_samples, n_features],
-                                       [n_cat_samples, n_features]]
+        X : array-like, shape=[n_samples, n_features]
+        categorical : Index of columns that contain categorical data
         """
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self.cluster_centroids_, self.labels_, self.cost_, self.gamma = \
-            k_prototypes(X, self.n_clusters, self.gamma, self.init,
-                         self.n_init, self.max_iter, self.verbose)
+            k_prototypes(X, categorical, self.n_clusters, self.gamma,
+                         self.init, self.n_init, self.max_iter, self.verbose)
         return self
 
-    def predict(self, X):
+    def fit_predict(self, X, y=None, categorical=None):
+        """Compute cluster centroids and predict cluster index for each sample.
+
+        Convenience method; equivalent to calling fit(X) followed by
+        predict(X).
+        """
+        return self.fit(X, categorical=categorical).labels_
+
+    def predict(self, X, categorical=None):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
         ----------
-        X : list of array-like, shape=[[n_num_samples, n_features],
-                                       [n_cat_samples, n_features]]
+        X : array-like, shape = [n_samples, n_features]
+            New data to predict.
+        categorical : Index of columns that contain categorical data
 
         Returns
         -------

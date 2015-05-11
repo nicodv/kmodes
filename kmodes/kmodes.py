@@ -295,7 +295,7 @@ class KModes(object):
 
         self.max_iter = max_iter
 
-    def fit(self, X):
+    def fit(self, X, **kwargs):
         """Compute k-modes clustering.
 
         Parameters
@@ -308,7 +308,7 @@ class KModes(object):
                     self.max_iter, self.verbose)
         return self
 
-    def fit_predict(self, X, y=None):
+    def fit_predict(self, X, y=None, **kwargs):
         """Compute cluster centroids and predict cluster index for each sample.
 
         Convenience method; equivalent to calling fit(X) followed by
@@ -316,7 +316,7 @@ class KModes(object):
         """
         return self.fit(X).labels_
 
-    def predict(self, X):
+    def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
