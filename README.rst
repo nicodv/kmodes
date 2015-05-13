@@ -41,6 +41,14 @@ feedback on my implementation.
 
 Enjoy!
 
+Installation
+------------
+.. code:: bash
+
+    git clone https://github.com/nicodv/kmodes.git
+    cd kmodes
+    python setup.py install
+
 Usage
 -----
 .. code:: python
