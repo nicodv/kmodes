@@ -125,7 +125,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
         print("No categorical data selected, effectively doing k-means.")
     assert len(categorical) != X.shape[1], \
         "All columns are categorical, use k-modes instead of k-prototypes."
-    assert max(categorical) < len(X), \
+    assert max(categorical) < X.shape[1], \
         "Categorical index larger than number of columns."
 
     if isinstance(categorical, int):
