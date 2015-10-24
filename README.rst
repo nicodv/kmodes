@@ -30,8 +30,8 @@ Implemented are:
 - k-modes with initialization based on density [CAO09]_
 - k-prototypes [HUANG97]_
 
-The code is modeled after the k-means module in scikit-learn and has the
-same familiar interface.
+The code is modeled after the clustering algorithms in scikit-learn and has
+the same familiar interface.
 
 Usage examples of both k-modes ('soybean.py') and k-prototypes
 ('stocks.py') are included.
