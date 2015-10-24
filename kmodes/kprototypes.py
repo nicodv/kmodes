@@ -1,11 +1,16 @@
+"""
+K-prototypes clustering
+"""
 
-"""T-prototypes clustering"""
-
-# Author: Nico de Vos <njdevos@gmail.com>
+# Author: 'Nico de Vos' <njdevos@gmail.com>
 # License: MIT
 
 from collections import defaultdict
+
 import numpy as np
+from scipy import sparse
+from sklearn.utils.validation import check_array
+
 from . import kmodes
 
 
@@ -46,6 +51,8 @@ def _labels_cost(X, categorical, centroids, gamma):
 
     npoints = X.shape[0]
     Xnum, Xcat = _split_num_cat(X, categorical)
+
+    Xnum = check_array(Xnum)
 
     cost = 0.
     labels = np.empty(npoints, dtype='int64')
@@ -121,6 +128,9 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                  max_iter, verbose):
     """k-prototypes algorithm"""
 
+    if sparse.issparse(X):
+        raise TypeError("k-prototypes does not support sparse data.")
+
     if categorical is None or not categorical and verbose:
         print("No categorical data selected, effectively doing k-means.")
     assert len(categorical) != X.shape[1], \
@@ -137,6 +147,8 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
 
     Xnum, Xcat = _split_num_cat(X, categorical)
 
+    Xnum = check_array(Xnum)
+
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
     if gamma is None:
@@ -145,6 +157,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
     all_centroids = []
     all_labels = []
     all_costs = []
+    all_n_iters = []
     for init_no in range(n_init):
 
         # For numerical part of initialization, we don't have a guarantee
@@ -232,13 +245,15 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
         all_centroids.append(centroids)
         all_labels.append(labels)
         all_costs.append(cost)
+        all_n_iters.append(itr)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
     # Note: return gamma in case it was automatically determined.
-    return all_centroids[best], all_labels[best], all_costs[best], gamma
+    return all_centroids[best], all_labels[best], all_costs[best],\
+           all_n_iters[best], gamma
 
 
 class KPrototypes(kmodes.KModes):
@@ -305,7 +320,7 @@ class KPrototypes(kmodes.KModes):
 
         self.gamma = gamma
 
-    def fit(self, X, **kwargs):
+    def fit(self, X, y=None, **kwargs):
         """Compute k-prototypes clustering.
 
         Parameters
@@ -318,7 +333,7 @@ class KPrototypes(kmodes.KModes):
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
-        self.cluster_centroids_, self.labels_, self.cost_, self.gamma = \
+        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.gamma = \
             k_prototypes(X, categorical, self.n_clusters, self.gamma,
                          self.init, self.n_init, self.max_iter, self.verbose)
         return self

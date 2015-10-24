@@ -1,10 +1,16 @@
-"""K-modes clustering"""
+"""
+K-modes clustering
+"""
 
-# Author: Nico de Vos <njdevos@gmail.com>
+# Author: 'Nico de Vos' <njdevos@gmail.com>
 # License: MIT
 
 from collections import defaultdict
+
 import numpy as np
+from scipy import sparse
+from sklearn.base import BaseEstimator, ClusterMixin
+from sklearn.utils.validation import check_array
 
 
 def get_max_value_key(dic):
@@ -96,6 +102,8 @@ def _labels_cost(X, centroids):
     a list of centroids for the k-modes algorithm.
     """
 
+    X = check_array(X)
+
     npoints = X.shape[0]
     cost = 0.
     labels = np.empty(npoints, dtype='int64')
@@ -134,8 +142,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membership):
         # from the largest cluster.
         if sum(membership[old_clust, :]) == 0:
             from_clust = membership.sum(axis=1).argmax()
-            choices = \
-                [ii for ii, ch in enumerate(membership[from_clust, :]) if ch]
+            choices = [ii for ii, ch in enumerate(membership[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
             cl_attr_freq, membership = move_point_cat(
@@ -148,14 +155,18 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membership):
 def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
     """k-modes algorithm"""
 
-    # Convert to numpy array, if needed.
-    X = np.asanyarray(X)
+    if sparse.issparse(X):
+        raise TypeError("k-modes does not support sparse data.")
+
+    X = check_array(X)
+
     npoints, nattrs = X.shape
     assert n_clusters < npoints, "More clusters than data points?"
 
     all_centroids = []
     all_labels = []
     all_costs = []
+    all_n_iters = []
     for init_no in range(n_init):
 
         # _____ INIT _____
@@ -201,8 +212,7 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         cost = np.Inf
         while itr <= max_iter and not converged:
             itr += 1
-            centroids, moves = \
-                _k_modes_iter(X, centroids, cl_attr_freq, membership)
+            centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membership)
             # All points seen in this iteration
             labels, ncost = _labels_cost(X, centroids)
             converged = (moves == 0) or (ncost >= cost)
@@ -215,15 +225,16 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         all_centroids.append(centroids)
         all_labels.append(labels)
         all_costs.append(cost)
+        all_n_iters.append(itr)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
-    return all_centroids[best], all_labels[best], all_costs[best]
+    return all_centroids[best], all_labels[best], all_costs[best], all_n_iters[best]
 
 
-class KModes(object):
+class KModes(BaseEstimator, ClusterMixin):
 
     """k-modes clustering algorithm for categorical data.
 
@@ -275,7 +286,7 @@ class KModes(object):
 
     """
 
-    def __init__(self, n_clusters=8, init='Cao', n_init=10, max_iter=100,
+    def __init__(self, n_clusters=8, init='Cao', n_init=1, max_iter=100,
                  verbose=0):
 
         if hasattr(init, '__array__'):
@@ -295,7 +306,7 @@ class KModes(object):
 
         self.max_iter = max_iter
 
-    def fit(self, X, **kwargs):
+    def fit(self, X, y=None, **kwargs):
         """Compute k-modes clustering.
 
         Parameters
@@ -303,12 +314,12 @@ class KModes(object):
         X : array-like, shape=[n_samples, n_features]
         """
 
-        self.cluster_centroids_, self.labels_, self.cost_ = \
+        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_ = \
             k_modes(X, self.n_clusters, self.init, self.n_init,
                     self.max_iter, self.verbose)
         return self
 
-    def fit_predict(self, X, **kwargs):
+    def fit_predict(self, X, y=None, **kwargs):
         """Compute cluster centroids and predict cluster index for each sample.
 
         Convenience method; equivalent to calling fit(X) followed by
