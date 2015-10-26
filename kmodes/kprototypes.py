@@ -320,7 +320,7 @@ class KPrototypes(kmodes.KModes):
 
         self.gamma = gamma
 
-    def fit(self, X, y=None, **kwargs):
+    def fit(self, X, y=None, categorical=None):
         """Compute k-prototypes clustering.
 
         Parameters
@@ -329,8 +329,6 @@ class KPrototypes(kmodes.KModes):
         categorical : Index of columns that contain categorical data
         """
 
-        categorical = kwargs.get('categorical', None)
-
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.gamma = \
@@ -338,7 +336,7 @@ class KPrototypes(kmodes.KModes):
                          self.init, self.n_init, self.max_iter, self.verbose)
         return self
 
-    def predict(self, X, **kwargs):
+    def predict(self, X, categorical=None):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
@@ -353,8 +351,6 @@ class KPrototypes(kmodes.KModes):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
-
-        categorical = kwargs.get('categorical', None)
 
         return _labels_cost(X, categorical,
                             self.cluster_centroids_, self.gamma)[0]
