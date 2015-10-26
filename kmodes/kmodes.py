@@ -303,7 +303,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
         self.max_iter = max_iter
 
-    def fit(self, X, _=None, **kwargs):
+    def fit(self, X, y=None, **kwargs):
         """Compute k-modes clustering.
 
         Parameters
