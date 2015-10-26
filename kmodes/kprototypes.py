@@ -16,19 +16,19 @@ from . import kmodes
 
 def euclidean_dissim(a, b):
     """Euclidean distance dissimilarity function"""
+    assert len(a.shape) == 2 or len(b.shape) == 2
     return np.sum((a - b) ** 2, axis=1)
 
 
-def move_point_num(point, ipoint, to_clust, from_clust,
-                   cl_attr_sum, membership):
+def move_point_num(point, ipoint, to_clust, from_clust, cl_attr_sum, membship):
     """Move point between clusters, numerical attributes."""
-    membership[to_clust, ipoint] = 1
-    membership[from_clust, ipoint] = 0
+    membship[to_clust, ipoint] = 1
+    membship[from_clust, ipoint] = 0
     # Update sum of attributes in cluster.
     for iattr, curattr in enumerate(point):
         cl_attr_sum[to_clust][iattr] += curattr
         cl_attr_sum[from_clust][iattr] -= curattr
-    return cl_attr_sum, membership
+    return cl_attr_sum, membship
 
 
 def _split_num_cat(X, categorical):
@@ -70,35 +70,36 @@ def _labels_cost(X, categorical, centroids, gamma):
 
 
 def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
-                       membership, gamma):
+                       membship, gamma):
     """Single iteration of the k-prototypes algorithm"""
     moves = 0
     for ipoint in range(Xnum.shape[0]):
         clust = np.argmin(
             euclidean_dissim(centroids[0], Xnum[ipoint]) +
-            gamma * kmodes.matching_dissim(centroids[1], Xcat[ipoint]))
-        if membership[clust, ipoint]:
+            gamma * kmodes.matching_dissim(centroids[1], Xcat[ipoint])
+        )
+        if membship[clust, ipoint]:
             # Point is already in its right place.
             continue
 
         # Move point, and update old/new cluster frequencies and centroids.
         moves += 1
-        old_clust = np.argwhere(membership[:, ipoint])[0][0]
+        old_clust = np.argwhere(membship[:, ipoint])[0][0]
 
-        cl_attr_sum, membership = move_point_num(
-            Xnum[ipoint], ipoint, clust, old_clust, cl_attr_sum,
-            membership)
-        cl_attr_freq, membership = kmodes.move_point_cat(
-            Xcat[ipoint], ipoint, clust, old_clust, cl_attr_freq,
-            membership)
+        cl_attr_sum, membship = move_point_num(
+            Xnum[ipoint], ipoint, clust, old_clust, cl_attr_sum, membship
+        )
+        cl_attr_freq, membship = kmodes.move_point_cat(
+            Xcat[ipoint], ipoint, clust, old_clust, cl_attr_freq, membship
+        )
 
         # Update new and old centroids by choosing mean for numerical
         # and mode for categorical attributes.
         for iattr in range(len(Xnum[ipoint])):
             for curc in (clust, old_clust):
-                if sum(membership[curc, :]):
+                if sum(membship[curc, :]):
                     centroids[0][curc, iattr] = \
-                        cl_attr_sum[curc, iattr] / sum(membership[curc, :])
+                        cl_attr_sum[curc, iattr] / sum(membship[curc, :])
                 else:
                     centroids[0][curc, iattr] = 0.
         for iattr in range(len(Xcat[ipoint])):
@@ -108,18 +109,18 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
 
         # In case of an empty cluster, reinitialize with a random point
         # from largest cluster.
-        if sum(membership[old_clust, :]) == 0:
-            from_clust = membership.sum(axis=1).argmax()
+        if sum(membship[old_clust, :]) == 0:
+            from_clust = membship.sum(axis=1).argmax()
             choices = \
-                [ii for ii, ch in enumerate(membership[from_clust, :]) if ch]
+                [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_freq, membership = move_point_num(
-                Xnum[rindx], rindx, old_clust, from_clust, cl_attr_sum,
-                membership)
-            cl_attr_freq, membership = kmodes.move_point_cat(
-                Xcat[rindx], rindx, old_clust, from_clust, cl_attr_freq,
-                membership)
+            cl_attr_freq, membship = move_point_num(
+                Xnum[rindx], rindx, old_clust, from_clust, cl_attr_sum, membship
+            )
+            cl_attr_freq, membship = kmodes.move_point_cat(
+                Xcat[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship
+            )
 
     return centroids, moves
 
@@ -183,12 +184,14 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
             # categorical following the k-modes methods.
             meanX = np.mean(Xnum, axis=0)
             stdX = np.std(Xnum, axis=0)
-            centroids = [meanX + np.random.randn(n_clusters, nnumattrs) * stdX,
-                         centroids]
+            centroids = [
+                meanX + np.random.randn(n_clusters, nnumattrs) * stdX,
+                centroids
+            ]
 
             if verbose:
                 print("Init: initializing clusters")
-            membership = np.zeros((n_clusters, npoints), dtype='int64')
+            membship = np.zeros((n_clusters, npoints), dtype='int64')
             # Keep track of the sum of attribute values per cluster so that we
             # can do k-means on the numerical attributes.
             cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype='float')
@@ -200,8 +203,9 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                 # Initial assignment to clusters
                 clust = np.argmin(
                     euclidean_dissim(centroids[0], Xnum[ipoint]) +
-                    gamma * kmodes.matching_dissim(centroids[1], Xcat[ipoint]))
-                membership[clust, ipoint] = 1
+                    gamma * kmodes.matching_dissim(centroids[1], Xcat[ipoint])
+                )
+                membship[clust, ipoint] = 1
                 # Count attribute values per cluster.
                 for iattr, curattr in enumerate(Xnum[ipoint]):
                     cl_attr_sum[clust, iattr] += curattr
@@ -209,14 +213,14 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                     cl_attr_freq[clust][iattr][curattr] += 1
 
             # If no empty clusters, then consider initialization finalized.
-            if membership.sum(axis=1).min() > 0:
+            if membship.sum(axis=1).min() > 0:
                 break
 
         # Perform an initial centroid update.
         for ik in range(n_clusters):
             for iattr in range(nnumattrs):
-                centroids[0][ik, iattr] =  \
-                    cl_attr_sum[ik, iattr] / sum(membership[ik, :])
+                centroids[0][ik, iattr] = \
+                    cl_attr_sum[ik, iattr] / sum(membship[ik, :])
             for iattr in range(ncatattrs):
                 centroids[1][ik, iattr] = \
                     kmodes.get_max_value_key(cl_attr_freq[ik][iattr])
@@ -230,8 +234,8 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
         while itr <= max_iter and not converged:
             itr += 1
             centroids, moves = _k_prototypes_iter(
-                Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
-                membership, gamma)
+                Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq, membship, gamma
+            )
 
             # All points seen in this iteration
             labels, ncost = _labels_cost(X, categorical, centroids, gamma)
@@ -252,7 +256,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
         print("Best run was number {}".format(best + 1))
 
     # Note: return gamma in case it was automatically determined.
-    return all_centroids[best], all_labels[best], all_costs[best],\
+    return all_centroids[best], all_labels[best], all_costs[best], \
            all_n_iters[best], gamma
 
 
@@ -315,8 +319,7 @@ class KPrototypes(kmodes.KModes):
     def __init__(self, n_clusters=8, gamma=None, init='Huang', n_init=10,
                  max_iter=100, verbose=0):
 
-        super(KPrototypes, self).__init__(n_clusters, init, n_init, max_iter,
-                                          verbose)
+        super(KPrototypes, self).__init__(n_clusters, init, n_init, max_iter,verbose)
 
         self.gamma = gamma
 
