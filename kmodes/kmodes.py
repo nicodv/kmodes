@@ -22,6 +22,7 @@ def get_max_value_key(dic):
 
 def matching_dissim(a, b):
     """Simple matching dissimilarity function"""
+    assert len(a.shape) == 2 or len(b.shape) == 2
     return np.sum(a != b, axis=1)
 
 
@@ -85,16 +86,15 @@ def init_cao(X, n_clusters):
     return centroids
 
 
-def move_point_cat(point, ipoint, to_clust, from_clust,
-                   cl_attr_freq, membership):
+def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq, membship):
     """Move point between clusters, categorical attributes."""
-    membership[to_clust, ipoint] = 1
-    membership[from_clust, ipoint] = 0
+    membship[to_clust, ipoint] = 1
+    membship[from_clust, ipoint] = 0
     # Update frequencies of attributes in cluster.
     for iattr, curattr in enumerate(point):
         cl_attr_freq[to_clust][iattr][curattr] += 1
         cl_attr_freq[from_clust][iattr][curattr] -= 1
-    return cl_attr_freq, membership
+    return cl_attr_freq, membship
 
 
 def _labels_cost(X, centroids):
@@ -116,38 +116,38 @@ def _labels_cost(X, centroids):
     return labels, cost
 
 
-def _k_modes_iter(X, centroids, cl_attr_freq, membership):
+def _k_modes_iter(X, centroids, cl_attr_freq, membship):
     """Single iteration of k-modes clustering algorithm"""
     moves = 0
     for ipoint, curpoint in enumerate(X):
         clust = np.argmin(matching_dissim(centroids, curpoint))
-        if membership[clust, ipoint]:
+        if membship[clust, ipoint]:
             # Point is already in its right place.
             continue
 
         # Move point, and update old/new cluster frequencies and centroids.
         moves += 1
-        old_clust = np.argwhere(membership[:, ipoint])[0][0]
+        old_clust = np.argwhere(membship[:, ipoint])[0][0]
 
-        cl_attr_freq, membership = move_point_cat(
-            curpoint, ipoint, clust, old_clust, cl_attr_freq, membership)
+        cl_attr_freq, membship = move_point_cat(
+            curpoint, ipoint, clust, old_clust, cl_attr_freq, membship
+        )
 
         # Update new and old centroids by choosing mode of attribute.
         for iattr in range(len(curpoint)):
             for curc in (clust, old_clust):
-                centroids[curc, iattr] = \
-                    get_max_value_key(cl_attr_freq[curc][iattr])
+                centroids[curc, iattr] = get_max_value_key(cl_attr_freq[curc][iattr])
 
         # In case of an empty cluster, reinitialize with a random point
         # from the largest cluster.
-        if sum(membership[old_clust, :]) == 0:
-            from_clust = membership.sum(axis=1).argmax()
-            choices = [ii for ii, ch in enumerate(membership[from_clust, :]) if ch]
+        if sum(membship[old_clust, :]) == 0:
+            from_clust = membship.sum(axis=1).argmax()
+            choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_freq, membership = move_point_cat(
-                X[rindx], rindx, old_clust, from_clust, cl_attr_freq,
-                membership)
+            cl_attr_freq, membship = move_point_cat(
+                X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship
+            )
 
     return centroids, moves
 
@@ -186,7 +186,7 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
 
         if verbose:
             print("Init: initializing clusters")
-        membership = np.zeros((n_clusters, npoints), dtype='int64')
+        membship = np.zeros((n_clusters, npoints), dtype='int64')
         # cl_attr_freq is a list of lists with dictionaries that contain the
         # frequencies of values per cluster and attribute.
         cl_attr_freq = [[defaultdict(int) for _ in range(nattrs)]
@@ -194,15 +194,14 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         for ipoint, curpoint in enumerate(X):
             # Initial assignment to clusters
             clust = np.argmin(matching_dissim(centroids, curpoint))
-            membership[clust, ipoint] = 1
+            membship[clust, ipoint] = 1
             # Count attribute values per cluster.
             for iattr, curattr in enumerate(curpoint):
                 cl_attr_freq[clust][iattr][curattr] += 1
         # Perform an initial centroid update.
         for ik in range(n_clusters):
             for iattr in range(nattrs):
-                centroids[ik, iattr] = get_max_value_key(
-                    cl_attr_freq[ik][iattr])
+                centroids[ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
@@ -212,7 +211,7 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         cost = np.Inf
         while itr <= max_iter and not converged:
             itr += 1
-            centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membership)
+            centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship)
             # All points seen in this iteration
             labels, ncost = _labels_cost(X, centroids)
             converged = (moves == 0) or (ncost >= cost)
@@ -286,8 +285,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
     """
 
-    def __init__(self, n_clusters=8, init='Cao', n_init=1, max_iter=100,
-                 verbose=0):
+    def __init__(self, n_clusters=8, init='Cao', n_init=1, max_iter=100, verbose=0):
 
         if hasattr(init, '__array__'):
             n_clusters = init.shape[0]
@@ -297,8 +295,7 @@ class KModes(BaseEstimator, ClusterMixin):
         self.init = init
         self.n_init = n_init
         self.verbose = verbose
-        if (self.init == 'Cao' or hasattr(self.init, '__array__')) and \
-                self.n_init > 1:
+        if (self.init == 'Cao' or hasattr(self.init, '__array__')) and self.n_init > 1:
             if self.verbose:
                 print("Initialization method and algorithm are deterministic. "
                       "Setting n_init to 1.")
@@ -306,7 +303,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
         self.max_iter = max_iter
 
-    def fit(self, X, y=None, **kwargs):
+    def fit(self, X, _=None, **kwargs):
         """Compute k-modes clustering.
 
         Parameters
