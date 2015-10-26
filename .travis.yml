@@ -19,7 +19,7 @@ addons:
 # Install dependencies
 install:
   - pip install --upgrade pip
-  - pip install -r requirements.txt
+  - travis_wait pip install -r requirements.txt
   - pip install coveralls
 
 # Run tests
