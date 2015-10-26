@@ -24,8 +24,8 @@ install:
 
 # Run tests
 script:
-  - nosetests --with-coverage --cov-config .coveragerc
+  - nosetests --with-coverage
 
 # Calculate coverage
 after_success:
-  coveralls --config_file .coveragerc
+  coveralls
