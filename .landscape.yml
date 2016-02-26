@@ -1,22 +1,23 @@
 strictness: veryhigh
-test-warnings: no
-max-line-length: 90
-requirements:
-  - requirements.txt
+#test-warnings: no
+#max-line-length: 90
+#requirements:
+#  - requirements.txt
 ignore-paths:
   - setup.py
+  - examples/
 python-targets:
   - 2
   - 3
-#pylint:
-#  options:
-#    # Good variable names which should always be accepted, separated by a comma
-#    good-names: _,e,k,v,X,x,y
-#    # Regular expression matching correct variable names
-#    variable-rgx: "[a-z_][a-z0-9_]{1,30}$"
-#     # Maximum number of arguments for function / method
-#    max-args: 8
-#     # Maximum number of locals for function / method body
-#    max-locals: 20
-#    # Minimum number of public methods for a class (see R0903).
-#    min-public-methods: 1
+pylint:
+  options:
+    # Good variable names which should always be accepted, separated by a comma
+    good-names: _,a,b,e,k,v,X,x,y
+    # Regular expression matching correct variable names
+    variable-rgx: "[a-z_][a-z0-9_]{1,30}$"
+     # Maximum number of arguments for function / method
+    max-args: 8
+     # Maximum number of locals for function / method body
+    max-locals: 20
+    # Minimum number of public methods for a class (see R0903).
+    min-public-methods: 1

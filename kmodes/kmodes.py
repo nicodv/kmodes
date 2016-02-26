@@ -5,7 +5,7 @@ K-modes clustering
 # Author: 'Nico de Vos' <njdevos@gmail.com>
 # License: MIT
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,attribute-assigned-outside-init
 
 from collections import defaultdict
 
