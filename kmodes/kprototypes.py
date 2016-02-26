@@ -259,7 +259,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
 
     # Note: return gamma in case it was automatically determined.
     return all_centroids[best], all_labels[best], all_costs[best], \
-           all_n_iters[best], gamma
+        all_n_iters[best], gamma
 
 
 class KPrototypes(kmodes.KModes):
@@ -321,7 +321,7 @@ class KPrototypes(kmodes.KModes):
     def __init__(self, n_clusters=8, gamma=None, init='Huang', n_init=10,
                  max_iter=100, verbose=0):
 
-        super(KPrototypes, self).__init__(n_clusters, init, n_init, max_iter,verbose)
+        super(KPrototypes, self).__init__(n_clusters, init, n_init, max_iter, verbose)
 
         self.gamma = gamma
 

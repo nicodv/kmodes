@@ -10,6 +10,7 @@ python-targets:
   - 3
 pep8:
   disable:
+    - N803
     - N806
 pylint:
   options:
