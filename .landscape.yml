@@ -1,5 +1,5 @@
 strictness: veryhigh
-test-warnings: no
+#test-warnings: no
 max-line-length: 90
 #requirements:
 #  - requirements.txt
@@ -9,6 +9,9 @@ ignore-paths:
 python-targets:
   - 2
   - 3
+pep8:
+  disable:
+    - N806
 pylint:
   options:
     # Good variable names which should always be accepted, separated by a comma
