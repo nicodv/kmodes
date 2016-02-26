@@ -1,5 +1,4 @@
 strictness: veryhigh
-test-warnings: false
 max-line-length: 90
 requirements:
   - requirements.txt
