@@ -8,7 +8,7 @@ ignore-paths:
 pylint:
   options:
     # Good variable names which should always be accepted, separated by a comma
-    good-names: _,e,i,j,k,v,x,y
+    good-names: _,e,k,v,X,x,y
     # Regular expression matching correct variable names
     variable-rgx: "[a-z_][a-z0-9_]{1,30}$"
     # Maximum number of arguments for function / method
