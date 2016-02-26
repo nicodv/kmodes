@@ -5,8 +5,11 @@ requirements:
   - requirements.txt
 ignore-paths:
   - setup.py
-pylint:
-  options:
+python-targets:
+  - 2
+  - 3
+#pylint:
+#  options:
 #    # Good variable names which should always be accepted, separated by a comma
 #    good-names: _,e,k,v,X,x,y
 #    # Regular expression matching correct variable names
@@ -15,5 +18,5 @@ pylint:
 #    max-args: 8
 #     # Maximum number of locals for function / method body
 #    max-locals: 20
-    # Minimum number of public methods for a class (see R0903).
-    min-public-methods: 1
+#    # Minimum number of public methods for a class (see R0903).
+#    min-public-methods: 1
