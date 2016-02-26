@@ -5,7 +5,7 @@ from kmodes import kmodes
 
 # reproduce results on small soybean data set
 x = np.genfromtxt('soybean.csv', dtype=int, delimiter=',')[:, :-1]
-y = np.genfromtxt('soybean.csv', dtype=str, delimiter=',', usecols=35)
+y = np.genfromtxt('soybean.csv', dtype=str, delimiter=',', usecols=(35, ))
 
 kmodes_huang = kmodes.KModes(n_clusters=4, init='Huang', verbose=1)
 kmodes_huang.fit_predict(x)

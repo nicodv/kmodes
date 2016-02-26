@@ -5,6 +5,8 @@ K-modes clustering
 # Author: 'Nico de Vos' <njdevos@gmail.com>
 # License: MIT
 
+# pylint: disable=unused-argument
+
 from collections import defaultdict
 
 import numpy as np
