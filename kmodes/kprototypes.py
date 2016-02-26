@@ -5,7 +5,7 @@ K-prototypes clustering
 # Author: 'Nico de Vos' <njdevos@gmail.com>
 # License: MIT
 
-# pylint: disable=super-on-old-class,unused-argument,attribute-assigned-outside-init
+# pylint: disable=super-on-old-class,unused-argument,attribute-defined-outside-init
 
 from collections import defaultdict
 

@@ -1,6 +1,6 @@
 strictness: veryhigh
-#test-warnings: no
-#max-line-length: 90
+test-warnings: no
+max-line-length: 90
 #requirements:
 #  - requirements.txt
 ignore-paths:
