@@ -10,7 +10,7 @@ with open(ver_path) as ver_file:
 setup(
     name='kmodes',
     version=main_ns['__version__'],
-    url=https://github.com/nicodv/kmodes,
+    url='https://github.com/nicodv/kmodes',
     author='Nico de Vos',
     author_email='njdevos@gmail.com',
     packages=['kmodes'],
