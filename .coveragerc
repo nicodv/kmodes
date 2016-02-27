@@ -3,6 +3,6 @@ branch = True
 source = kmodes
 include = */kmodes/*
 omit =
-    */komdes/tests/*
+    */kmodes/tests/*
     */examples/*
     */setup.py
