@@ -1,25 +1,37 @@
-
 from setuptools import setup
-from distutils.util import convert_path
 
-main_ns = {}
-ver_path = convert_path('kmodes/version.py')
-with open(ver_path) as ver_file:
-    exec(ver_file.read(), main_ns)
+import kmodes
+
+DESCRIPTION = __doc__
+VERSION = kmodes.__version__
 
 setup(
     name='kmodes',
-    version=main_ns['__version__'],
+    packages=['kmodes'],
+    version=VERSION,
     url='https://github.com/nicodv/kmodes',
     author='Nico de Vos',
     author_email='njdevos@gmail.com',
-    packages=['kmodes'],
     license='MIT',
-    description='A Python implementation of the k-modes/k-prototypes clustering algorithms.',
+    description=DESCRIPTION,
     long_description=open('README.rst', 'r').read(),
     install_requires=[
         'numpy>=1.10.4',
-        'scikit-learn>=0.17.1',
         'scipy>=0.17.0',
+        'scikit-learn>=0.17.1',
     ],
+    classifiers=['Development Status :: 3 - Alpha',
+                 'Intended Audience :: Science/Research',
+                 'License :: OSI Approved :: MIT License',
+                 'Operating System :: Microsoft :: Windows',
+                 'Operating System :: Unix',
+                 'Operating System :: MacOS',
+                 'Programming Language :: Python',
+                 'Programming Language :: Python :: 2',
+                 'Programming Language :: Python :: 2.7',
+                 'Programming Language :: Python :: 3',
+                 'Programming Language :: Python :: 3.3',
+                 'Programming Language :: Python :: 3.4',
+                 'Programming Language :: Python :: 3.5',
+                 'Topic :: Scientific/Engineering'],
 )
