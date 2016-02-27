@@ -18,8 +18,8 @@ setup(
     description='A Python implementation of the k-modes/k-prototypes clustering algorithms.',
     long_description=open('README.rst', 'r').read(),
     install_requires=[
-        'numpy',
-        'scikit-learn',
-        'scipy',
+        'numpy>=1.10.4',
+        'scikit-learn==0.16.1',
+        'scipy>=0.17.0',
     ],
 )
