@@ -33,11 +33,13 @@ Implemented are:
 The code is modeled after the clustering algorithms in scikit-learn and has
 the same familiar interface.
 
-Usage examples of both k-modes ('soybean.py') and k-prototypes
-('stocks.py') are included.
+Simple usage examples of both k-modes ('soybean.py') and k-prototypes
+('stocks.py') are included in the examples directory.
 
 I would love to have more people play around with this and give me
-feedback on my implementation.
+feedback on my implementation. If you come across any issues in running or
+installing kmodes,
+`please submit a bug report <https://github.com/nicodv/kmodes/issues>`_.
 
 Enjoy!
 
