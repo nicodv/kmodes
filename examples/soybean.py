@@ -8,9 +8,9 @@ x = np.genfromtxt('soybean.csv', dtype=int, delimiter=',')[:, :-1]
 y = np.genfromtxt('soybean.csv', dtype=str, delimiter=',', usecols=(35, ))
 
 kmodes_huang = kmodes.KModes(n_clusters=4, init='Huang', verbose=1)
-kmodes_huang.fit_predict(x)
+kmodes_huang.fit(x)
 kmodes_cao = kmodes.KModes(n_clusters=4, init='Cao', verbose=1)
-kmodes_cao.fit_predict(x)
+kmodes_cao.fit(x)
 
 for result in (kmodes_huang, kmodes_cao):
     classtable = np.zeros((4, 4), dtype=int)
@@ -22,5 +22,4 @@ for result in (kmodes_huang, kmodes_cao):
     print("----|-------|-------|-------|-------|")
     for ii in range(4):
         prargs = tuple([ii + 1] + list(classtable[ii, :]))
-        print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |"
-              .format(*prargs))
+        print(" D{0} |    {1:>2} |    {2:>2} |    {3:>2} |    {4:>2} |".format(*prargs))
