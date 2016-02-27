@@ -20,7 +20,7 @@ addons:
 # Install dependencies
 install:
   - pip install --upgrade pip
-  - travis_wait pip install -r requirements.txt
+  - travis_wait python setup.py install
   - pip install coveralls
 
 # Run tests
