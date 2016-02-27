@@ -18,7 +18,6 @@ from . import kmodes
 
 def euclidean_dissim(a, b):
     """Euclidean distance dissimilarity function"""
-    assert len(a.shape) == 2 or len(b.shape) == 2
     return np.sum((a - b) ** 2, axis=1)
 
 
@@ -151,6 +150,11 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
     Xnum, Xcat = _split_num_cat(X, categorical)
 
     Xnum = check_array(Xnum)
+
+    # Convert the categorical values in X to integers for speed.
+    # Based on the unique values in X, we can make a mapping to achieve this.
+    enc_map = {val: ii for ii, val in enumerate(np.unique(Xcat))}
+    Xcat = np.vectorize(enc_map.__getitem__)(Xcat)
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).

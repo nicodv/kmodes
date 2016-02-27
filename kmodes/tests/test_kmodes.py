@@ -18,13 +18,8 @@ class TestKModes(unittest.TestCase):
         assert_equal('b', max_key)
 
     def test_matching_dissim(self):
-        a = np.array([0, 1, 2, 0, 1, 2])
-        b = np.array([0, 1, 2, 0, 1, 0])
-        with self.assertRaises(AssertionError):
-            kmodes.matching_dissim(a, b)
-
-        a = np.atleast_2d(a)
-        b = np.atleast_2d(b)
+        a = np.array([[0, 1, 2, 0, 1, 2]])
+        b = np.array([[0, 1, 2, 0, 1, 0]])
         assert_equal(1, kmodes.matching_dissim(a, b))
 
         a = np.array([['a', 'b', 'c', 'd']])

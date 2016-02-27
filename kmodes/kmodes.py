@@ -24,7 +24,6 @@ def get_max_value_key(dic):
 
 def matching_dissim(a, b):
     """Simple matching dissimilarity function"""
-    assert len(a.shape) == 2 or len(b.shape) == 2
     return np.sum(a != b, axis=1)
 
 
@@ -161,6 +160,11 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         raise TypeError("k-modes does not support sparse data.")
 
     X = check_array(X)
+
+    # Convert the categorical values in X to integers for speed.
+    # Based on the unique values in X, we can make a mapping to achieve this.
+    enc_map = {val: ii for ii, val in enumerate(np.unique(X))}
+    X = np.vectorize(enc_map.__getitem__)(X)
 
     npoints, nattrs = X.shape
     assert n_clusters < npoints, "More clusters than data points?"

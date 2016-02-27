@@ -6,6 +6,7 @@ from kmodes import kprototypes
 # stocks with their market caps, sectors and countries
 syms = np.genfromtxt('stocks.csv', dtype=str, delimiter=',')[:, 0]
 X = np.genfromtxt('stocks.csv', dtype=object, delimiter=',')[:, 1:]
+X[:, 0] = X[:, 0].astype(float)
 
 kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
 clusters = kproto.fit_predict(X, categorical=[1, 2])
