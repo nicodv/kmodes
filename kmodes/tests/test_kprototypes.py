@@ -35,14 +35,14 @@ class TestKProtoTypes(unittest.TestCase):
 
     def test_kprotoypes_huang_stocks(self):
         np.random.seed(42)
-        kproto_huang = kprototypes.KPrototypes(n_clusters=4, init='Huang', verbose=0)
+        kproto_huang = kprototypes.KPrototypes(n_clusters=4, init='Huang', verbose=2)
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([3, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2])
         np.testing.assert_array_equal(result, expected)
 
     def test_kprotoypes_cao_stocks(self):
         np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=0)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
         result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
         np.testing.assert_array_equal(result, expected)
