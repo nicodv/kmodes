@@ -1,3 +1,9 @@
+.. image:: https://img.shields.io/pypi/v/kmodes.svg
+    :target: https://pypi.python.org/pypi/kmodes/
+    :alt: Version
+.. image:: https://img.shields.io/pypi/l/kmodes.svg
+    :target: https://github.com/nicodv/kmodes/blob/master/LICENSE
+    :alt: License
 .. image:: https://travis-ci.org/nicodv/kmodes.svg?branch=master
     :target: https://travis-ci.org/nicodv/kmodes
     :alt: Test Status
