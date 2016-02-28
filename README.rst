@@ -46,7 +46,9 @@ Enjoy!
 Installation
 ------------
 
-`kmodes` can be installed using pip:
+kmodes can be installed using pip:
+
+.. code:: bash
 
     pip install kmodes
 
