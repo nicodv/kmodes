@@ -45,6 +45,13 @@ Enjoy!
 
 Installation
 ------------
+
+`kmodes` can be installed using pip:
+
+    pip install kmodes
+
+Alternatively, you can build the latest development version from source:
+
 .. code:: bash
 
     git clone https://github.com/nicodv/kmodes.git
