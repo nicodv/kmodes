@@ -196,10 +196,10 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
             if not isinstance(init, list):
                 # Numerical is initialized by drawing from normal distribution,
                 # categorical following the k-modes methods.
-                meanX = np.mean(Xnum, axis=0)
-                stdX = np.std(Xnum, axis=0)
+                meanx = np.mean(Xnum, axis=0)
+                stdx = np.std(Xnum, axis=0)
                 centroids = [
-                    meanX + np.random.randn(n_clusters, nnumattrs) * stdX,
+                    meanx + np.random.randn(n_clusters, nnumattrs) * stdx,
                     centroids
                 ]
 
