@@ -47,6 +47,11 @@ class TestKProtoTypes(unittest.TestCase):
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
         np.testing.assert_array_equal(result, expected)
 
+    def test_kprotoypes_random_stocks(self):
+        kproto_random = kprototypes.KPrototypes(n_clusters=4, init='random', verbose=2)
+        result = kproto_random.fit(STOCKS, categorical=[1, 2])
+        self.assertIsInstance(result, kprototypes.KPrototypes)
+
 
 if __name__ == '__main__':
     unittest.main()

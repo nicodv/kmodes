@@ -99,6 +99,11 @@ class TestKModes(unittest.TestCase):
                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         np.testing.assert_array_equal(result, expected)
 
+    def test_kmodes_random_soybean(self):
+        kmodes_random = kmodes.KModes(n_clusters=4, init='random', verbose=2)
+        result = kmodes_random.fit(SOYBEAN)
+        self.assertIsInstance(result, kmodes.KModes)
+
 
 if __name__ == '__main__':
     unittest.main()
