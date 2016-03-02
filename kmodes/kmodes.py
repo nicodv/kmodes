@@ -178,14 +178,16 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         # _____ INIT _____
         if verbose:
             print("Init: initializing centroids")
-        if init == 'Huang':
+        if isinstance(init, basestring) and init == 'Huang':
             centroids = init_huang(X, n_clusters)
-        elif init == 'Cao':
+        elif isinstance(init, basestring) and init == 'Cao':
             centroids = init_cao(X, n_clusters)
-        elif init == 'random':
+        elif isinstance(init, basestring) and init == 'random':
             seeds = np.random.choice(range(npoints), n_clusters)
             centroids = X[seeds]
         elif hasattr(init, '__array__'):
+            assert init.shape[0] == n_clusters, "Too many initial centroids in init"
+            assert init.shape[1] == nattrs, "Too many attributes in init"
             centroids = init
         else:
             raise NotImplementedError
@@ -207,7 +209,11 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         # Perform an initial centroid update.
         for ik in range(n_clusters):
             for iattr in range(nattrs):
-                centroids[ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
+                if sum(membship[ik]) == 0:
+                    # Empty centroid, choose randomly
+                    centroids[ik, iattr] = np.random.choice(X[:, iattr])
+                else:
+                    centroids[ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
@@ -294,14 +300,14 @@ class KModes(BaseEstimator, ClusterMixin):
     def __init__(self, n_clusters=8, init='Cao', n_init=1, max_iter=100, verbose=0):
 
         if hasattr(init, '__array__'):
-            n_clusters = init.shape[0]
             init = np.asarray(init, dtype=np.float64)
 
         self.n_clusters = n_clusters
         self.init = init
         self.n_init = n_init
         self.verbose = verbose
-        if (self.init == 'Cao' or hasattr(self.init, '__array__')) and self.n_init > 1:
+        if ((isinstance(self.init, basestring) and self.init == 'Cao') or
+                hasattr(self.init, '__array__')) and self.n_init > 1:
             if self.verbose:
                 print("Initialization method and algorithm are deterministic. "
                       "Setting n_init to 1.")

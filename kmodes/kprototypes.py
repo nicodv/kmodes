@@ -174,14 +174,17 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
             # _____ INIT _____
             if verbose:
                 print("Init: initializing centroids")
-            if init == 'Huang':
+            if isinstance(init, basestring) and init == 'Huang':
                 centroids = kmodes.init_huang(Xcat, n_clusters)
-            elif init == 'Cao':
+            elif isinstance(init, basestring) and init == 'Cao':
                 centroids = kmodes.init_cao(Xcat, n_clusters)
-            elif init == 'random':
+            elif isinstance(init, basestring) and init == 'random':
                 seeds = np.random.choice(range(npoints), n_clusters)
                 centroids = Xcat[seeds]
             elif hasattr(init, '__array__'):
+                assert init.shape[0] == n_clusters, "Too many initial centroids in init"
+                assert init.shape[1] == ncatattrs, \
+                    "Too many categorical attributes in init"
                 centroids = init
             else:
                 raise NotImplementedError
