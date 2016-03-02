@@ -86,7 +86,7 @@ class TestKModes(unittest.TestCase):
 
     def test_kmodes_huang_soybean(self):
         np.random.seed(42)
-        kmodes_huang = kmodes.KModes(n_clusters=4, init='Huang', verbose=2)
+        kmodes_huang = kmodes.KModes(n_clusters=4, n_init=2, init='Huang', verbose=2)
         result = kmodes_huang.fit_predict(SOYBEAN)
         expected = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                              0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1,
@@ -136,7 +136,7 @@ class TestKModes(unittest.TestCase):
         with self.assertRaises(AssertionError):
             kmodes_init.fit(SOYBEAN)
 
-    def test_kmodes_empty_cluster_soybean(self):
+    def test_kmodes_empty_init_cluster_soybean(self):
         # Check if the clustering does not crash in case of an empty cluster.
         init_vals = np.array(
             [[0, 1, 2, 1, 0, 3, 1, 1, 0, 2, 1, 1, 0, 2, 2, 0, 0, 0, 1, 0, 1, 2,
@@ -150,6 +150,10 @@ class TestKModes(unittest.TestCase):
         kmodes_init = kmodes.KModes(n_clusters=4, init=init_vals, verbose=2)
         result = kmodes_init.fit(SOYBEAN)
         self.assertIsInstance(result, kmodes.KModes)
+
+    def test_kmodes_unknowninit_soybean(self):
+        with self.assertRaises(NotImplementedError):
+            kmodes.KModes(n_clusters=4, init='nonsense', verbose=2).fit(SOYBEAN)
 
 
 if __name__ == '__main__':

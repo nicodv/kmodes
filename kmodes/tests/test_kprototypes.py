@@ -33,18 +33,28 @@ class TestKProtoTypes(unittest.TestCase):
         s = pickle.dumps(obj)
         assert_equal(type(pickle.loads(s)), obj.__class__)
 
-    def test_kprotoypes_stocks(self):
+    def test_kprotoypes_categoricals_stocks(self):
         # Number/index of categoricals does not make sense
         kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
         with self.assertRaises(AssertionError):
             kproto.fit_predict(STOCKS, categorical=[1, 3])
         with self.assertRaises(AssertionError):
             kproto.fit_predict(STOCKS, categorical=[0, 1, 2])
+        result = kproto.fit(STOCKS[:, :2], categorical=1)
+        self.assertIsInstance(result, kprototypes.KPrototypes)
 
     def test_kprotoypes_huang_stocks(self):
         np.random.seed(42)
         kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1, init='Huang', verbose=2)
+        # Untrained model
+        with self.assertRaises(AssertionError):
+            kproto_huang.predict(STOCKS, categorical=[1, 2])
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
+        expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
+        np.testing.assert_array_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        # Test predict
+        result = kproto_huang.predict(STOCKS, categorical=[1, 2])
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
@@ -94,6 +104,11 @@ class TestKProtoTypes(unittest.TestCase):
         expected = np.array([0, 2, 2, 2, 2, 3, 3, 3, 3, 1, 1, 1])
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kprototypes_unknowninit_soybean(self):
+        kproto = kprototypes.KPrototypes(n_clusters=4, init='nonsense', verbose=2)
+        with self.assertRaises(NotImplementedError):
+            kproto.fit(STOCKS, categorical=[1, 2])
 
 
 if __name__ == '__main__':
