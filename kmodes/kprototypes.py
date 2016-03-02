@@ -1,5 +1,5 @@
 """
-K-prototypes clustering
+K-prototypes clustering for mixed categorical and numerical data
 """
 
 # Author: 'Nico de Vos' <njdevos@gmail.com>
@@ -40,23 +40,21 @@ def _split_num_cat(X, categorical):
     :param categorical: Indices of categorical columns
     """
     Xnum = np.asanyarray(X[:, [ii for ii in range(X.shape[1])
-                               if ii not in categorical]]).astype(float)
+                               if ii not in categorical]]).astype(np.float64)
     Xcat = np.asanyarray(X[:, categorical])
     return Xnum, Xcat
 
 
-def _labels_cost(X, categorical, centroids, gamma):
+def _labels_cost(Xnum, Xcat, centroids, gamma):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-prototypes algorithm.
     """
 
-    npoints = X.shape[0]
-    Xnum, Xcat = _split_num_cat(X, categorical)
-
+    npoints = Xnum.shape[0]
     Xnum = check_array(Xnum)
 
     cost = 0.
-    labels = np.empty(npoints, dtype='int64')
+    labels = np.empty(npoints, dtype=np.uint8)
     for ipoint in range(npoints):
         # Numerical cost = sum of Euclidean distances
         num_costs = euclidean_dissim(centroids[0], Xnum[ipoint])
@@ -181,29 +179,36 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
             elif isinstance(init, basestring) and init == 'random':
                 seeds = np.random.choice(range(npoints), n_clusters)
                 centroids = Xcat[seeds]
-            elif hasattr(init, '__array__'):
-                assert init.shape[0] == n_clusters, "Too many initial centroids in init"
-                assert init.shape[1] == ncatattrs, \
+            elif isinstance(init, list):
+                assert init[0].shape[0] == n_clusters, \
+                    "Too many initial numerical centroids in init."
+                assert init[0].shape[1] == nnumattrs, \
+                    "Too many numerical attributes in init"
+                assert init[1].shape[0] == n_clusters, \
+                    "Too many initial categorical centroids in init."
+                assert init[1].shape[1] == ncatattrs, \
                     "Too many categorical attributes in init"
-                centroids = init
+                centroids = [np.asarray(init[0], dtype=np.float64),
+                             np.asarray(init[1], dtype=np.uint8)]
             else:
                 raise NotImplementedError
 
-            # Numerical is initialized by drawing from normal distribution,
-            # categorical following the k-modes methods.
-            meanX = np.mean(Xnum, axis=0)
-            stdX = np.std(Xnum, axis=0)
-            centroids = [
-                meanX + np.random.randn(n_clusters, nnumattrs) * stdX,
-                centroids
-            ]
+            if not isinstance(init, list):
+                # Numerical is initialized by drawing from normal distribution,
+                # categorical following the k-modes methods.
+                meanX = np.mean(Xnum, axis=0)
+                stdX = np.std(Xnum, axis=0)
+                centroids = [
+                    meanX + np.random.randn(n_clusters, nnumattrs) * stdX,
+                    centroids
+                ]
 
             if verbose:
                 print("Init: initializing clusters")
-            membship = np.zeros((n_clusters, npoints), dtype='int64')
+            membship = np.zeros((n_clusters, npoints), dtype=np.uint8)
             # Keep track of the sum of attribute values per cluster so that we
             # can do k-means on the numerical attributes.
-            cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype='float')
+            cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
             # cl_attr_freq is a list of lists with dictionaries that contain
             # the frequencies of values per cluster and attribute.
             cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
@@ -247,7 +252,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
             )
 
             # All points seen in this iteration
-            labels, ncost = _labels_cost(X, categorical, centroids, gamma)
+            labels, ncost = _labels_cost(Xnum, Xcat, centroids, gamma)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
@@ -274,7 +279,7 @@ class KPrototypes(kmodes.KModes):
 
     Parameters
     -----------
-    K : int, optional, default: 8
+    n_clusters : int, optional, default: 8
         The number of clusters to form as well as the number of
         centroids to generate.
 
@@ -292,21 +297,22 @@ class KPrototypes(kmodes.KModes):
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of cost.
 
-    init : {'Huang', 'Cao', 'random' or an ndarray}
+    init : {'Huang', 'Cao', 'random' or a list of ndarrays}
         Method for initialization:
         'Huang': Method in Huang [1997, 1998]
         'Cao': Method in Cao et al. [2009]
-        'random': choose k observations (rows) at random from data for
-        the initial centroids.
-        If an ndarray is passed, it should be of shape (K, n_features)
-        and gives the initial centroids.
+        'random': choose 'n_clusters' observations (rows) at random from
+        data for the initial centroids.
+        If a list of ndarrays is passed, it should be of length 2, with
+        shapes (n_clusters, n_features) for numerical and categorical
+        data respectively. These are the initial centroids.
 
     verbose : integer, optional
         Verbosity mode.
 
     Attributes
     ----------
-    cluster_centroids_ : array, [K, n_features]
+    cluster_centroids_ : array, [n_clusters, n_features]
         Categories of cluster centroids
 
     labels_ :
