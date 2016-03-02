@@ -178,11 +178,11 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
         # _____ INIT _____
         if verbose:
             print("Init: initializing centroids")
-        if isinstance(init, basestring) and init == 'Huang':
+        if isinstance(init, str) and init == 'Huang':
             centroids = init_huang(X, n_clusters)
-        elif isinstance(init, basestring) and init == 'Cao':
+        elif isinstance(init, str) and init == 'Cao':
             centroids = init_cao(X, n_clusters)
-        elif isinstance(init, basestring) and init == 'random':
+        elif isinstance(init, str) and init == 'random':
             seeds = np.random.choice(range(npoints), n_clusters)
             centroids = X[seeds]
         elif hasattr(init, '__array__'):
@@ -303,7 +303,7 @@ class KModes(BaseEstimator, ClusterMixin):
         self.init = init
         self.n_init = n_init
         self.verbose = verbose
-        if ((isinstance(self.init, basestring) and self.init == 'Cao') or
+        if ((isinstance(self.init, str) and self.init == 'Cao') or
                 hasattr(self.init, '__array__')) and self.n_init > 1:
             if self.verbose:
                 print("Initialization method and algorithm are deterministic. "
