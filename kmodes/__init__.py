@@ -1,4 +1,4 @@
 """Python implementations of the k-modes and k-prototypes clustering
 algorithms.
 """
-__version__ = '0.1'
+__version__ = '0.2'
