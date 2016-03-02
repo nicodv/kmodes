@@ -1,5 +1,5 @@
 """
-K-modes clustering
+K-modes clustering for categorical data
 """
 
 # Author: 'Nico de Vos' <njdevos@gmail.com>
@@ -28,7 +28,7 @@ def matching_dissim(a, b):
 
 
 def init_huang(X, n_clusters):
-    """Initialize K according to method by Huang [1997]."""
+    """Initialize centroids according to method by Huang [1997]."""
     nattrs = X.shape[1]
     centroids = np.empty((n_clusters, nattrs), dtype='object')
     # determine frequencies of attributes
@@ -57,9 +57,9 @@ def init_huang(X, n_clusters):
 
 
 def init_cao(X, n_clusters):
-    """Initialize K according to method by Cao et al. [2009].
+    """Initialize centroids according to method by Cao et al. [2009].
 
-    Note: O(N * attr * K**2), so watch out with large K
+    Note: O(N * attr * n_clusters**2), so watch out with large n_clusters
     """
     npoints, nattrs = X.shape
     centroids = np.empty((n_clusters, nattrs), dtype='object')
@@ -107,7 +107,7 @@ def _labels_cost(X, centroids):
 
     npoints = X.shape[0]
     cost = 0.
-    labels = np.empty(npoints, dtype='int64')
+    labels = np.empty(npoints, dtype=np.uint8)
     for ipoint, curpoint in enumerate(X):
         diss = matching_dissim(centroids, curpoint)
         clust = np.argmin(diss)
@@ -186,15 +186,15 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
             seeds = np.random.choice(range(npoints), n_clusters)
             centroids = X[seeds]
         elif hasattr(init, '__array__'):
-            assert init.shape[0] == n_clusters, "Too many initial centroids in init"
-            assert init.shape[1] == nattrs, "Too many attributes in init"
-            centroids = init
+            assert init.shape[0] == n_clusters, "Too many initial centroids in init."
+            assert init.shape[1] == nattrs, "Too many attributes in init for X."
+            centroids = np.asarray(init, dtype=np.uint8)
         else:
             raise NotImplementedError
 
         if verbose:
             print("Init: initializing clusters")
-        membship = np.zeros((n_clusters, npoints), dtype='int64')
+        membship = np.zeros((n_clusters, npoints), dtype=np.uint8)
         # cl_attr_freq is a list of lists with dictionaries that contain the
         # frequencies of values per cluster and attribute.
         cl_attr_freq = [[defaultdict(int) for _ in range(nattrs)]
@@ -268,9 +268,9 @@ class KModes(BaseEstimator, ClusterMixin):
         Method for initialization:
         'Huang': Method in Huang [1997, 1998]
         'Cao': Method in Cao et al. [2009]
-        'random': choose k observations (rows) at random from data for
-        the initial centroids.
-        If an ndarray is passed, it should be of shape (K, n_features)
+        'random': choose 'n_clusters' observations (rows) at random from
+        data for the initial centroids.
+        If an ndarray is passed, it should be of shape (n_clusters, n_features)
         and gives the initial centroids.
 
     verbose : integer, optional
@@ -278,7 +278,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
     Attributes
     ----------
-    cluster_centroids_ : array, [K, n_features]
+    cluster_centroids_ : array, [n_clusters, n_features]
         Categories of cluster centroids
 
     labels_ :
@@ -298,9 +298,6 @@ class KModes(BaseEstimator, ClusterMixin):
     """
 
     def __init__(self, n_clusters=8, init='Cao', n_init=1, max_iter=100, verbose=0):
-
-        if hasattr(init, '__array__'):
-            init = np.asarray(init, dtype=np.float64)
 
         self.n_clusters = n_clusters
         self.init = init
