@@ -267,7 +267,7 @@ class KModes(BaseEstimator, ClusterMixin):
         If an ndarray is passed, it should be of shape (K, n_features)
         and gives the initial centroids.
 
-    verbose : boolean, optional
+    verbose : integer, optional
         Verbosity mode.
 
     Attributes
