@@ -41,7 +41,14 @@ def _split_num_cat(X, categorical):
     """
     Xnum = np.asanyarray(X[:, [ii for ii in range(X.shape[1])
                                if ii not in categorical]]).astype(np.float64)
+    Xnum = check_array(Xnum)
+
     Xcat = np.asanyarray(X[:, categorical])
+    # Convert the categorical values in X to integers for speed.
+    # Based on the unique values in X, we can make a mapping to achieve this.
+    enc_map = {val: ii for ii, val in enumerate(np.unique(Xcat))}
+    Xcat = np.vectorize(enc_map.__getitem__)(Xcat)
+
     return Xnum, Xcat
 
 
@@ -133,26 +140,19 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
 
     if categorical is None or not categorical and verbose:
         print("No categorical data selected, effectively doing k-means.")
+    if isinstance(categorical, int):
+        categorical = [categorical]
     assert len(categorical) != X.shape[1], \
         "All columns are categorical, use k-modes instead of k-prototypes."
     assert max(categorical) < X.shape[1], \
         "Categorical index larger than number of columns."
 
-    if isinstance(categorical, int):
-        categorical = [categorical]
     ncatattrs = len(categorical)
     nnumattrs = X.shape[1] - ncatattrs
     npoints = X.shape[0]
     assert n_clusters < npoints, "More clusters than data points?"
 
     Xnum, Xcat = _split_num_cat(X, categorical)
-
-    Xnum = check_array(Xnum)
-
-    # Convert the categorical values in X to integers for speed.
-    # Based on the unique values in X, we can make a mapping to achieve this.
-    enc_map = {val: ii for ii, val in enumerate(np.unique(Xcat))}
-    Xcat = np.vectorize(enc_map.__getitem__)(Xcat)
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
@@ -370,5 +370,5 @@ class KPrototypes(kmodes.KModes):
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
 
-        return _labels_cost(X, categorical,
-                            self.cluster_centroids_, self.gamma)[0]
+        Xnum, Xcat = _split_num_cat(X, categorical)
+        return _labels_cost(Xnum, Xcat, self.cluster_centroids_, self.gamma)[0]
