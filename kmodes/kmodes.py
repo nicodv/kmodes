@@ -98,6 +98,33 @@ def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq, membship):
     return cl_attr_freq, membship
 
 
+def encode_features(X, enc_map=None):
+    """Converts categorical values in each column of X to integers in the range
+    [0, n_unique_values_in_column - 1], if X is not already of integer type.
+
+    If mapping is not provided, it is calculated based on the valus in X.
+    """
+    if np.issubdtype(X.dtype, np.integer):
+        # Already integer type. do nothing.
+        return X, enc_map
+
+    if enc_map is None:
+        calc_map = True
+        # We will calculate enc_map, so initialize the list of column mappings.
+        enc_map = []
+    else:
+        calc_map = False
+
+    Xenc = np.zeros(X.shape).astype('int')
+    for ii in range(X.shape[1]):
+        if calc_map:
+            enc_map.append({val: ii for ii, val in enumerate(np.unique(X[:, ii]))})
+        # Unknown categories when predicting all get a value of -1.
+        Xenc[:, ii] = np.vectorize(lambda x: enc_map[ii].get(x, -1))(X[:, ii])
+
+    return Xenc, enc_map
+
+
 def _labels_cost(X, centroids):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-modes algorithm.
@@ -159,12 +186,11 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
     if sparse.issparse(X):
         raise TypeError("k-modes does not support sparse data.")
 
-    X = check_array(X)
+    X = check_array(X, dtype=None)
 
     # Convert the categorical values in X to integers for speed.
     # Based on the unique values in X, we can make a mapping to achieve this.
-    enc_map = {val: ii for ii, val in enumerate(np.unique(X))}
-    X = np.vectorize(enc_map.__getitem__)(X)
+    X, enc_map = encode_features(X)
 
     npoints, nattrs = X.shape
     assert n_clusters < npoints, "More clusters than data points?"
@@ -242,7 +268,8 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
-    return all_centroids[best], all_labels[best], all_costs[best], all_n_iters[best]
+    return all_centroids[best], all_labels[best], all_costs[best],\
+           all_n_iters[best], enc_map
 
 
 class KModes(BaseEstimator, ClusterMixin):
@@ -320,7 +347,7 @@ class KModes(BaseEstimator, ClusterMixin):
         X : array-like, shape=[n_samples, n_features]
         """
 
-        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_ = \
+        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.enc_map_ = \
             k_modes(X, self.n_clusters, self.init, self.n_init,
                     self.max_iter, self.verbose)
         return self
@@ -347,4 +374,6 @@ class KModes(BaseEstimator, ClusterMixin):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
+        X = check_array(X, dtype=None)
+        X, _ = encode_features(X, enc_map=self.enc_map_)
         return _labels_cost(X, self.cluster_centroids_)[0]

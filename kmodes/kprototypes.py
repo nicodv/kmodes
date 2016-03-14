@@ -41,14 +41,7 @@ def _split_num_cat(X, categorical):
     """
     Xnum = np.asanyarray(X[:, [ii for ii in range(X.shape[1])
                                if ii not in categorical]]).astype(np.float64)
-    Xnum = check_array(Xnum)
-
     Xcat = np.asanyarray(X[:, categorical])
-    # Convert the categorical values in X to integers for speed.
-    # Based on the unique values in X, we can make a mapping to achieve this.
-    enc_map = {val: ii for ii, val in enumerate(np.unique(Xcat))}
-    Xcat = np.vectorize(enc_map.__getitem__)(Xcat)
-
     return Xnum, Xcat
 
 
@@ -153,6 +146,11 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
     assert n_clusters < npoints, "More clusters than data points?"
 
     Xnum, Xcat = _split_num_cat(X, categorical)
+    Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
+
+    # Convert the categorical values in Xcat to integers for speed.
+    # Based on the unique values in Xcat, we can make a mapping to achieve this.
+    Xcat, enc_map = kmodes.encode_features(Xcat)
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
@@ -181,13 +179,13 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                 centroids = Xcat[seeds]
             elif isinstance(init, list):
                 assert init[0].shape[0] == n_clusters, \
-                    "Too many initial numerical centroids in init."
+                    "Incorrect number of initial numerical centroids in init."
                 assert init[0].shape[1] == nnumattrs, \
-                    "Too many numerical attributes in init"
+                    "Incorrect number of numerical attributes in init"
                 assert init[1].shape[0] == n_clusters, \
-                    "Too many initial categorical centroids in init."
+                    "Incorrect number of initial categorical centroids in init."
                 assert init[1].shape[1] == ncatattrs, \
-                    "Too many categorical attributes in init"
+                    "Incorrect number of categorical attributes in init"
                 centroids = [np.asarray(init[0], dtype=np.float64),
                              np.asarray(init[1], dtype=np.uint8)]
             else:
@@ -271,7 +269,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
 
     # Note: return gamma in case it was automatically determined.
     return all_centroids[best], all_labels[best], all_costs[best], \
-        all_n_iters[best], gamma
+        all_n_iters[best], gamma, enc_map
 
 
 class KPrototypes(kmodes.KModes):
@@ -349,8 +347,8 @@ class KPrototypes(kmodes.KModes):
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
-        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.gamma = \
-            k_prototypes(X, categorical, self.n_clusters, self.gamma,
+        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.gamma,\
+        self.enc_map_ = k_prototypes(X, categorical, self.n_clusters, self.gamma,
                          self.init, self.n_init, self.max_iter, self.verbose)
         return self
 
@@ -371,4 +369,6 @@ class KPrototypes(kmodes.KModes):
         assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
 
         Xnum, Xcat = _split_num_cat(X, categorical)
+        Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
+        Xcat, _ = kmodes.encode_features(Xcat, enc_map=self.enc_map_)
         return _labels_cost(Xnum, Xcat, self.cluster_centroids_, self.gamma)[0]
