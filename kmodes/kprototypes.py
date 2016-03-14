@@ -347,9 +347,15 @@ class KPrototypes(kmodes.KModes):
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
-        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.gamma,\
-        self.enc_map_ = k_prototypes(X, categorical, self.n_clusters, self.gamma,
-                         self.init, self.n_init, self.max_iter, self.verbose)
+        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, \
+            self.gamma, self.enc_map_ = k_prototypes(X,
+                                                     categorical,
+                                                     self.n_clusters,
+                                                     self.gamma,
+                                                     self.init,
+                                                     self.n_init,
+                                                     self.max_iter,
+                                                     self.verbose)
         return self
 
     def predict(self, X, categorical=None):

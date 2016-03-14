@@ -101,6 +101,7 @@ def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq, membship):
 def encode_features(X, enc_map=None):
     """Converts categorical values in each column of X to integers in the range
     [0, n_unique_values_in_column - 1], if X is not already of integer type.
+    Unknown values get a value of -1.
 
     If mapping is not provided, it is calculated based on the valus in X.
     """
@@ -118,7 +119,7 @@ def encode_features(X, enc_map=None):
     Xenc = np.zeros(X.shape).astype('int')
     for ii in range(X.shape[1]):
         if calc_map:
-            enc_map.append({val: ii for ii, val in enumerate(np.unique(X[:, ii]))})
+            enc_map.append({val: jj for jj, val in enumerate(np.unique(X[:, ii]))})
         # Unknown categories when predicting all get a value of -1.
         Xenc[:, ii] = np.vectorize(lambda x: enc_map[ii].get(x, -1))(X[:, ii])
 
@@ -268,8 +269,8 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
-    return all_centroids[best], all_labels[best], all_costs[best],\
-           all_n_iters[best], enc_map
+    return all_centroids[best], all_labels[best], all_costs[best], \
+        all_n_iters[best], enc_map
 
 
 class KModes(BaseEstimator, ClusterMixin):
@@ -348,8 +349,12 @@ class KModes(BaseEstimator, ClusterMixin):
         """
 
         self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.enc_map_ = \
-            k_modes(X, self.n_clusters, self.init, self.n_init,
-                    self.max_iter, self.verbose)
+            k_modes(X,
+                    self.n_clusters,
+                    self.init,
+                    self.n_init,
+                    self.max_iter,
+                    self.verbose)
         return self
 
     def fit_predict(self, X, y=None, **kwargs):
