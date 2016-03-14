@@ -63,6 +63,15 @@ SOYBEAN = np.array([
 # Drop target column
 SOYBEAN = SOYBEAN[:, :35]
 
+SOYBEAN2 = np.array([
+[4,0,2,1,1,1,0,1,0,1,1,1,0,2,2,0,0,0,1,0,3,0,1,1,0,0,0,0,4,0,0,0,0,0,0,'D1'],
+[7,0,0,2,1,0,2,1,0,0,1,1,0,2,2,0,0,0,1,1,0,3,0,0,0,2,1,0,4,0,0,0,0,0,0,'D2'],
+[0,1,2,0,0,1,1,1,1,2,1,0,0,2,2,0,0,0,1,0,1,1,0,1,0,0,0,3,4,0,0,0,0,0,0,'D3'],
+[2,1,2,1,1,3,1,2,1,1,1,1,0,2,2,0,0,0,1,1,1,2,0,1,0,0,0,3,4,0,0,0,0,0,1,'D4'],
+])
+# Drop target column
+SOYBEAN2 = SOYBEAN2[:, :35]
+
 
 class TestKModes(unittest.TestCase):
 
@@ -100,6 +109,14 @@ class TestKModes(unittest.TestCase):
         expected = np.array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1,
                              1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        np.testing.assert_array_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kmodes_predict_soybean(self):
+        kmodes_cao = kmodes.KModes(n_clusters=4, init='Cao', verbose=2)
+        kmodes_cao = kmodes_cao.fit(SOYBEAN)
+        result = kmodes_cao.predict(SOYBEAN2)
+        expected = np.array([2, 1, 3, 0])
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 

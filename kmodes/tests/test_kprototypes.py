@@ -24,6 +24,12 @@ STOCKS = np.array([
     [192.1, 'tech', 'USA'],
     [195.7, 'nrg', 'NL']
 ])
+STOCKS2 = np.array([
+    [134.1, 'fin', 'USA'],
+    [190.2, 'cons', 'USA'],
+    [389.1, 'nrg', 'CA'],
+    [150.4, 'mat', 'USA']
+])
 
 
 class TestKProtoTypes(unittest.TestCase):
@@ -53,17 +59,21 @@ class TestKProtoTypes(unittest.TestCase):
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
-        # Test predict
-        result = kproto_huang.predict(STOCKS, categorical=[1, 2])
-        expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
-        np.testing.assert_array_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kprotoypes_cao_stocks(self):
         np.random.seed(42)
         kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
         result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
+        np.testing.assert_array_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kprotoypes_predict_stocks(self):
+        np.random.seed(42)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        kproto_cao = kproto_cao.fit(STOCKS, categorical=[1, 2])
+        result = kproto_cao.predict(STOCKS2, categorical=[1, 2])
+        expected = np.array([1, 1, 3, 1])
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
@@ -75,33 +85,33 @@ class TestKProtoTypes(unittest.TestCase):
     def test_kprotoypes_init_stocks(self):
         # Wrong order
         init_vals = [
-            np.array([[6, 2],
-                      [5, 2],
-                      [4, 2],
-                      [3, 2]]),
-            np.array([[382.27919457],
-                      [350.76963718],
-                      [13.31595618],
-                      [540.50533708]])
+            np.array([[3, 2],
+                      [0, 2],
+                      [3, 2],
+                      [2, 2]]),
+            np.array([[356.975],
+                      [275.35],
+                      [738.5],
+                      [197.667]])
         ]
         kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
         with self.assertRaises(AssertionError):
             kproto_init.fit_predict(STOCKS, categorical=[1, 2])
 
         init_vals = [
-            np.array([[0.],
-                      [0.],
-                      [0.],
-                      [0.]]),
-            np.array([[6, 2],
-                      [5, 2],
-                      [4, 2],
-                      [3, 2]])
+            np.array([[356.975],
+                      [275.35],
+                      [738.5],
+                      [197.667]]),
+            np.array([[3, 2],
+                      [0, 2],
+                      [3, 2],
+                      [2, 2]])
         ]
         np.random.seed(42)
         kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
         result = kproto_init.fit_predict(STOCKS, categorical=[1, 2])
-        expected = np.array([0, 2, 2, 2, 2, 3, 3, 3, 3, 1, 1, 1])
+        expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
