@@ -119,9 +119,12 @@ def encode_features(X, enc_map=None):
     Xenc = np.zeros(X.shape).astype('int')
     for ii in range(X.shape[1]):
         if calc_map:
-            enc_map.append({val: jj for jj, val in enumerate(np.unique(X[:, ii]))})
+            cur_map = {val: jj for jj, val in enumerate(np.unique(X[:, ii]))}
+            enc_map.append(cur_map)
+        else:
+            cur_map = enc_map[ii]
         # Unknown categories when predicting all get a value of -1.
-        Xenc[:, ii] = np.vectorize(lambda x: enc_map[ii].get(x, -1))(X[:, ii])
+        Xenc[:, ii] = np.vectorize(lambda x: cur_map.get(x, -1))(X[:, ii])
 
     return Xenc, enc_map
 
