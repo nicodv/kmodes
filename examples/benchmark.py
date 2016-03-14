@@ -17,11 +17,11 @@ data = np.random.randint(1, 1000, (N, M))
 
 
 def huang():
-    kmodes.KModes(n_clusters=K, init='Huang', n_init=1).fit_predict(data)
+    kmodes.KModes(n_clusters=K, init='Huang', n_init=1, verbose=2).fit_predict(data)
 
 
 def cao():
-    kmodes.KModes(n_clusters=K, init='Cao').fit_predict(data)
+    kmodes.KModes(n_clusters=K, init='Cao', verbose=2).fit_predict(data)
 
 
 if __name__ == '__main__':
