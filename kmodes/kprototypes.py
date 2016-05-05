@@ -88,8 +88,9 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
         cl_attr_sum, membship = move_point_num(
             Xnum[ipoint], ipoint, clust, old_clust, cl_attr_sum, membship
         )
-        cl_attr_freq, membship = kmodes.move_point_cat(
-            Xcat[ipoint], ipoint, clust, old_clust, cl_attr_freq, membship, centroids[1]
+        cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
+            Xcat[ipoint], ipoint, clust, old_clust,
+            cl_attr_freq, membship, centroids[1]
         )
 
         # Update old and new centroids for numerical attributes using the mean
@@ -113,8 +114,9 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
             cl_attr_freq, membship = move_point_num(
                 Xnum[rindx], rindx, old_clust, from_clust, cl_attr_sum, membship
             )
-            cl_attr_freq, membship = kmodes.move_point_cat(
-                Xcat[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship
+            cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
+                Xcat[rindx], rindx, old_clust, from_clust,
+                cl_attr_freq, membship, centroids[1]
             )
 
     return centroids, moves
