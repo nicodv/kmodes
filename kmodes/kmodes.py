@@ -87,32 +87,36 @@ def init_cao(X, n_clusters):
     return centroids
 
 
-def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq, membship, centroids):
+def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
+                   membship, centroids):
     """Move point between clusters, categorical attributes."""
     membship[to_clust, ipoint] = 1
     membship[from_clust, ipoint] = 0
     # Update frequencies of attributes in cluster.
     for iattr, curattr in enumerate(point):
-        # Increment the attribute count for the new "to" cluster
-        cl_attr_freq[to_clust][iattr][curattr] += 1
+        to_attr_counts = cl_attr_freq[to_clust][iattr]
+        from_attr_counts = cl_attr_freq[from_clust][iattr]
 
-        current_attribute_value_freq = cl_attr_freq[to_clust][iattr][curattr]
+        # Increment the attribute count for the new "to" cluster
+        to_attr_counts[curattr] += 1
+
+        current_attribute_value_freq = to_attr_counts[curattr]
         current_centroid_value = centroids[to_clust][iattr]
-        current_centroid_freq = cl_attr_freq[to_clust][iattr][current_centroid_value]
+        current_centroid_freq = to_attr_counts[current_centroid_value]
         if current_centroid_freq < current_attribute_value_freq:
-            # We have incremented this value to the new mode. Update the centroid
+            # We have incremented this value to the new mode. Update the centroid.
             centroids[to_clust][iattr] = curattr
 
         # Decrement the attribute count for the old "from" cluster
-        cl_attr_freq[from_clust][iattr][curattr] -= 1
+        from_attr_counts[curattr] -= 1
 
         old_centroid_value = centroids[from_clust][iattr]
         if old_centroid_value == curattr:
             # We have just removed a count from the old centroid value. We need to 
             # recalculate the centroid as it may no longer be the maximum
-            centroids[from_clust][iattr] = get_max_value_key(cl_attr_freq[from_clust][iattr])
+            centroids[from_clust][iattr] = get_max_value_key(from_attr_counts)
 
-    return cl_attr_freq, membship
+    return cl_attr_freq, membship, centroids
 
 
 def encode_features(X, enc_map=None):
@@ -175,7 +179,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship):
         moves += 1
         old_clust = np.argwhere(membship[:, ipoint])[0][0]
 
-        cl_attr_freq, membship = move_point_cat(
+        cl_attr_freq, membship, centroids = move_point_cat(
             curpoint, ipoint, clust, old_clust, cl_attr_freq, membship, centroids
         )
 
@@ -186,7 +190,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship):
             choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_freq, membship = move_point_cat(
+            cl_attr_freq, membship, centroids = move_point_cat(
                 X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship, centroids
             )
 
