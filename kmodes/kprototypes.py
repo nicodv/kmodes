@@ -89,11 +89,11 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
             Xnum[ipoint], ipoint, clust, old_clust, cl_attr_sum, membship
         )
         cl_attr_freq, membship = kmodes.move_point_cat(
-            Xcat[ipoint], ipoint, clust, old_clust, cl_attr_freq, membship
+            Xcat[ipoint], ipoint, clust, old_clust, cl_attr_freq, membship, centroids[1]
         )
 
-        # Update new and old centroids by choosing mean for numerical
-        # and mode for categorical attributes.
+        # Update old and new centroids for numerical attributes using the mean
+        # of all values
         for iattr in range(len(Xnum[ipoint])):
             for curc in (clust, old_clust):
                 if sum(membship[curc, :]):
@@ -101,11 +101,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                         cl_attr_sum[curc, iattr] / sum(membship[curc, :])
                 else:
                     centroids[0][curc, iattr] = 0.
-        for iattr in range(len(Xcat[ipoint])):
-            for curc in (clust, old_clust):
-                centroids[1][curc, iattr] = \
-                    kmodes.get_max_value_key(cl_attr_freq[curc][iattr])
-
+        
         # In case of an empty cluster, reinitialize with a random point
         # from largest cluster.
         if sum(membship[old_clust, :]) == 0:

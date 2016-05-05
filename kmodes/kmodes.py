@@ -87,14 +87,31 @@ def init_cao(X, n_clusters):
     return centroids
 
 
-def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq, membship):
+def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq, membship, centroids):
     """Move point between clusters, categorical attributes."""
     membship[to_clust, ipoint] = 1
     membship[from_clust, ipoint] = 0
     # Update frequencies of attributes in cluster.
     for iattr, curattr in enumerate(point):
+        # Increment the attribute count for the new "to" cluster
         cl_attr_freq[to_clust][iattr][curattr] += 1
+
+        current_attribute_value_freq = cl_attr_freq[to_clust][iattr][curattr]
+        current_centroid_value = centroids[to_clust][iattr]
+        current_centroid_freq = cl_attr_freq[to_clust][iattr][current_centroid_value]
+        if current_centroid_freq < current_attribute_value_freq:
+            # We have incremented this value to the new mode. Update the centroid
+            centroids[to_clust][iattr] = curattr
+
+        # Decrement the attribute count for the old "from" cluster
         cl_attr_freq[from_clust][iattr][curattr] -= 1
+
+        old_centroid_value = centroids[from_clust][iattr]
+        if old_centroid_value == curattr:
+            # We have just removed a count from the old centroid value. We need to 
+            # recalculate the centroid as it may no longer be the maximum
+            centroids[from_clust][iattr] = get_max_value_key(cl_attr_freq[from_clust][iattr])
+
     return cl_attr_freq, membship
 
 
@@ -159,23 +176,18 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship):
         old_clust = np.argwhere(membship[:, ipoint])[0][0]
 
         cl_attr_freq, membship = move_point_cat(
-            curpoint, ipoint, clust, old_clust, cl_attr_freq, membship
+            curpoint, ipoint, clust, old_clust, cl_attr_freq, membship, centroids
         )
-
-        # Update new and old centroids by choosing mode of attribute.
-        for iattr in range(len(curpoint)):
-            for curc in (clust, old_clust):
-                centroids[curc, iattr] = get_max_value_key(cl_attr_freq[curc][iattr])
 
         # In case of an empty cluster, reinitialize with a random point
         # from the largest cluster.
-        if sum(membship[old_clust, :]) == 0:
+        if np.sum(membship[old_clust, :]) == 0:
             from_clust = membship.sum(axis=1).argmax()
             choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
             cl_attr_freq, membship = move_point_cat(
-                X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship
+                X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship, centroids
             )
 
     return centroids, moves
