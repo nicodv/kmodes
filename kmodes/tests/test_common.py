@@ -9,7 +9,6 @@ from sklearn.utils.testing import assert_false
 from sklearn.utils.testing import assert_greater
 
 from sklearn.utils.estimator_checks import (
-    check_dtype_object,
     check_parameters_default_constructible,
     check_estimator_sparse_data,
     check_estimators_dtypes,

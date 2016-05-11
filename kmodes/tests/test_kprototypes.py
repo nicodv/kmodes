@@ -115,6 +115,21 @@ class TestKProtoTypes(unittest.TestCase):
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
+    def test_kprotoypes_missings(self):
+        init_vals = [
+            np.array([[356.975],
+                      [275.35],
+                      [738.5],
+                      [np.NaN]]),
+            np.array([[3, 2],
+                      [0, 2],
+                      [3, 2],
+                      [2, 2]])
+        ]
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
+        with self.assertRaises(ValueError):
+            kproto_init.fit_predict(STOCKS, categorical=[1, 2])
+
     def test_kprototypes_unknowninit_soybean(self):
         kproto = kprototypes.KPrototypes(n_clusters=4, init='nonsense', verbose=2)
         with self.assertRaises(NotImplementedError):
