@@ -14,11 +14,8 @@ from scipy import sparse
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-
-
-def euclidean_dissim(a, b):
-    """Euclidean distance dissimilarity function"""
-    return np.sum((a - b) ** 2, axis=1)
+from .util import get_max_value_key, encode_features
+from .util.dissim import matching_dissim, euclidean_dissim
 
 
 def move_point_num(point, ipoint, to_clust, from_clust, cl_attr_sum, membship):
@@ -58,7 +55,7 @@ def _labels_cost(Xnum, Xcat, centroids, gamma):
     for ipoint in range(npoints):
         # Numerical cost = sum of Euclidean distances
         num_costs = euclidean_dissim(centroids[0], Xnum[ipoint])
-        cat_costs = kmodes.matching_dissim(centroids[1], Xcat[ipoint])
+        cat_costs = matching_dissim(centroids[1], Xcat[ipoint])
         # Gamma relates the categorical cost to the numerical cost.
         tot_costs = num_costs + gamma * cat_costs
         clust = np.argmin(tot_costs)
@@ -75,7 +72,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
     for ipoint in range(Xnum.shape[0]):
         clust = np.argmin(
             euclidean_dissim(centroids[0], Xnum[ipoint]) +
-            gamma * kmodes.matching_dissim(centroids[1], Xcat[ipoint])
+            gamma * matching_dissim(centroids[1], Xcat[ipoint])
         )
         if membship[clust, ipoint]:
             # Point is already in its right place.
@@ -148,7 +145,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
 
     # Convert the categorical values in Xcat to integers for speed.
     # Based on the unique values in Xcat, we can make a mapping to achieve this.
-    Xcat, enc_map = kmodes.encode_features(Xcat)
+    Xcat, enc_map = encode_features(Xcat)
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
@@ -213,7 +210,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                 # Initial assignment to clusters
                 clust = np.argmin(
                     euclidean_dissim(centroids[0], Xnum[ipoint]) +
-                    gamma * kmodes.matching_dissim(centroids[1], Xcat[ipoint])
+                    gamma * matching_dissim(centroids[1], Xcat[ipoint])
                 )
                 membship[clust, ipoint] = 1
                 # Count attribute values per cluster.
@@ -233,7 +230,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                     cl_attr_sum[ik, iattr] / sum(membship[ik, :])
             for iattr in range(ncatattrs):
                 centroids[1][ik, iattr] = \
-                    kmodes.get_max_value_key(cl_attr_freq[ik][iattr])
+                    get_max_value_key(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
@@ -374,5 +371,5 @@ class KPrototypes(kmodes.KModes):
 
         Xnum, Xcat = _split_num_cat(X, categorical)
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
-        Xcat, _ = kmodes.encode_features(Xcat, enc_map=self.enc_map_)
+        Xcat, _ = encode_features(Xcat, enc_map=self.enc_map_)
         return _labels_cost(Xnum, Xcat, self.cluster_centroids_, self.gamma)[0]
