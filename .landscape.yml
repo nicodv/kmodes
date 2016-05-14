@@ -1,8 +1,8 @@
 strictness: veryhigh
 max-line-length: 90
-#ignore-paths:
-#  - setup.py
-#  - examples/
+ignore-paths:
+  - setup.py
+  - examples/
 #python-targets:
 #  - 2
 #  - 3
