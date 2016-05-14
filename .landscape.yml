@@ -10,8 +10,8 @@ pep8:
   disable:
     - N803
     - N806
-#pylint:
-#  options:
+pylint:
+  options:
 #    good-names: _,a,b,e,k,v,X,x,y,Xnum,Xcat,Xenc
 #    # Regular expression matching correct variable names
 #    variable-rgx: "[a-z_][a-z0-9_]{1,30}$"
@@ -20,4 +20,4 @@ pep8:
 #    # Maximum number of locals for function / method body
 #    max-locals: 20
 #    # Minimum number of public methods for a class (see R0903).
-#    min-public-methods: 1
+    min-public-methods: 1
