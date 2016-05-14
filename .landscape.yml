@@ -6,10 +6,10 @@ ignore-paths:
 python-targets:
   - 2
   - 3
-#pep8:
-#  disable:
-#    - N803
-#    - N806
+pep8:
+  disable:
+    - N803
+    - N806
 #pylint:
 #  options:
 #    good-names: _,a,b,e,k,v,X,x,y,Xnum,Xcat,Xenc
