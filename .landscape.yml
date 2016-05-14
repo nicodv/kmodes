@@ -3,9 +3,9 @@ max-line-length: 90
 ignore-paths:
   - setup.py
   - examples/
-#python-targets:
-#  - 2
-#  - 3
+python-targets:
+  - 2
+  - 3
 #pep8:
 #  disable:
 #    - N803
