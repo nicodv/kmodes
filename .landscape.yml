@@ -12,7 +12,7 @@ pep8:
     - N806
 pylint:
   options:
-#    good-names: _,a,b,e,k,v,X,x,y,Xnum,Xcat,Xenc
+    good-names: _,a,b,e,k,v,X,x,y,Xnum,Xcat,Xenc
     # Regular expression matching correct variable names
     variable-rgx: "[a-z_][a-z0-9_]{1,30}$"
     # Maximum number of arguments for function / method
