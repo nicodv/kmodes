@@ -83,6 +83,23 @@ Usage
 
     clusters = km.fit_predict(data)
 
+Missing / unseen data
+_____________________
+
+The k-modes algorithm accepts `np.NaN`s as missing values in the `X`
+matrix. When fitting the model, these values are encoded into their
+own category (let's call it "unknown values"). When predicting, the model
+treats any values in `X` that (1) it has not seen before during training
+or (2) are missing as being a member of the "unknown values" category.
+Simply put, the algorithm treats any missing / unseen data as matching
+with each other but mismatching with non-missing / seen data when
+determining similarity between points.
+
+The k-prototypes also accepts `np.NaN`s as missing values for the
+categorical variables, but does *not* accept missing values for the
+numerical values. It is up to the user to come up with a way of
+handling these missing data that is appropriate for the problem at hand.
+
 References
 ----------
 
