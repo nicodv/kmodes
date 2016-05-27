@@ -18,12 +18,16 @@ def get_max_value_key(dic):
 def encode_features(X, enc_map=None):
     """Converts categorical values in each column of X to integers in the range
     [0, n_unique_values_in_column - 1], if X is not already of integer type.
-    Unknown values get a value of -1.
 
-    If mapping is not provided, it is calculated based on the valus in X.
+    If mapping is not provided, it is calculated based on the values in X.
+
+    Unknown values during prediction get a value of -1. np.NaNs are ignored
+    during encoding, and get treated as unknowns during prediction.
     """
     if np.issubdtype(X.dtype, np.integer):
-        # Already integer type. do nothing.
+        # Already integer type, so we can take a shortcut. Simply reshape
+        # the data to mapping dictionaries, and do nothing with X.
+        enc_map = [{val: val for val in np.unique(col)} for col in X.T]
         return X, enc_map
 
     if enc_map is None:
@@ -36,8 +40,10 @@ def encode_features(X, enc_map=None):
     Xenc = np.zeros(X.shape).astype('int')
     for ii in range(X.shape[1]):
         if fit:
-            enc_map.append({val: jj for jj, val in enumerate(np.unique(X[:, ii]))})
-        # Unknown categories when predicting all get a value of -1.
+            col_enc = {val: jj for jj, val in enumerate(np.unique(X[:, ii]))
+                       if not (isinstance(val, float) and np.isnan(val))}
+            enc_map.append(col_enc)
+        # Unknown categories (including np.NaNs) all get a value of -1.
         Xenc[:, ii] = np.array([enc_map[ii].get(x, -1) for x in X[:, ii]])
 
     return Xenc, enc_map
