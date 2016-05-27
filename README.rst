@@ -36,8 +36,8 @@ Implemented are:
 - k-modes with initialization based on density [CAO09]_
 - k-prototypes [HUANG97]_
 
-The code is modeled after the clustering algorithms in scikit-learn and has
-the same familiar interface.
+The code is modeled after the clustering algorithms in :code:`scikit-learn`
+and has the same familiar interface.
 
 I would love to have more people play around with this and give me
 feedback on my implementation. If you come across any issues in running or
@@ -86,17 +86,17 @@ More simple usage examples of both k-modes ('soybean.py') and k-prototypes
 Missing / unseen data
 _____________________
 
-The k-modes algorithm accepts `np.NaN`s as missing values in the `X`
-matrix. When fitting the model, these values are encoded into their
-own category (let's call it "unknown values"). When predicting, the model
-treats any values in `X` that (1) it has not seen before during training
-or (2) are missing as being a member of the "unknown values" category.
-Simply put, the algorithm treats any missing / unseen data as matching
-with each other but mismatching with non-missing / seen data when
+The k-modes algorithm accepts :code:`np.NaN` values as missing values in
+the :code:`X` matrix. When fitting the model, these values are encoded
+into their own category (let's call it "unknown values"). When predicting,
+the model treats any values in :code:`X` that (1) it has not seen before
+during training or (2) are missing as being a member of the "unknown values"
+category. Simply put, the algorithm treats any missing / unseen data as
+matching with each other but mismatching with non-missing / seen data when
 determining similarity between points.
 
-The k-prototypes also accepts `np.NaN`s as missing values for the
-categorical variables, but does *not* accept missing values for the
+The k-prototypes also accepts :code:`np.NaN` values as missing values for
+the categorical variables, but does *not* accept missing values for the
 numerical values. It is up to the user to come up with a way of
 handling these missing data that is appropriate for the problem at hand.
 
