@@ -39,9 +39,6 @@ Implemented are:
 The code is modeled after the clustering algorithms in scikit-learn and has
 the same familiar interface.
 
-Simple usage examples of both k-modes ('soybean.py') and k-prototypes
-('stocks.py') are included in the examples directory.
-
 I would love to have more people play around with this and give me
 feedback on my implementation. If you come across any issues in running or
 installing kmodes,
@@ -82,6 +79,9 @@ Usage
     print(km.cluster_centroids_)
 
     clusters = km.fit_predict(data)
+
+More simple usage examples of both k-modes ('soybean.py') and k-prototypes
+('stocks.py') are included in the examples directory.
 
 Missing / unseen data
 _____________________
