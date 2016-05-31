@@ -87,13 +87,19 @@ Missing / unseen data
 _____________________
 
 The k-modes algorithm accepts :code:`np.NaN` values as missing values in
-the :code:`X` matrix. When fitting the model, these values are encoded
-into their own category (let's call it "unknown values"). When predicting,
-the model treats any values in :code:`X` that (1) it has not seen before
-during training, or (2) are missing, as being a member of the "unknown 
-values" category. Simply put, the algorithm treats any missing / unseen
-data as matching with each other but mismatching with non-missing / seen
-data when determining similarity between points.
+the :code:`X` matrix. However, users are strongly suggested to consider
+filling in the missing data themselves in a way that makes sense for
+the problem at hand. This is especially important in case of many missing
+values.
+
+The k-modes algorithm currently handles missing data as follows. When
+fitting the model, :code:`np.NaN` values are encoded into their own
+category (let's call it "unknown values"). When predicting, the model
+treats any values in :code:`X` that (1) it has not seen before during
+training, or (2) are missing, as being a member of the "unknown values"
+category. Simply put, the algorithm treats any missing / unseen data as
+matching with each other but mismatching with non-missing / seen data
+when determining similarity between points.
 
 The k-prototypes also accepts :code:`np.NaN` values as missing values for
 the categorical variables, but does *not* accept missing values for the
