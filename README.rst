@@ -55,6 +55,12 @@ kmodes can be installed using pip:
 
     pip install kmodes
 
+To upgrade to the latest version (recommended), run it like this:
+
+.. code:: bash
+
+    pip install --upgrade kmodes
+
 Alternatively, you can build the latest development version from source:
 
 .. code:: bash
