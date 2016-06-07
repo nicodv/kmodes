@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 import kmodes
 
@@ -7,7 +7,10 @@ VERSION = kmodes.__version__
 
 setup(
     name='kmodes',
-    packages=['kmodes'],
+    packages=find_packages(exclude=[
+        '*.tests',
+        '*.tests.*',
+    ]),
     version=VERSION,
     url='https://github.com/nicodv/kmodes',
     author='Nico de Vos',
