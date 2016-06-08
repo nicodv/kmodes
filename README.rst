@@ -81,10 +81,10 @@ Usage
     
     km = kmodes.KModes(n_clusters=4, init='Huang', n_init=5, verbose=1)
 
+    clusters = km.fit_predict(data)
+
     # Print the cluster centroids
     print(km.cluster_centroids_)
-
-    clusters = km.fit_predict(data)
 
 More simple usage examples of both k-modes ('soybean.py') and k-prototypes
 ('stocks.py') are included in the examples directory.
