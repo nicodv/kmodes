@@ -30,6 +30,33 @@ STOCKS2 = np.array([
     [389.1, 'nrg', 'CA'],
     [150.4, 'mat', 'USA']
 ])
+INIT_PROBLEM = np.array([
+    [0, 'Regular'],
+    [0, 'Regular'],
+    [0, 'Regular'],
+    [0, 'nan'],
+    [-0.5, 'Regular'],
+    [-0.5, 'Regular'],
+    [0, 'nan'],
+    [0, 'Regular'],
+    [0, 'Regular'],
+    [0, 'Slim'],
+    [0, 'Regular'],
+    [0, 'Regular'],
+    [0.5, 'Regular'],
+    [-0.5, 'Regular'],
+    [0.5, 'Regular'],
+    [0.5, 'Slim'],
+    [0, 'Regular'],
+    [0.5, 'Regular'],
+    [0, 'Regular'],
+    [-0.5, 'Regular'],
+    [0, 'nan'],
+    [0, 'nan'],
+    [0, 'Regular'],
+    [0, 'Regular'],
+    [0, 'Regular']
+])
 
 
 class TestKProtoTypes(unittest.TestCase):
@@ -134,6 +161,18 @@ class TestKProtoTypes(unittest.TestCase):
         kproto = kprototypes.KPrototypes(n_clusters=4, init='nonsense', verbose=2)
         with self.assertRaises(NotImplementedError):
             kproto.fit(STOCKS, categorical=[1, 2])
+
+    def test_kprotoypes_not_stuck_initialization(self):
+        np.random.seed(42)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
+        kproto_cao = kproto_cao.fit(INIT_PROBLEM, categorical=[1])
+        self.assertTrue(hasattr(kproto_cao, 'cluster_centroids_'))
+
+    def test_kprotoypes_no_categoricals(self):
+        np.random.seed(42)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
+        kproto_cao = kproto_cao.fit(INIT_PROBLEM, categorical=[])
+        self.assertTrue(hasattr(kproto_cao, 'cluster_centroids_'))
 
 
 if __name__ == '__main__':
