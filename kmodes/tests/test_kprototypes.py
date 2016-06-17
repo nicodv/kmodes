@@ -34,10 +34,10 @@ INIT_PROBLEM = np.array([
     [0, 'Regular'],
     [0, 'Regular'],
     [0, 'Regular'],
-    [0, 'nan'],
+    [0, np.NaN],
     [-0.5, 'Regular'],
     [-0.5, 'Regular'],
-    [0, 'nan'],
+    [0, np.NaN],
     [0, 'Regular'],
     [0, 'Regular'],
     [0, 'Slim'],
@@ -51,8 +51,8 @@ INIT_PROBLEM = np.array([
     [0.5, 'Regular'],
     [0, 'Regular'],
     [-0.5, 'Regular'],
-    [0, 'nan'],
-    [0, 'nan'],
+    [0, np.NaN],
+    [0, np.NaN],
     [0, 'Regular'],
     [0, 'Regular'],
     [0, 'Regular']
@@ -171,8 +171,8 @@ class TestKProtoTypes(unittest.TestCase):
     def test_kprotoypes_no_categoricals(self):
         np.random.seed(42)
         kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
-        kproto_cao = kproto_cao.fit(INIT_PROBLEM, categorical=[])
-        self.assertTrue(hasattr(kproto_cao, 'cluster_centroids_'))
+        with self.assertRaises(NotImplementedError):
+            kproto_cao.fit(INIT_PROBLEM, categorical=[])
 
 
 if __name__ == '__main__':
