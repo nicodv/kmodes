@@ -51,7 +51,4 @@ def encode_features(X, enc_map=None):
 
 def get_unique_rows(a):
     """Gets the unique rows in a numpy array."""
-    b = np.ascontiguousarray(a).view(
-        np.dtype((np.void, a.dtype.itemsize * a.shape[1])))
-    _, idx = np.unique(b, return_index=True)
-    return a[idx]
+    return np.vstack({tuple(row) for row in a})

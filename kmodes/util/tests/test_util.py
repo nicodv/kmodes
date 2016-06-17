@@ -88,12 +88,12 @@ class TestUtils(unittest.TestCase):
     def test_get_unique_rows(self):
         result = get_unique_rows(STOCKS_CAT)
         expected = np.array([
+            ['tel', 'USA'],
+            ['tel', 'CN'],
+            ['nrg', 'USA'],
+            ['nrg', 'NL'],
+            ['tech', 'USA'],
             ['cons', 'USA'],
             ['fin', 'USA'],
-            ['nrg', 'NL'],
-            ['nrg', 'USA'],
-            ['tech', 'USA'],
-            ['tel', 'CN'],
-            ['tel', 'USA']
         ])
         assert_array_equal(result, expected)
