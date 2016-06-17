@@ -14,7 +14,7 @@ from scipy import sparse
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 
-from .util import get_max_value_key, encode_features
+from .util import get_max_value_key, encode_features, get_unique_rows
 from .util.dissim import matching_dissim
 
 
@@ -173,7 +173,17 @@ def k_modes(X, n_clusters, init, n_init, max_iter, verbose):
     X, enc_map = encode_features(X)
 
     npoints, nattrs = X.shape
-    assert n_clusters < npoints, "More clusters than data points?"
+    assert n_clusters <= npoints, "More clusters than data points?"
+
+    # Are there more n_clusters than unique rows? Then set the unique
+    # rows as initial values and skip iteration.
+    unique = get_unique_rows(X)
+    n_unique = unique.shape[0]
+    if n_unique <= n_clusters:
+        max_iter = 0
+        n_init = 1
+        n_clusters = n_unique
+        init = unique
 
     all_centroids = []
     all_labels = []

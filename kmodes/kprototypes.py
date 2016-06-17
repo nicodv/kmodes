@@ -14,7 +14,7 @@ from scipy import sparse
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features
+from .util import get_max_value_key, encode_features, get_unique_rows
 from .util.dissim import matching_dissim, euclidean_dissim
 
 # Number of tries we give the initialization methods to find non-empty
@@ -22,7 +22,7 @@ from .util.dissim import matching_dissim, euclidean_dissim
 MAX_INIT_TRIES = 20
 # Number of tries we give the initialization before we raise an
 # initialization error.
-RAISE_INIT_TRIES = 20
+RAISE_INIT_TRIES = 100
 
 
 def move_point_num(point, ipoint, to_clust, from_clust, cl_attr_sum, membship):
@@ -149,7 +149,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
     ncatattrs = len(categorical)
     nnumattrs = X.shape[1] - ncatattrs
     npoints = X.shape[0]
-    assert n_clusters < npoints, "More clusters than data points?"
+    assert n_clusters <= npoints, "More clusters than data points?"
 
     Xnum, Xcat = _split_num_cat(X, categorical)
     Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
@@ -157,6 +157,17 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
     # Convert the categorical values in Xcat to integers for speed.
     # Based on the unique values in Xcat, we can make a mapping to achieve this.
     Xcat, enc_map = encode_features(Xcat)
+
+    # Are there more n_clusters than unique rows? Then set the unique
+    # rows as initial values and skip iteration.
+    unique = get_unique_rows(X)
+    n_unique = unique.shape[0]
+    if n_unique <= n_clusters:
+        max_iter = 0
+        n_init = 1
+        n_clusters = n_unique
+        init = list(_split_num_cat(unique, categorical))
+        init[1], _ = encode_features(init[1], enc_map)
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).

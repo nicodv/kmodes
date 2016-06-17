@@ -159,6 +159,23 @@ class TestKModes(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             kmodes.KModes(n_clusters=4, init='nonsense', verbose=2).fit(SOYBEAN)
 
+    def test_kmodes_nunique_nclusters(self):
+        data = np.array([
+            [0, 1],
+            [0, 1],
+            [0, 1],
+            [0, 2],
+            [0, 2],
+            [0, 2]
+        ])
+        np.random.seed(42)
+        kmodes_cao = kmodes.KModes(n_clusters=6, init='Cao', verbose=2)
+        result = kmodes_cao.fit_predict(data, categorical=[1])
+        expected = np.array([0, 0, 0, 1, 1, 1])
+        np.testing.assert_array_equal(result, expected)
+        np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
+                                      np.array([[0, 1],
+                                                [0, 2]]))
 
 if __name__ == '__main__':
     unittest.main()
