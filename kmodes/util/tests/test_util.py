@@ -96,4 +96,8 @@ class TestUtils(unittest.TestCase):
             ['cons', 'USA'],
             ['fin', 'USA'],
         ])
-        assert_array_equal(result, expected)
+        # Check if each row is found exactly 1 time.
+        for row in expected:
+            mask = result == row
+            matches = np.where(np.all(mask, axis=1))
+            self.assertEqual(len(matches), 1)

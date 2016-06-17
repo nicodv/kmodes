@@ -190,9 +190,6 @@ class TestKProtoTypes(unittest.TestCase):
         ])
         np.random.seed(42)
         kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
-        result = kproto_cao.fit_predict(data, categorical=[1])
-        expected = np.array([0, 0, 0, 1, 1, 1])
-        np.testing.assert_array_equal(result, expected)
         np.testing.assert_array_equal(kproto_cao.cluster_centroids_,
                                       np.array([[[0.], [1.]],
                                                 [[0], [1]]]))
