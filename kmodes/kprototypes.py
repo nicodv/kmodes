@@ -106,7 +106,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                         cl_attr_sum[curc, iattr] / sum(membship[curc, :])
                 else:
                     centroids[0][curc, iattr] = 0.
-        
+
         # In case of an empty cluster, reinitialize with a random point
         # from largest cluster.
         if sum(membship[old_clust, :]) == 0:

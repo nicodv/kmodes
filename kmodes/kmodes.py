@@ -103,7 +103,7 @@ def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
 
         old_centroid_value = centroids[from_clust][iattr]
         if old_centroid_value == curattr:
-            # We have just removed a count from the old centroid value. We need to 
+            # We have just removed a count from the old centroid value. We need to
             # recalculate the centroid as it may no longer be the maximum
             centroids[from_clust][iattr] = get_max_value_key(from_attr_counts)
 
