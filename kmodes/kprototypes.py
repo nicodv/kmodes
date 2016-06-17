@@ -17,6 +17,13 @@ from . import kmodes
 from .util import get_max_value_key, encode_features
 from .util.dissim import matching_dissim, euclidean_dissim
 
+# Number of tries we give the initialization methods to find non-empty
+# clusters before we switch to random initialization.
+MAX_INIT_TRIES = 20
+# Number of tries we give the initialization before we raise an
+# initialization error.
+RAISE_INIT_TRIES = 20
+
 
 def move_point_num(point, ipoint, to_clust, from_clust, cl_attr_sum, membship):
     """Move point between clusters, numerical attributes."""
@@ -126,8 +133,12 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
     if sparse.issparse(X):
         raise TypeError("k-prototypes does not support sparse data.")
 
-    if categorical is None or not categorical and verbose:
-        print("No categorical data selected, effectively doing k-means.")
+    if categorical is None or not categorical:
+        raise NotImplementedError(
+            "No categorical data selected, effectively doing k-means. "
+            "Present a list of categorical columns, or use scikit-learn's "
+            "KMeans instead."
+        )
     if isinstance(categorical, int):
         categorical = [categorical]
     assert len(categorical) != X.shape[1], \
@@ -161,7 +172,9 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
         # For numerical part of initialization, we don't have a guarantee
         # that there is not an empty cluster, so we need to retry until
         # there is none.
+        init_tries = 0
         while True:
+            init_tries += 1
             # _____ INIT _____
             if verbose:
                 print("Init: initializing centroids")
@@ -184,7 +197,7 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
                 centroids = [np.asarray(init[0], dtype=np.float64),
                              np.asarray(init[1], dtype=np.uint8)]
             else:
-                raise NotImplementedError
+                raise NotImplementedError("Initialization method not supported.")
 
             if not isinstance(init, list):
                 # Numerical is initialized by drawing from normal distribution,
@@ -222,6 +235,16 @@ def k_prototypes(X, categorical, n_clusters, gamma, init, n_init,
             # If no empty clusters, then consider initialization finalized.
             if membship.sum(axis=1).min() > 0:
                 break
+
+            if init_tries == MAX_INIT_TRIES:
+                # Could not get rid of empty clusters. Randomly
+                # initialize instead.
+                init = 'random'
+            elif init_tries == RAISE_INIT_TRIES:
+                raise ValueError(
+                    "Clustering algorithm could not initialize. "
+                    "Consider assigning the initial clusters manually."
+                )
 
         # Perform an initial centroid update.
         for ik in range(n_clusters):
