@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 from sklearn.utils.testing import assert_equal, assert_array_equal
 
-from kmodes.util import get_max_value_key, encode_features
+from kmodes.util import get_max_value_key, encode_features, get_unique_rows
 
 
 STOCKS_CAT = np.array([
@@ -41,7 +41,7 @@ SPOTTY_CAT = np.array([
 ])
 
 
-class TestDissimilarityMeasures(unittest.TestCase):
+class TestUtils(unittest.TestCase):
 
     def test_get_max_value_key(self):
         max_key = get_max_value_key({'a': 3, 'b': 10, 'c': -1, 'd': 9.9})
@@ -84,3 +84,16 @@ class TestDissimilarityMeasures(unittest.TestCase):
         self.assertEqual(enc_map,
                          [{0.: 0, 1.: 1, 8.: 2, 9.: 3},
                           {0.: 0, 1.: 1, 2.: 2}])
+
+    def test_get_unique_rows(self):
+        result = get_unique_rows(STOCKS_CAT)
+        expected = np.array([
+            ['cons', 'USA'],
+            ['fin', 'USA'],
+            ['nrg', 'NL'],
+            ['nrg', 'USA'],
+            ['tech', 'USA'],
+            ['tel', 'CN'],
+            ['tel', 'USA']
+        ])
+        assert_array_equal(result, expected)
