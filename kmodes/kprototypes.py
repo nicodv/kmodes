@@ -115,7 +115,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                 [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_freq, membship = move_point_num(
+            cl_attr_sum, membship = move_point_num(
                 Xnum[rindx], rindx, old_clust, from_clust, cl_attr_sum, membship
             )
             cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
