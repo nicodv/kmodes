@@ -47,3 +47,8 @@ def encode_features(X, enc_map=None):
         Xenc[:, ii] = np.array([enc_map[ii].get(x, -1) for x in X[:, ii]])
 
     return Xenc, enc_map
+
+
+def get_unique_rows(a):
+    """Gets the unique rows in a numpy array."""
+    return np.vstack({tuple(row) for row in a})

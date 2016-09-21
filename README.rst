@@ -86,8 +86,8 @@ Usage
     # Print the cluster centroids
     print(km.cluster_centroids_)
 
-More simple usage examples of both k-modes ('soybean.py') and k-prototypes
-('stocks.py') are included in the examples directory.
+The examples directory showcases simple use cases of both k-modes 
+('soybean.py') and k-prototypes ('stocks.py').
 
 Missing / unseen data
 _____________________

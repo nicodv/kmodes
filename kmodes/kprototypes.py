@@ -14,8 +14,15 @@ from scipy import sparse
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features
+from .util import get_max_value_key, encode_features, get_unique_rows
 from .util.dissim import matching_dissim, euclidean_dissim
+
+# Number of tries we give the initialization methods to find non-empty
+# clusters before we switch to random initialization.
+MAX_INIT_TRIES = 20
+# Number of tries we give the initialization before we raise an
+# initialization error.
+RAISE_INIT_TRIES = 100
 
 
 def move_point_num(point, ipoint, to_clust, from_clust, cl_attr_sum, membship):
@@ -99,7 +106,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                         cl_attr_sum[curc, iattr] / sum(membship[curc, :])
                 else:
                     centroids[0][curc, iattr] = 0.
-        
+
         # In case of an empty cluster, reinitialize with a random point
         # from largest cluster.
         if sum(membship[old_clust, :]) == 0:
@@ -108,7 +115,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
                 [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_freq, membship = move_point_num(
+            cl_attr_sum, membship = move_point_num(
                 Xnum[rindx], rindx, old_clust, from_clust, cl_attr_sum, membship
             )
             cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
@@ -126,8 +133,12 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     if sparse.issparse(X):
         raise TypeError("k-prototypes does not support sparse data.")
 
-    if categorical is None or not categorical and verbose:
-        print("No categorical data selected, effectively doing k-means.")
+    if categorical is None or not categorical:
+        raise NotImplementedError(
+            "No categorical data selected, effectively doing k-means. "
+            "Present a list of categorical columns, or use scikit-learn's "
+            "KMeans instead."
+        )
     if isinstance(categorical, int):
         categorical = [categorical]
     assert len(categorical) != X.shape[1], \
@@ -138,7 +149,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     ncatattrs = len(categorical)
     nnumattrs = X.shape[1] - ncatattrs
     npoints = X.shape[0]
-    assert n_clusters < npoints, "More clusters than data points?"
+    assert n_clusters <= npoints, "More clusters than data points?"
 
     Xnum, Xcat = _split_num_cat(X, categorical)
     Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
@@ -146,6 +157,17 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     # Convert the categorical values in Xcat to integers for speed.
     # Based on the unique values in Xcat, we can make a mapping to achieve this.
     Xcat, enc_map = encode_features(Xcat)
+
+    # Are there more n_clusters than unique rows? Then set the unique
+    # rows as initial values and skip iteration.
+    unique = get_unique_rows(X)
+    n_unique = unique.shape[0]
+    if n_unique <= n_clusters:
+        max_iter = 0
+        n_init = 1
+        n_clusters = n_unique
+        init = list(_split_num_cat(unique, categorical))
+        init[1], _ = encode_features(init[1], enc_map)
 
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
@@ -161,7 +183,9 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
         # For numerical part of initialization, we don't have a guarantee
         # that there is not an empty cluster, so we need to retry until
         # there is none.
+        init_tries = 0
         while True:
+            init_tries += 1
             # _____ INIT _____
             if verbose:
                 print("Init: initializing centroids")
@@ -184,7 +208,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                 centroids = [np.asarray(init[0], dtype=np.float64),
                              np.asarray(init[1], dtype=np.uint8)]
             else:
-                raise NotImplementedError
+                raise NotImplementedError("Initialization method not supported.")
 
             if not isinstance(init, list):
                 # Numerical is initialized by drawing from normal distribution,
@@ -222,6 +246,16 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             # If no empty clusters, then consider initialization finalized.
             if membship.sum(axis=1).min() > 0:
                 break
+
+            if init_tries == MAX_INIT_TRIES:
+                # Could not get rid of empty clusters. Randomly
+                # initialize instead.
+                init = 'random'
+            elif init_tries == RAISE_INIT_TRIES:
+                raise ValueError(
+                    "Clustering algorithm could not initialize. "
+                    "Consider assigning the initial clusters manually."
+                )
 
         # Perform an initial centroid update.
         for ik in range(n_clusters):
