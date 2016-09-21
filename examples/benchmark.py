@@ -7,7 +7,7 @@ from kmodes import kmodes
 # number of clusters
 K = 20
 # no. of points
-N = 1e5
+N = int(1e5)
 # no. of dimensions
 M = 10
 # no. of times test is repeated
