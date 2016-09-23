@@ -11,6 +11,7 @@ kmodes_huang = kmodes.KModes(n_clusters=4, init='Huang', verbose=1)
 kmodes_huang.fit(x)
 
 # Print cluster centroids of the trained model.
+print('k-modes (Huang) centroids:')
 print(kmodes_huang.cluster_centroids_)
 # Print training statistics
 print('Final training cost: {}'.format(kmodes_huang.cost_))
@@ -20,11 +21,13 @@ kmodes_cao = kmodes.KModes(n_clusters=4, init='Cao', verbose=1)
 kmodes_cao.fit(x)
 
 # Print cluster centroids of the trained model.
+print('k-modes (Cao) centroids:')
 print(kmodes_cao.cluster_centroids_)
 # Print training statistics
 print('Final training cost: {}'.format(kmodes_cao.cost_))
 print('Training iterations: {}'.format(kmodes_cao.n_iter_))
 
+print('Results tables:')
 for result in (kmodes_huang, kmodes_cao):
     classtable = np.zeros((4, 4), dtype=int)
     for ii, _ in enumerate(y):

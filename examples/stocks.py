@@ -11,9 +11,8 @@ X[:, 0] = X[:, 0].astype(float)
 kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
 clusters = kproto.fit_predict(X, categorical=[1, 2])
 
-# Print cluster centroids and categorical data mapping of the trained model.
+# Print cluster centroids of the trained model.
 print(kproto.cluster_centroids_)
-print(kproto.enc_map_)
 # Print training statistics
 print(kproto.cost_)
 print(kproto.n_iter_)
