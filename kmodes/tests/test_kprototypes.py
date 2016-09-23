@@ -77,6 +77,14 @@ class TestKProtoTypes(unittest.TestCase):
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
+    def test_kprototypes_predict_unfitted(self):
+        np.random.seed(42)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        with self.assertRaises(AssertionError):
+            kproto_cao.predict(STOCKS)
+        with self.assertRaises(AttributeError):
+            kproto_cao.cluster_centroids_
+
     def test_kprotoypes_random_stocks(self):
         kproto_random = kprototypes.KPrototypes(n_clusters=4, init='random', verbose=2)
         result = kproto_random.fit(STOCKS, categorical=[1, 2])

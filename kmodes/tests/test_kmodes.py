@@ -107,6 +107,13 @@ class TestKModes(unittest.TestCase):
         np.testing.assert_array_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
+    def test_kmodes_predict_unfitted(self):
+        kmodes_cao = kmodes.KModes(n_clusters=4, init='Cao', verbose=2)
+        with self.assertRaises(AssertionError):
+            kmodes_cao.predict(SOYBEAN)
+        with self.assertRaises(AttributeError):
+            kmodes_cao.cluster_centroids_
+
     def test_kmodes_random_soybean(self):
         kmodes_random = kmodes.KModes(n_clusters=4, init='random', verbose=2)
         result = kmodes_random.fit(SOYBEAN)
@@ -176,6 +183,7 @@ class TestKModes(unittest.TestCase):
         np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
                                       np.array([[0, 1],
                                                 [0, 2]]))
+
 
 if __name__ == '__main__':
     unittest.main()
