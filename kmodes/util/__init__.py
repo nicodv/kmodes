@@ -49,6 +49,18 @@ def encode_features(X, enc_map=None):
     return Xenc, enc_map
 
 
+def decode_centroids(encoded, mapping):
+    """Decodes the encoded centroids array back to the original data
+    labels using a list of mappings.
+    """
+    decoded = []
+    for ii in range(encoded.shape[1]):
+        # Invert the mapping so that we can decode.
+        inv_mapping = {v: k for k, v in mapping[ii].items()}
+        decoded.append(np.vectorize(inv_mapping.__getitem__)(encoded[:, ii]))
+    return np.atleast_2d(np.array(decoded)).T
+
+
 def get_unique_rows(a):
     """Gets the unique rows in a numpy array."""
     return np.vstack({tuple(row) for row in a})

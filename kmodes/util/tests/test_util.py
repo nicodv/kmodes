@@ -7,7 +7,8 @@ import unittest
 import numpy as np
 from sklearn.utils.testing import assert_equal, assert_array_equal
 
-from kmodes.util import get_max_value_key, encode_features, get_unique_rows
+from kmodes.util import get_max_value_key, encode_features, get_unique_rows, \
+    decode_centroids
 
 
 STOCKS_CAT = np.array([
@@ -101,3 +102,21 @@ class TestUtils(unittest.TestCase):
             mask = result == row
             matches = np.where(np.all(mask, axis=1))
             self.assertEqual(len(matches), 1)
+
+    def test_decode_centroids(self):
+        enc = np.array([[3, 2],
+                        [2, 2],
+                        [3, 2],
+                        [3, 2],
+                        [1, 2],
+                        [1, 2],
+                        [4, 0],
+                        [0, 2],
+                        [0, 2],
+                        [4, 2],
+                        [3, 2],
+                        [2, 1]])
+        mapping = [{'cons': 0, 'fin': 1, 'nrg': 2, 'tech': 3, 'tel': 4},
+                   {'CN': 0, 'NL': 1, 'USA': 2}]
+        res = decode_centroids(enc, mapping)
+        assert_array_equal(res, STOCKS_CAT)
