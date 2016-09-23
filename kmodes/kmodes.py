@@ -14,7 +14,7 @@ from scipy import sparse
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 
-from .util import get_max_value_key, encode_features, get_unique_rows
+from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
 from .util.dissim import matching_dissim
 
 
@@ -258,8 +258,8 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
-    return all_centroids[best], all_labels[best], all_costs[best], \
-        all_n_iters[best], enc_map
+    return all_centroids[best], enc_map, all_labels[best], \
+        all_costs[best], all_n_iters[best]
 
 
 class KModes(BaseEstimator, ClusterMixin):
@@ -309,6 +309,9 @@ class KModes(BaseEstimator, ClusterMixin):
         Clustering cost, defined as the sum distance of all points to
         their respective cluster centroids.
 
+    n_iter_ : int
+        The number of iterations the algorithm ran for.
+
     Notes
     -----
     See:
@@ -342,14 +345,14 @@ class KModes(BaseEstimator, ClusterMixin):
         X : array-like, shape=[n_samples, n_features]
         """
 
-        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, self.enc_map_ = \
-            k_modes(X,
-                    self.n_clusters,
-                    self.max_iter,
-                    self.cat_dissim,
-                    self.init,
-                    self.n_init,
-                    self.verbose)
+        self._enc_cluster_centroids, self._enc_map, self.labels_,\
+        self.cost_, self.n_iter_ = k_modes(X,
+                                           self.n_clusters,
+                                           self.max_iter,
+                                           self.cat_dissim,
+                                           self.init,
+                                           self.n_init,
+                                           self.verbose)
         return self
 
     def fit_predict(self, X, y=None, **kwargs):
@@ -373,7 +376,15 @@ class KModes(BaseEstimator, ClusterMixin):
         labels : array, shape [n_samples,]
             Index of the cluster each sample belongs to.
         """
-        assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
+        assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
-        X, _ = encode_features(X, enc_map=self.enc_map_)
-        return _labels_cost(X, self.cluster_centroids_, self.cat_dissim)[0]
+        X, _ = encode_features(X, enc_map=self._enc_map)
+        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim)[0]
+
+    @property
+    def cluster_centroids_(self):
+        if hasattr(self, '_enc_cluster_centroids'):
+            return decode_centroids(self._enc_cluster_centroids, self._enc_map)
+        else:
+            raise AttributeError("'{}' object has no attribute 'cluster_centroids_' "
+                                 "because the model is not yet fitted.")

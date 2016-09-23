@@ -14,7 +14,7 @@ from scipy import sparse
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features, get_unique_rows
+from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
 from .util.dissim import matching_dissim, euclidean_dissim
 
 # Number of tries we give the initialization methods to find non-empty
@@ -298,8 +298,8 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
         print("Best run was number {}".format(best + 1))
 
     # Note: return gamma in case it was automatically determined.
-    return all_centroids[best], all_labels[best], all_costs[best], \
-        all_n_iters[best], gamma, enc_map
+    return all_centroids[best], enc_map, all_labels[best], \
+        all_costs[best], all_n_iters[best], gamma
 
 
 class KPrototypes(kmodes.KModes):
@@ -358,6 +358,12 @@ class KPrototypes(kmodes.KModes):
         Clustering cost, defined as the sum distance of all points to
         their respective cluster centroids.
 
+    n_iter_ : int
+        The number of iterations the algorithm ran for.
+
+    gamma : float
+        The (potentially calculated) weighing factor.
+
     Notes
     -----
     See:
@@ -388,17 +394,17 @@ class KPrototypes(kmodes.KModes):
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
-        self.cluster_centroids_, self.labels_, self.cost_, self.n_iter_, \
-            self.gamma, self.enc_map_ = k_prototypes(X,
-                                                     categorical,
-                                                     self.n_clusters,
-                                                     self.max_iter,
-                                                     self.num_dissim,
-                                                     self.cat_dissim,
-                                                     self.gamma,
-                                                     self.init,
-                                                     self.n_init,
-                                                     self.verbose)
+        self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_,\
+        self.n_iter_, self.gamma = k_prototypes(X,
+                                                categorical,
+                                                self.n_clusters,
+                                                self.max_iter,
+                                                self.num_dissim,
+                                                self.cat_dissim,
+                                                self.gamma,
+                                                self.init,
+                                                self.n_init,
+                                                self.verbose)
         return self
 
     def predict(self, X, categorical=None):
@@ -415,10 +421,21 @@ class KPrototypes(kmodes.KModes):
         labels : array, shape [n_samples,]
             Index of the cluster each sample belongs to.
         """
-        assert hasattr(self, 'cluster_centroids_'), "Model not yet fitted."
+        assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
 
         Xnum, Xcat = _split_num_cat(X, categorical)
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
-        Xcat, _ = encode_features(Xcat, enc_map=self.enc_map_)
-        return _labels_cost(Xnum, Xcat, self.cluster_centroids_,
+        Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
+        return _labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
                             self.num_dissim, self.cat_dissim, self.gamma)[0]
+
+    @property
+    def cluster_centroids_(self):
+        if hasattr(self, '_enc_cluster_centroids'):
+            return [
+                self._enc_cluster_centroids[0],
+                decode_centroids(self._enc_cluster_centroids[1], self._enc_map)
+            ]
+        else:
+            raise AttributeError("'{}' object has no attribute 'cluster_centroids_' "
+                                 "because the model is not yet fitted.")
