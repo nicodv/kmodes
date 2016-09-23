@@ -346,13 +346,13 @@ class KModes(BaseEstimator, ClusterMixin):
         """
 
         self._enc_cluster_centroids, self._enc_map, self.labels_,\
-        self.cost_, self.n_iter_ = k_modes(X,
-                                           self.n_clusters,
-                                           self.max_iter,
-                                           self.cat_dissim,
-                                           self.init,
-                                           self.n_init,
-                                           self.verbose)
+            self.cost_, self.n_iter_ = k_modes(X,
+                                               self.n_clusters,
+                                               self.max_iter,
+                                               self.cat_dissim,
+                                               self.init,
+                                               self.n_init,
+                                               self.verbose)
         return self
 
     def fit_predict(self, X, y=None, **kwargs):
