@@ -2,6 +2,11 @@ from setuptools import setup, find_packages
 
 import kmodes
 
+"""
+Python implementations of the k-modes and k-prototypes clustering algorithms,
+for clustering categorical data
+"""
+
 DESCRIPTION = __doc__
 VERSION = kmodes.__version__
 
