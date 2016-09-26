@@ -1,9 +1,6 @@
 .. image:: https://img.shields.io/pypi/v/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
     :alt: Version
-.. image:: https://img.shields.io/pypi/pyversions/kmodes.svg
-    :target: https://pypi.python.org/pypi/kmodes/
-    :alt: Supported Python versions
 .. image:: https://travis-ci.org/nicodv/kmodes.svg?branch=master
     :target: https://travis-ci.org/nicodv/kmodes
     :alt: Test Status
@@ -16,12 +13,12 @@
 .. image:: https://requires.io/github/nicodv/kmodes/requirements.svg
      :target: https://requires.io/github/nicodv/kmodes/requirements/
      :alt: Requirements Status
+.. image:: https://img.shields.io/pypi/pyversions/kmodes.svg
+    :target: https://pypi.python.org/pypi/kmodes/
+    :alt: Supported Python versions
 .. image:: https://img.shields.io/pypi/l/kmodes.svg
     :target: https://github.com/nicodv/kmodes/blob/master/LICENSE
     :alt: License
-.. image:: https://img.shields.io/pypi/dm/kmodes.svg
-    :target: https://pypi.python.org/pypi/kmodes/
-    :alt: Downloads per month
 
 kmodes
 ======
