@@ -102,6 +102,27 @@ class TestKProtoTypes(unittest.TestCase):
                       [738.5],
                       [197.667]])
         ]
+        kproto_init = kprototypes.KPrototypes(n_clusters=2, init=init_vals, verbose=2)
+        with self.assertRaises(AssertionError):
+            kproto_init.fit_predict(STOCKS, categorical=[1, 2])
+
+        # Wrong number of clusters
+        init_vals = [
+            np.array([356.975, 275.35, 738.5, 197.667, 0.]),
+            np.array([[3, 2],
+                      [0, 2],
+                      [3, 2],
+                      [2, 2]])
+        ]
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
+        with self.assertRaises(AssertionError):
+            kproto_init.fit_predict(STOCKS, categorical=[1, 2])
+
+        # Wrong number of attributes
+        init_vals = [
+            np.array([356.975, 275.35, 738.5, 197.667]),
+            np.array([3, 0, 3, 2])
+        ]
         kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
         with self.assertRaises(AssertionError):
             kproto_init.fit_predict(STOCKS, categorical=[1, 2])
@@ -213,7 +234,7 @@ class TestKProtoTypes(unittest.TestCase):
             [0., 'Slim']
         ])
         np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=2, init='Cao', verbose=2)
         with self.assertRaises(ValueError):
             kproto_cao.fit_predict(data, categorical=[1])
 

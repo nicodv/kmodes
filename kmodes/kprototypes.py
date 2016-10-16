@@ -197,14 +197,22 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                 seeds = np.random.choice(range(npoints), n_clusters)
                 centroids = Xcat[seeds]
             elif isinstance(init, list):
+                # Make sure inits are 2D arrays.
+                init = [np.atleast_2d(cur_init).T if len(cur_init.shape) == 1
+                        else cur_init
+                        for cur_init in init]
                 assert init[0].shape[0] == n_clusters, \
-                    "Incorrect number of initial numerical centroids in init."
+                    "Wrong number of initial numerical centroids in init " \
+                    "({}, should be {}).".format(init[0].shape[0], n_clusters)
                 assert init[0].shape[1] == nnumattrs, \
-                    "Incorrect number of numerical attributes in init"
+                    "Wrong number of numerical attributes in init ({}, should be {})."\
+                    .format(init[0].shape[1], nnumattrs)
                 assert init[1].shape[0] == n_clusters, \
-                    "Incorrect number of initial categorical centroids in init."
+                    "Wrong number of initial categorical centroids in init ({}, " \
+                    "should be {}).".format(init[1].shape[0], n_clusters)
                 assert init[1].shape[1] == ncatattrs, \
-                    "Incorrect number of categorical attributes in init"
+                    "Wrong number of categorical attributes in init ({}, should be {})."\
+                    .format(init[1].shape[1], ncatattrs)
                 centroids = [np.asarray(init[0], dtype=np.float64),
                              np.asarray(init[1], dtype=np.uint8)]
             else:
@@ -328,7 +336,7 @@ class KPrototypes(kmodes.KModes):
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of cost.
 
-    init : {'Huang', 'Cao', 'random' or a list of ndarrays}
+    init : {'Huang', 'Cao', 'random' or a list of ndarrays}, default: 'Cao'
         Method for initialization:
         'Huang': Method in Huang [1997, 1998]
         'Cao': Method in Cao et al. [2009]
