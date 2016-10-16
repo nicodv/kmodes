@@ -202,8 +202,15 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
             seeds = np.random.choice(range(npoints), n_clusters)
             centroids = X[seeds]
         elif hasattr(init, '__array__'):
-            assert init.shape[0] == n_clusters, "Too many initial centroids in init."
-            assert init.shape[1] == nattrs, "Too many attributes in init for X."
+            # Make sure init is a 2D array.
+            if len(init.shape) == 1:
+                init = np.atleast_2d(init).T
+            assert init.shape[0] == n_clusters, \
+                "Wrong number of initial centroids in init ({}, should be {})."\
+                .format(init.shape[0], n_clusters)
+            assert init.shape[1] == nattrs, \
+                "Wrong number of attributes in init ({}, should be {})."\
+                .format(init.shape[1], nattrs)
             centroids = np.asarray(init, dtype=np.uint8)
         else:
             raise NotImplementedError
@@ -280,7 +287,7 @@ class KModes(BaseEstimator, ClusterMixin):
         Dissimilarity function used by the algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
 
-    init : {'Huang', 'Cao', 'random' or an ndarray}
+    init : {'Huang', 'Cao', 'random' or an ndarray}, default: 'Cao'
         Method for initialization:
         'Huang': Method in Huang [1997, 1998]
         'Cao': Method in Cao et al. [2009]
@@ -294,7 +301,7 @@ class KModes(BaseEstimator, ClusterMixin):
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of cost.
 
-    verbose : integer, optional
+    verbose : int, optional
         Verbosity mode.
 
     Attributes

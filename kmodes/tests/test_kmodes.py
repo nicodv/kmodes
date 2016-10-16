@@ -147,6 +147,13 @@ class TestKModes(unittest.TestCase):
         with self.assertRaises(AssertionError):
             kmodes_init.fit(SOYBEAN)
 
+        # wrong number of attributes
+        init_vals = np.array(
+            [0, 1, 2, 3])
+        kmodes_init = kmodes.KModes(n_clusters=4, init=init_vals, verbose=2)
+        with self.assertRaises(AssertionError):
+            kmodes_init.fit(SOYBEAN)
+
     def test_kmodes_empty_init_cluster_soybean(self):
         # Check if the clustering does not crash in case of an empty cluster.
         init_vals = np.array(
