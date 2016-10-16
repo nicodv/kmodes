@@ -7,16 +7,11 @@ from kmodes.kprototypes import KPrototypes
 
 from sklearn.utils.testing import assert_false
 from sklearn.utils.testing import assert_greater
+from sklearn.utils.testing import _named_check
 
 from sklearn.utils.estimator_checks import (
-    check_parameters_default_constructible,
-    check_estimator_sparse_data,
-    check_estimators_dtypes,
-    check_estimators_empty_data_messages,
-    check_estimators_nan_inf,
-    check_estimators_overwrite_params,
-    check_fit_score_takes_y,
-    check_pipeline_consistency)
+    _yield_all_checks,
+    check_parameters_default_constructible)
 
 all_estimators = lambda: (('kmodes', KModes), ('kprototypes', KPrototypes))
 
@@ -30,7 +25,7 @@ def test_all_estimator_no_base_class():
 
 
 def test_all_estimators():
-    # Test that estimators are default-constructible, clonable
+    # Test that estimators are default-constructible, cloneable
     # and have working repr.
     estimators = all_estimators()
 
@@ -40,26 +35,24 @@ def test_all_estimators():
 
     for name, Estimator in estimators:
         # some can just not be sensibly default constructed
-        yield check_parameters_default_constructible, name, Estimator
+        yield (_named_check(check_parameters_default_constructible, name),
+               name, Estimator)
 
 
 def test_non_meta_estimators():
     # input validation etc for non-meta estimators
     estimators = all_estimators()
     for name, Estimator in estimators:
-        if name != 'kprototypes':
-            yield check_estimators_dtypes, name, Estimator
-            yield check_fit_score_takes_y, name, Estimator
-
-            # Check that all estimator yield informative messages when
-            # trained on empty datasets
-            yield check_estimators_empty_data_messages, name, Estimator
-
-            yield check_pipeline_consistency, name, Estimator
-
-            if name not in ['Imputer']:
-                # Test that all estimators check their input for NaN's and infs
-                yield check_estimators_nan_inf, name, Estimator
-
-            yield check_estimators_overwrite_params, name, Estimator
-        yield check_estimator_sparse_data, name, Estimator
+        if name == 'kmodes':
+            for check in _yield_all_checks(name, Estimator):
+                # Skip these
+                if check.__name__ not in ('check_clustering',
+                                          'check_dtype_object'):
+                    yield _named_check(check, name), name, Estimator
+        elif name == 'kprototypes':
+            for check in _yield_all_checks(name, Estimator):
+                # Only do these
+                if check.__name__ in ('check_estimator_sparse_data',
+                                      'check_clusterer_compute_labels_predict',
+                                      'check_estimators_partial_fit_n_features'):
+                    yield _named_check(check, name), name, Estimator
