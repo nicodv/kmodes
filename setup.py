@@ -21,7 +21,7 @@ setup(
     description=DESCRIPTION,
     long_description=open('README.rst', 'r').read(),
     install_requires=[
-        'numpy==1.11.1',
+        'numpy==1.11.2',
         'scikit-learn==0.17.1',
         'scipy==0.18.1',
     ],
