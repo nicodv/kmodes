@@ -9,7 +9,7 @@ import numpy as np
 
 
 def get_max_value_key(dic):
-    """Fast method to get key for maximum value in dict."""
+    """Gets the key for the maximum value in a dict."""
     v = np.array(list(dic.values()))
     k = np.array(list(dic.keys()))
 
