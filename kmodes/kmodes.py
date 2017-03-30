@@ -34,6 +34,9 @@ def init_huang(X, n_clusters, dissim):
         # as frequency counts. Since the counts are small integers,
         # memory consumption is low.
         choices = [chc for chc, wght in freq.items() for _ in range(wght)]
+        # So that we are consistent between Python versions,
+        # each with different dict ordering.
+        choices = sorted(choices)
         centroids[:, iattr] = np.random.choice(choices, n_clusters)
     # The previously chosen centroids could result in empty clusters,
     # so set centroid to closest point in X.
