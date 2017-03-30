@@ -21,9 +21,9 @@ setup(
     description=DESCRIPTION,
     long_description=open('README.rst', 'r').read(),
     install_requires=[
-        'numpy==1.12.0',
+        'numpy==1.12.1',
         'scikit-learn==0.18.1',
-        'scipy==0.18.1',
+        'scipy==0.19.0',
     ],
     classifiers=['Development Status :: 3 - Alpha',
                  'Intended Audience :: Science/Research',
