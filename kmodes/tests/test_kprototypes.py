@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.utils.testing import assert_equal
 
 from kmodes import kprototypes
+from kmodes.tests.test_kmodes import assert_cluster_splits_equal
 
 STOCKS = np.array([
     [738.5, 'tech', 'USA'],
@@ -57,7 +58,7 @@ class TestKProtoTypes(unittest.TestCase):
             kproto_huang.predict(STOCKS, categorical=[1, 2])
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kprotoypes_cao_stocks(self):
@@ -65,7 +66,7 @@ class TestKProtoTypes(unittest.TestCase):
         kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
         result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kprotoypes_predict_stocks(self):
@@ -74,7 +75,7 @@ class TestKProtoTypes(unittest.TestCase):
         kproto_cao = kproto_cao.fit(STOCKS, categorical=[1, 2])
         result = kproto_cao.predict(STOCKS2, categorical=[1, 2])
         expected = np.array([1, 1, 3, 1])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kprototypes_predict_unfitted(self):
@@ -141,7 +142,7 @@ class TestKProtoTypes(unittest.TestCase):
         kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
         result = kproto_init.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kprotoypes_missings(self):
@@ -243,7 +244,3 @@ class TestKProtoTypes(unittest.TestCase):
         kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
         with self.assertRaises(NotImplementedError):
             kproto_cao.fit(STOCKS, categorical=[])
-
-
-if __name__ == '__main__':
-    unittest.main()

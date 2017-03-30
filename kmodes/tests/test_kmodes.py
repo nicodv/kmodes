@@ -73,6 +73,14 @@ SOYBEAN2 = np.array([
 SOYBEAN2 = SOYBEAN2[:, :35]
 
 
+def assert_cluster_splits_equal(array1, array2):
+
+    def find_splits(x):
+        return np.where(np.hstack((np.array([1]), np.diff(x))))[0]
+
+    np.testing.assert_array_equal(find_splits(array1), find_splits(array2))
+
+
 class TestKModes(unittest.TestCase):
 
     def test_pickle(self):
@@ -87,7 +95,7 @@ class TestKModes(unittest.TestCase):
         expected = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                              0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1,
                              2, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1, 2, 1])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kmodes_cao_soybean(self):
@@ -96,7 +104,7 @@ class TestKModes(unittest.TestCase):
         expected = np.array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1,
                              1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kmodes_predict_soybean(self):
@@ -104,7 +112,7 @@ class TestKModes(unittest.TestCase):
         kmodes_cao = kmodes_cao.fit(SOYBEAN)
         result = kmodes_cao.predict(SOYBEAN2)
         expected = np.array([2, 1, 3, 0])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
     def test_kmodes_predict_unfitted(self):
@@ -134,7 +142,7 @@ class TestKModes(unittest.TestCase):
         expected = np.array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1,
                              1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
 
         # 5 initial centroids, 4 n_clusters
         init_vals = np.array(
@@ -186,11 +194,7 @@ class TestKModes(unittest.TestCase):
         kmodes_cao = kmodes.KModes(n_clusters=6, init='Cao', verbose=2)
         result = kmodes_cao.fit_predict(data, categorical=[1])
         expected = np.array([0, 0, 0, 1, 1, 1])
-        np.testing.assert_array_equal(result, expected)
+        assert_cluster_splits_equal(result, expected)
         np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
                                       np.array([[0, 1],
                                                 [0, 2]]))
-
-
-if __name__ == '__main__':
-    unittest.main()
