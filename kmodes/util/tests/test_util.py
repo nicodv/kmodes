@@ -48,6 +48,10 @@ class TestUtils(unittest.TestCase):
         max_key = get_max_value_key({'a': 3, 'b': 10, 'c': -1, 'd': 9.9})
         assert_equal('b', max_key)
 
+        # Make sure minimum key is consistently selected for equal values.
+        max_key = get_max_value_key({'d': 10, 'c': 10, 'b': 10, 'a': 10})
+        assert_equal('a', max_key)
+
     def test_encode_features(self):
         X_enc, enc_map = encode_features(STOCKS_CAT)
         expected_X = np.array([[3, 2],

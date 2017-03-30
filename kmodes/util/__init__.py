@@ -10,9 +10,16 @@ import numpy as np
 
 def get_max_value_key(dic):
     """Fast method to get key for maximum value in dict."""
-    v = list(dic.values())
-    k = list(dic.keys())
-    return k[v.index(max(v))]
+    v = np.array(list(dic.values()))
+    k = np.array(list(dic.keys()))
+
+    maxima = np.where(v == np.max(v))[0]
+    if len(maxima) == 1:
+        return k[maxima[0]]
+    else:
+        # In order to be consistent, always selects the minimum key
+        # (guaranteed to be unique) when there are multiple maximum values.
+        return k[maxima[np.argmin(k[maxima])]]
 
 
 def encode_features(X, enc_map=None):
