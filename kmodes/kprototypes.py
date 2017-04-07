@@ -189,11 +189,11 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             # _____ INIT _____
             if verbose:
                 print("Init: initializing centroids")
-            if isinstance(init, str) and init == 'Huang':
+            if isinstance(init, str) and init.lower() == 'huang':
                 centroids = kmodes.init_huang(Xcat, n_clusters, cat_dissim)
-            elif isinstance(init, str) and init == 'Cao':
+            elif isinstance(init, str) and init.lower() == 'cao':
                 centroids = kmodes.init_cao(Xcat, n_clusters, cat_dissim)
-            elif isinstance(init, str) and init == 'random':
+            elif isinstance(init, str) and init.lower() == 'random':
                 seeds = np.random.choice(range(npoints), n_clusters)
                 centroids = Xcat[seeds]
             elif isinstance(init, list):
