@@ -197,11 +197,11 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
         # _____ INIT _____
         if verbose:
             print("Init: initializing centroids")
-        if isinstance(init, str) and init == 'Huang':
+        if isinstance(init, str) and init.lower() == 'huang':
             centroids = init_huang(X, n_clusters, dissim)
-        elif isinstance(init, str) and init == 'Cao':
+        elif isinstance(init, str) and init.lower() == 'cao':
             centroids = init_cao(X, n_clusters, dissim)
-        elif isinstance(init, str) and init == 'random':
+        elif isinstance(init, str) and init.lower() == 'random':
             seeds = np.random.choice(range(npoints), n_clusters)
             centroids = X[seeds]
         elif hasattr(init, '__array__'):
