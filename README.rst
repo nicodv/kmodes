@@ -16,6 +16,9 @@
 .. image:: https://img.shields.io/pypi/pyversions/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
     :alt: Supported Python versions
+.. image:: https://img.shields.io/github/stars/nicodv/kmodes.svg
+    :target: https://github.com/nicodv/kmodes/
+    :alt: Github stars
 .. image:: https://img.shields.io/pypi/l/kmodes.svg
     :target: https://github.com/nicodv/kmodes/blob/master/LICENSE
     :alt: License
