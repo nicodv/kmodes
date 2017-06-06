@@ -169,6 +169,10 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
     if sparse.issparse(X):
         raise TypeError("k-modes does not support sparse data.")
 
+    # Convert pandas objects to numpy arrays.
+    if 'pandas' in str(X.__class__):
+        X = X.values
+
     X = check_array(X, dtype=None)
 
     # Convert the categorical values in X to integers for speed.

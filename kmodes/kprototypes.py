@@ -133,6 +133,10 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     if sparse.issparse(X):
         raise TypeError("k-prototypes does not support sparse data.")
 
+    # Convert pandas objects to numpy arrays.
+    if 'pandas' in str(X.__class__):
+        X = X.values
+
     if categorical is None or not categorical:
         raise NotImplementedError(
             "No categorical data selected, effectively doing k-means. "
