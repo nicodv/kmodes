@@ -5,6 +5,8 @@ K-modes clustering for categorical data
 # Author: 'Nico de Vos' <njdevos@gmail.com>
 # License: MIT
 
+# Modified to add support for Ng et al.'s dissimilarity measure (Ben Andow <beandow@ncsu.edu>)
+
 # pylint: disable=unused-argument,attribute-defined-outside-init
 
 from collections import defaultdict
@@ -113,7 +115,7 @@ def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
     return cl_attr_freq, membship, centroids
 
 
-def _labels_cost(X, centroids, dissim):
+def _labels_cost(X, centroids, dissim, membship):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-modes algorithm.
     """
@@ -124,7 +126,7 @@ def _labels_cost(X, centroids, dissim):
     cost = 0.
     labels = np.empty(npoints, dtype=np.uint8)
     for ipoint, curpoint in enumerate(X):
-        diss = dissim(centroids, curpoint)
+        diss = dissim(a=centroids, b=curpoint, X=X, membship=membship)
         clust = np.argmin(diss)
         labels[ipoint] = clust
         cost += diss[clust]
@@ -136,7 +138,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim):
     """Single iteration of k-modes clustering algorithm"""
     moves = 0
     for ipoint, curpoint in enumerate(X):
-        clust = np.argmin(dissim(centroids, curpoint))
+        clust = np.argmin(dissim(a=centroids, b=curpoint, X=X, membship=membship))
         if membship[clust, ipoint]:
             # Point is already in its right place.
             continue
@@ -163,7 +165,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim):
     return centroids, moves
 
 
-def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
+def k_modes(X, n_clusters, max_iter, init_dissim, kmodes_dissim, init, n_init, verbose):
     """k-modes algorithm"""
 
     if sparse.issparse(X):
@@ -198,9 +200,9 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
         if verbose:
             print("Init: initializing centroids")
         if isinstance(init, str) and init.lower() == 'huang':
-            centroids = init_huang(X, n_clusters, dissim)
+            centroids = init_huang(X, n_clusters, init_dissim)
         elif isinstance(init, str) and init.lower() == 'cao':
-            centroids = init_cao(X, n_clusters, dissim)
+            centroids = init_cao(X, n_clusters, init_dissim)
         elif isinstance(init, str) and init.lower() == 'random':
             seeds = np.random.choice(range(npoints), n_clusters)
             centroids = X[seeds]
@@ -227,7 +229,7 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
                         for _ in range(n_clusters)]
         for ipoint, curpoint in enumerate(X):
             # Initial assignment to clusters
-            clust = np.argmin(dissim(centroids, curpoint))
+            clust = np.argmin(kmodes_dissim(a=centroids, b=curpoint, X=X, membship=membship))
             membship[clust, ipoint] = 1
             # Count attribute values per cluster.
             for iattr, curattr in enumerate(curpoint):
@@ -249,9 +251,9 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
         cost = np.Inf
         while itr <= max_iter and not converged:
             itr += 1
-            centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim)
+            centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship, kmodes_dissim)
             # All points seen in this iteration
-            labels, ncost = _labels_cost(X, centroids, dissim)
+            labels, ncost = _labels_cost(X, centroids, kmodes_dissim, membship)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
@@ -286,8 +288,12 @@ class KModes(BaseEstimator, ClusterMixin):
         Maximum number of iterations of the k-modes algorithm for a
         single run.
 
-    cat_dissim : func, default: matching_dissim
-        Dissimilarity function used by the algorithm for categorical variables.
+    init_cat_dissim : func, default: matching_dissim
+        Dissimilarity function used by the initialization algorithm for categorical variables.
+        Defaults to the matching dissimilarity function.
+
+    kmodes_cat_dissim : func, default: matching_dissim
+        Dissimilarity function used by the kmodes algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
 
     init : {'Huang', 'Cao', 'random' or an ndarray}, default: 'Cao'
@@ -331,12 +337,13 @@ class KModes(BaseEstimator, ClusterMixin):
 
     """
 
-    def __init__(self, n_clusters=8, max_iter=100, cat_dissim=matching_dissim,
+    def __init__(self, n_clusters=8, max_iter=100, init_cat_dissim=matching_dissim, kmodes_cat_dissim=matching_dissim,
                  init='Cao', n_init=1, verbose=0):
 
         self.n_clusters = n_clusters
         self.max_iter = max_iter
-        self.cat_dissim = cat_dissim
+        self.init_cat_dissim = init_cat_dissim
+        self.kmodes_cat_dissim = kmodes_cat_dissim
         self.init = init
         self.n_init = n_init
         self.verbose = verbose
@@ -359,7 +366,8 @@ class KModes(BaseEstimator, ClusterMixin):
             self.cost_, self.n_iter_ = k_modes(X,
                                                self.n_clusters,
                                                self.max_iter,
-                                               self.cat_dissim,
+                                               self.init_cat_dissim,
+                                               self.kmodes_cat_dissim,
                                                self.init,
                                                self.n_init,
                                                self.verbose)
@@ -372,6 +380,9 @@ class KModes(BaseEstimator, ClusterMixin):
         predict(X).
         """
         return self.fit(X, **kwargs).labels_
+
+    def genMembshipArray(clusters):
+        return np.array([[1 if v == num else 0 for v in clusters ] for num in range(0, np.amax(clusters) + 1)])
 
     def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
@@ -389,7 +400,7 @@ class KModes(BaseEstimator, ClusterMixin):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim)[0]
+        return _labels_cost(X, self._enc_cluster_centroids, self.kmodes_cat_dissim, genMembshipArray(self.labels_))[0]
 
     @property
     def cluster_centroids_(self):
