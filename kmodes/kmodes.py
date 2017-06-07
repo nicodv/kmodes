@@ -4,8 +4,7 @@ K-modes clustering for categorical data
 
 # Author: 'Nico de Vos' <njdevos@gmail.com>
 # License: MIT
-
-# Modified to add support for Ng et al.'s dissimilarity measure (Ben Andow <beandow@ncsu.edu>)
+# Added support for Ng et al.'s dissimilarity measure (Ben Andow <beandow@ncsu.edu>)
 
 # pylint: disable=unused-argument,attribute-defined-outside-init
 
