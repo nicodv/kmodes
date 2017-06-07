@@ -445,7 +445,7 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
         return _labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                            self.num_dissim, self.init_cat_dissim, self.kmodes_cat_dissim, self.gamma, self.genMembshipArray())[0]
+                            self.num_dissim, self.kmodes_cat_dissim, self.gamma, self.genMembshipArray())[0]
 
     @property
     def cluster_centroids_(self):
