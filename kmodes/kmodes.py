@@ -21,7 +21,7 @@ from .util.dissim import matching_dissim
 
 def init_huang(X, n_clusters, dissim):
     """Initialize centroids according to method by Huang [1997]."""
-    nattrs = X.shape[1]
+    npoints, nattrs = X.shape
     centroids = np.empty((n_clusters, nattrs), dtype='object')
     # determine frequencies of attributes
     for iattr in range(nattrs):
@@ -39,10 +39,11 @@ def init_huang(X, n_clusters, dissim):
         # each with different dict ordering.
         choices = sorted(choices)
         centroids[:, iattr] = np.random.choice(choices, n_clusters)
+    membship = np.zeros((npoints, npoints), dtype=np.uint8)
     # The previously chosen centroids could result in empty clusters,
     # so set centroid to closest point in X.
     for ik in range(n_clusters):
-        ndx = np.argsort(dissim(X, centroids[ik]))
+        ndx = np.argsort(dissim(X, centroids[ik], X=X, membship=membship))
         # We want the centroid to be unique.
         while np.all(X[ndx[0]] == centroids, axis=1).any():
             ndx = np.delete(ndx, 0)
@@ -58,7 +59,7 @@ def init_cao(X, n_clusters, dissim):
     """
     npoints, nattrs = X.shape
     centroids = np.empty((n_clusters, nattrs), dtype='object')
-    # Method is base don determining density of points.
+    # Method is based on determining density of points.
     dens = np.zeros(npoints)
     for iattr in range(nattrs):
         freq = defaultdict(int)
@@ -73,10 +74,11 @@ def init_cao(X, n_clusters, dissim):
     if n_clusters > 1:
         # For the remaining centroids, choose maximum dens * dissim to the
         # (already assigned) centroid with the lowest dens * dissim.
+        membship = np.zeros((npoints, npoints), dtype=np.uint8)
         for ik in range(1, n_clusters):
             dd = np.empty((ik, npoints))
             for ikk in range(ik):
-                dd[ikk] = dissim(X, centroids[ikk]) * dens
+                dd[ikk] = dissim(X, centroids[ikk], X=X, membship=membship) * dens
             centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
 
     return centroids
@@ -125,7 +127,7 @@ def _labels_cost(X, centroids, dissim, membship):
     cost = 0.
     labels = np.empty(npoints, dtype=np.uint8)
     for ipoint, curpoint in enumerate(X):
-        diss = dissim(a=centroids, b=curpoint, X=X, membship=membship)
+        diss = dissim(centroids, curpoint, X=X, membship=membship)
         clust = np.argmin(diss)
         labels[ipoint] = clust
         cost += diss[clust]
@@ -137,7 +139,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim):
     """Single iteration of k-modes clustering algorithm"""
     moves = 0
     for ipoint, curpoint in enumerate(X):
-        clust = np.argmin(dissim(a=centroids, b=curpoint, X=X, membship=membship))
+        clust = np.argmin(dissim(centroids, curpoint, X=X, membship=membship))
         if membship[clust, ipoint]:
             # Point is already in its right place.
             continue
@@ -164,7 +166,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim):
     return centroids, moves
 
 
-def k_modes(X, n_clusters, max_iter, init_dissim, kmodes_dissim, init, n_init, verbose):
+def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
     """k-modes algorithm"""
 
     if sparse.issparse(X):
@@ -199,9 +201,9 @@ def k_modes(X, n_clusters, max_iter, init_dissim, kmodes_dissim, init, n_init, v
         if verbose:
             print("Init: initializing centroids")
         if isinstance(init, str) and init.lower() == 'huang':
-            centroids = init_huang(X, n_clusters, init_dissim)
+            centroids = init_huang(X, n_clusters, dissim)
         elif isinstance(init, str) and init.lower() == 'cao':
-            centroids = init_cao(X, n_clusters, init_dissim)
+            centroids = init_cao(X, n_clusters, dissim)
         elif isinstance(init, str) and init.lower() == 'random':
             seeds = np.random.choice(range(npoints), n_clusters)
             centroids = X[seeds]
@@ -228,7 +230,7 @@ def k_modes(X, n_clusters, max_iter, init_dissim, kmodes_dissim, init, n_init, v
                         for _ in range(n_clusters)]
         for ipoint, curpoint in enumerate(X):
             # Initial assignment to clusters
-            clust = np.argmin(kmodes_dissim(a=centroids, b=curpoint, X=X, membship=membship))
+            clust = np.argmin(dissim(centroids, curpoint, X=X, membship=membship))
             membship[clust, ipoint] = 1
             # Count attribute values per cluster.
             for iattr, curattr in enumerate(curpoint):
@@ -250,9 +252,9 @@ def k_modes(X, n_clusters, max_iter, init_dissim, kmodes_dissim, init, n_init, v
         cost = np.Inf
         while itr <= max_iter and not converged:
             itr += 1
-            centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship, kmodes_dissim)
+            centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim)
             # All points seen in this iteration
-            labels, ncost = _labels_cost(X, centroids, kmodes_dissim, membship)
+            labels, ncost = _labels_cost(X, centroids, dissim, membship)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
@@ -287,11 +289,7 @@ class KModes(BaseEstimator, ClusterMixin):
         Maximum number of iterations of the k-modes algorithm for a
         single run.
 
-    init_cat_dissim : func, default: matching_dissim
-        Dissimilarity function used by the initialization algorithm for categorical variables.
-        Defaults to the matching dissimilarity function.
-
-    kmodes_cat_dissim : func, default: matching_dissim
+    cat_dissim : func, default: matching_dissim
         Dissimilarity function used by the kmodes algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
 
@@ -336,13 +334,12 @@ class KModes(BaseEstimator, ClusterMixin):
 
     """
 
-    def __init__(self, n_clusters=8, max_iter=100, init_cat_dissim=matching_dissim, kmodes_cat_dissim=matching_dissim,
+    def __init__(self, n_clusters=8, max_iter=100, cat_dissim=matching_dissim,
                  init='Cao', n_init=1, verbose=0):
 
         self.n_clusters = n_clusters
         self.max_iter = max_iter
-        self.init_cat_dissim = init_cat_dissim
-        self.kmodes_cat_dissim = kmodes_cat_dissim
+        self.cat_dissim = cat_dissim
         self.init = init
         self.n_init = n_init
         self.verbose = verbose
@@ -365,8 +362,7 @@ class KModes(BaseEstimator, ClusterMixin):
             self.cost_, self.n_iter_ = k_modes(X,
                                                self.n_clusters,
                                                self.max_iter,
-                                               self.init_cat_dissim,
-                                               self.kmodes_cat_dissim,
+                                               self.cat_dissim,
                                                self.init,
                                                self.n_init,
                                                self.verbose)
@@ -399,7 +395,7 @@ class KModes(BaseEstimator, ClusterMixin):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.kmodes_cat_dissim, self.genMembshipArray())[0]
+        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim, self.genMembshipArray())[0]
 
     @property
     def cluster_centroids_(self):

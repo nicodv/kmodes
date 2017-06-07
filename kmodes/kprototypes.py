@@ -50,7 +50,7 @@ def _split_num_cat(X, categorical):
     return Xnum, Xcat
 
 
-def _labels_cost(Xnum, Xcat, centroids, num_dissim, kmodes_cat_dissim, gamma, membship):
+def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-prototypes algorithm.
     """
@@ -63,7 +63,7 @@ def _labels_cost(Xnum, Xcat, centroids, num_dissim, kmodes_cat_dissim, gamma, me
     for ipoint in range(npoints):
         # Numerical cost = sum of Euclidean distances
         num_costs = num_dissim(centroids[0], Xnum[ipoint])
-        cat_costs = kmodes_cat_dissim(a=centroids[1], b=Xcat[ipoint], X=Xcat, membship=membship)
+        cat_costs = cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
         # Gamma relates the categorical cost to the numerical cost.
         tot_costs = num_costs + gamma * cat_costs
         clust = np.argmin(tot_costs)
@@ -74,13 +74,13 @@ def _labels_cost(Xnum, Xcat, centroids, num_dissim, kmodes_cat_dissim, gamma, me
 
 
 def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
-                       membship, num_dissim, kmodes_cat_dissim, gamma):
+                       membship, num_dissim, cat_dissim, gamma):
     """Single iteration of the k-prototypes algorithm"""
     moves = 0
     for ipoint in range(Xnum.shape[0]):
         clust = np.argmin(
             num_dissim(centroids[0], Xnum[ipoint]) +
-            gamma * kmodes_cat_dissim(a=centroids[1], b=Xcat[ipoint], X=Xcat, membship=membship)
+            gamma * cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
         )
         if membship[clust, ipoint]:
             # Point is already in its right place.
@@ -127,7 +127,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
     return centroids, moves
 
 
-def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, init_cat_dissim, kmodes_cat_dissim,
+def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                  gamma, init, n_init, verbose):
     """k-prototypes algorithm"""
 
@@ -191,9 +191,9 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, init_cat_diss
             if verbose:
                 print("Init: initializing centroids")
             if isinstance(init, str) and init.lower() == 'huang':
-                centroids = kmodes.init_huang(Xcat, n_clusters, init_cat_dissim)
+                centroids = kmodes.init_huang(Xcat, n_clusters, cat_dissim)
             elif isinstance(init, str) and init.lower() == 'cao':
-                centroids = kmodes.init_cao(Xcat, n_clusters, init_cat_dissim)
+                centroids = kmodes.init_cao(Xcat, n_clusters, cat_dissim)
             elif isinstance(init, str) and init.lower() == 'random':
                 seeds = np.random.choice(range(npoints), n_clusters)
                 centroids = Xcat[seeds]
@@ -243,7 +243,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, init_cat_diss
                 # Initial assignment to clusters
                 clust = np.argmin(
                     num_dissim(centroids[0], Xnum[ipoint]) +
-                    gamma * kmodes_cat_dissim(a=centroids[1], b=Xcat[ipoint], X=Xcat, membship=membship)
+                    gamma * cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
                 )
                 membship[clust, ipoint] = 1
                 # Count attribute values per cluster.
@@ -285,11 +285,11 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, init_cat_diss
             itr += 1
             centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
                                                   cl_attr_sum, cl_attr_freq,
-                                                  membship, num_dissim, kmodes_cat_dissim, gamma)
+                                                  membship, num_dissim, cat_dissim, gamma)
 
             # All points seen in this iteration
             labels, ncost = _labels_cost(Xnum, Xcat, centroids,
-                                         num_dissim, kmodes_cat_dissim, gamma, membship)
+                                         num_dissim, cat_dissim, gamma, membship)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
@@ -328,11 +328,7 @@ class KPrototypes(kmodes.KModes):
         Dissimilarity function used by the algorithm for numerical variables.
         Defaults to the Euclidian dissimilarity function.
 
-    init_cat_dissim : func, default: matching_dissim
-        Dissimilarity function used by the algorithm for categorical variables.
-        Defaults to the matching dissimilarity function.
-
-    kmodes_cat_dissim : func, default: matching_dissim
+    cat_dissim : func, default: matching_dissim
         Dissimilarity function used by the kmodes algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
 
@@ -387,11 +383,10 @@ class KPrototypes(kmodes.KModes):
     """
 
     def __init__(self, n_clusters=8, max_iter=100, num_dissim=euclidean_dissim,
-				 init_cat_dissim=matching_dissim, kmodes_cat_dissim=matching_dissim,
-                 init='Huang', n_init=10, gamma=None,
+				 cat_dissim=matching_dissim, init='Huang', n_init=10, gamma=None,
                  verbose=0):
 
-        super(KPrototypes, self).__init__(n_clusters, max_iter, init_cat_dissim, kmodes_cat_dissim,
+        super(KPrototypes, self).__init__(n_clusters, max_iter, cat_dissim,
                                           init, n_init, verbose)
 
         self.num_dissim = num_dissim
@@ -414,8 +409,7 @@ class KPrototypes(kmodes.KModes):
                                                     self.n_clusters,
                                                     self.max_iter,
                                                     self.num_dissim,
-                                                    self.init_cat_dissim,
-													self.kmodes_cat_dissim,
+                                                    self.cat_dissim,
                                                     self.gamma,
                                                     self.init,
                                                     self.n_init,
@@ -445,7 +439,7 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
         return _labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                            self.num_dissim, self.kmodes_cat_dissim, self.gamma, self.genMembshipArray())[0]
+                            self.num_dissim, self.cat_dissim, self.gamma, self.genMembshipArray())[0]
 
     @property
     def cluster_centroids_(self):

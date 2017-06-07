@@ -25,9 +25,12 @@ def euclidean_dissim(a, b, **kwargs):
 # 	Transactions on Pattern Analysis and Machine Intelligence, Vol. 29, No. 3,
 # 	January, 2007
 # Author: 'Ben Andow' <beandow@ncsu.edu>
-def ng_dissim(a, b, **kwargs):
-    X = kwargs['X']
-    membship = kwargs['membship']
+# Note that membship must be a rectangular array such that the len(membship) = len(a) and len(membship[i]) = X.shape[1]
+def ng_dissim(a, b, X, membship):
+    """Ng et al.'s dissimilarity measure"""
+    if len(membship) != len(a) and len(membship[0]) != X.shape[1]:
+        raise ValueError("'membship' must be a rectangular array where the number of rows in 'membship' equals the number of rows in 'a' and the number of columns in 'membship' equals the number of rows in 'X'.")
+
     return np.array([ np.array([calc_dissim(b, X, membship[idj], idr, idj) if b[idr] == t else 1.0 for idr,t in enumerate(val_a) ]).sum(0) for idj,val_a in enumerate(a) ])
 
 # Num objects w/ category value x_{i,r} for rth attr in jth cluster
