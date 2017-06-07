@@ -399,7 +399,7 @@ class KModes(BaseEstimator, ClusterMixin):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.kmodes_cat_dissim, self.genMembshipArray(self.labels_))[0]
+        return _labels_cost(X, self._enc_cluster_centroids, self.kmodes_cat_dissim, self.genMembshipArray())[0]
 
     @property
     def cluster_centroids_(self):
