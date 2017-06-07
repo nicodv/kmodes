@@ -380,8 +380,8 @@ class KModes(BaseEstimator, ClusterMixin):
         """
         return self.fit(X, **kwargs).labels_
 
-    def genMembshipArray(clusters):
-        return np.array([[1 if v == num else 0 for v in clusters ] for num in range(0, np.amax(clusters) + 1)])
+    def genMembshipArray(self):
+        return np.array([[1 if v == num else 0 for v in self.labels_ ] for num in range(0, np.amax(self.labels_) + 1)])
 
     def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
@@ -399,7 +399,7 @@ class KModes(BaseEstimator, ClusterMixin):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.kmodes_cat_dissim, genMembshipArray(self.labels_))[0]
+        return _labels_cost(X, self._enc_cluster_centroids, self.kmodes_cat_dissim, self.genMembshipArray(self.labels_))[0]
 
     @property
     def cluster_centroids_(self):
