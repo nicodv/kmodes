@@ -15,7 +15,7 @@ from scipy import sparse
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
+from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, genMembshipArray
 from .util.dissim import matching_dissim
 
 
@@ -376,9 +376,6 @@ class KModes(BaseEstimator, ClusterMixin):
         """
         return self.fit(X, **kwargs).labels_
 
-    def genMembshipArray(self):
-        return np.array([[1 if v == num else 0 for v in self.labels_ ] for num in range(0, np.amax(self.labels_) + 1)])
-
     def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
 
@@ -395,7 +392,7 @@ class KModes(BaseEstimator, ClusterMixin):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim, self.genMembshipArray())[0]
+        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim, genMembshipArray(self.labels_))[0]
 
     @property
     def cluster_centroids_(self):

@@ -15,7 +15,7 @@ from scipy import sparse
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
+from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, genMembshipArray
 from .util.dissim import matching_dissim, euclidean_dissim
 
 # Number of tries we give the initialization methods to find non-empty
@@ -416,9 +416,6 @@ class KPrototypes(kmodes.KModes):
                                                     self.verbose)
         return self
 
-    def genMembshipArray(self):
-        return np.array([[1 if v == num else 0 for v in self.labels_ ] for num in range(0, np.amax(self.labels_) + 1)])
-
     def predict(self, X, categorical=None):
         """Predict the closest cluster each sample in X belongs to.
 
@@ -439,7 +436,7 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
         return _labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                            self.num_dissim, self.cat_dissim, self.gamma, self.genMembshipArray())[0]
+                            self.num_dissim, self.cat_dissim, self.gamma, genMembshipArray(self.labels_))[0]
 
     @property
     def cluster_centroids_(self):
