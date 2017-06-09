@@ -2,10 +2,6 @@
 K-prototypes clustering for mixed categorical and numerical data
 """
 
-# Author: 'Nico de Vos' <njdevos@gmail.com>
-# License: MIT
-# Added support for Ng et al.'s dissimilarity measure (Ben Andow <beandow@ncsu.edu>)
-
 # pylint: disable=super-on-old-class,unused-argument,attribute-defined-outside-init
 
 from collections import defaultdict
@@ -383,7 +379,7 @@ class KPrototypes(kmodes.KModes):
     """
 
     def __init__(self, n_clusters=8, max_iter=100, num_dissim=euclidean_dissim,
-				 cat_dissim=matching_dissim, init='Huang', n_init=10, gamma=None,
+                 cat_dissim=matching_dissim, init='Huang', n_init=10, gamma=None,
                  verbose=0):
 
         super(KPrototypes, self).__init__(n_clusters, max_iter, cat_dissim,
