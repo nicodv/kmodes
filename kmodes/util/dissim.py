@@ -31,14 +31,14 @@ def ng_dissim(a, b, X, membship):
     if len(membship) != len(a) and len(membship[0]) != X.shape[1]:
         raise ValueError("'membship' must be a rectangular array where the number of rows in 'membship' equals the number of rows in 'a' and the number of columns in 'membship' equals the number of rows in 'X'.")
 
-    return np.array([ np.array([calc_dissim(b, X, membship[idj], idr, idj) if b[idr] == t else 1.0 for idr,t in enumerate(val_a) ]).sum(0) for idj,val_a in enumerate(a) ])
+    return np.array([ np.array([calc_dissim(b, X, membship[idj], idr) if b[idr] == t else 1.0 for idr,t in enumerate(val_a) ]).sum(0) for idj,val_a in enumerate(a) ])
 
 # Num objects w/ category value x_{i,r} for rth attr in jth cluster
 def calcCJR(b, X, memj, idr):
     xcids = np.where(np.in1d(memj.ravel(), [1]).reshape(memj.shape))
     return float((np.take(X, xcids, axis=0)[0][:, idr] == b[idr]).sum(0))
 
-def calc_dissim(b, X, memj, idr, idj):
+def calc_dissim(b, X, memj, idr):
     CJ = float(np.sum(memj))           # Size of jth cluster
     return (1.0 - (calcCJR(b, X, memj, idr) / CJ)) if CJ != 0.0 else 0.0
 
