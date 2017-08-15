@@ -43,16 +43,17 @@ def test_non_meta_estimators():
     # input validation etc for non-meta estimators
     estimators = all_estimators()
     for name, Estimator in estimators:
+        estimator = Estimator()
         if name == 'kmodes':
             for check in _yield_all_checks(name, Estimator):
                 # Skip these
                 if check.__name__ not in ('check_clustering',
                                           'check_dtype_object'):
-                    yield _named_check(check, name), name, Estimator
+                    yield _named_check(check, name), name, estimator
         elif name == 'kprototypes':
             for check in _yield_all_checks(name, Estimator):
                 # Only do these
                 if check.__name__ in ('check_estimator_sparse_data',
                                       'check_clusterer_compute_labels_predict',
                                       'check_estimators_partial_fit_n_features'):
-                    yield _named_check(check, name), name, Estimator
+                    yield _named_check(check, name), name, estimator
