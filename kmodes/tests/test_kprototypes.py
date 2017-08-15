@@ -246,8 +246,6 @@ class TestKProtoTypes(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             kproto_cao.fit(STOCKS, categorical=[])
 
-
-    # Test cases for Ng dissimilarity measure (Ben Andow <beandow@ncsu.edu>)
     def test_kprotoypes_huang_stocks_ng(self):
         np.random.seed(42)
         kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1, init='Huang', verbose=2, cat_dissim=ng_dissim)

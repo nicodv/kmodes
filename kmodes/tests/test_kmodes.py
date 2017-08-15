@@ -199,7 +199,6 @@ class TestKModes(unittest.TestCase):
                                       np.array([[0, 1],
                                                 [0, 2]]))
 
-    # Test cases for Ng dissimilarity measure (Ben Andow <beandow@ncsu.edu>)
     def test_kmodes_huang_soybean_ng(self):
         np.random.seed(42)
         kmodes_huang = kmodes.KModes(n_clusters=4, n_init=2, init='Huang', verbose=2, cat_dissim=ng_dissim)
