@@ -69,6 +69,8 @@ def get_unique_rows(a):
     """Gets the unique rows in a numpy array."""
     return np.vstack({tuple(row) for row in a})
 
-def genMembshipArray(labels):
+
+def gen_membship_array(labels):
     """Generates the cluster membership array"""
-    return np.array([[1 if v == num else 0 for v in labels ] for num in range(0, np.amax(labels) + 1)])
+    return np.array([[1 if v == num else 0 for v in labels]
+                     for num in range(0, np.amax(labels) + 1)])

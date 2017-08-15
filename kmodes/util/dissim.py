@@ -5,12 +5,12 @@ Dissimilarity measures for clustering
 import numpy as np
 
 
-def matching_dissim(a, b, **kwargs):
+def matching_dissim(a, b, **_):
     """Simple matching dissimilarity function"""
     return np.sum(a != b, axis=1)
 
 
-def euclidean_dissim(a, b, **kwargs):
+def euclidean_dissim(a, b, **_):
     """Euclidean distance dissimilarity function"""
     if np.isnan(a).any() or np.isnan(b).any():
         raise ValueError("Missing values detected in numerical columns.")
@@ -37,13 +37,13 @@ def ng_dissim(a, b, X, membship):
         CJ = float(np.sum(memj))
         return (1.0 - (calcCJR(b, X, memj, idr) / CJ)) if CJ != 0.0 else 0.0
 
-    if len(membship) != len(a) and len(membship[0]) != X.shape[1]:
+    if len(membship) != a.shape[0] and len(membship[0]) != X.shape[1]:
         raise ValueError("'membship' must be a rectangular array where "
                          "the number of rows in 'membship' equals the "
                          "number of rows in 'a' and the number of "
                          "columns in 'membship' equals the number of rows in 'X'.")
 
-    return np.array([np.array([calc_dissim(b, X, membship[idj], idr, idj)
+    return np.array([np.array([calc_dissim(b, X, membship[idj], idr)
                                if b[idr] == t else 1.0
                                for idr, t in enumerate(val_a)]).sum(0)
                      for idj, val_a in enumerate(a)])

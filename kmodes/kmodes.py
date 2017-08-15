@@ -11,7 +11,8 @@ from scipy import sparse
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, genMembshipArray
+from .util import get_max_value_key, encode_features, get_unique_rows, \
+    decode_centroids, gen_membship_array
 from .util.dissim import matching_dissim
 
 
@@ -286,7 +287,7 @@ class KModes(BaseEstimator, ClusterMixin):
         single run.
 
     cat_dissim : func, default: matching_dissim
-        Dissimilarity function used by the kmodes algorithm for categorical variables.
+        Dissimilarity function used by the k-modes algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
 
     init : {'Huang', 'Cao', 'random' or an ndarray}, default: 'Cao'
@@ -356,12 +357,12 @@ class KModes(BaseEstimator, ClusterMixin):
 
         self._enc_cluster_centroids, self._enc_map, self.labels_,\
             self.cost_, self.n_iter_, self.X = k_modes(X,
-                                               self.n_clusters,
-                                               self.max_iter,
-                                               self.cat_dissim,
-                                               self.init,
-                                               self.n_init,
-                                               self.verbose)
+                                                       self.n_clusters,
+                                                       self.max_iter,
+                                                       self.cat_dissim,
+                                                       self.init,
+                                                       self.n_init,
+                                                       self.verbose)
         return self
 
     def fit_predict(self, X, y=None, **kwargs):
@@ -370,7 +371,7 @@ class KModes(BaseEstimator, ClusterMixin):
         Convenience method; equivalent to calling fit(X) followed by
         predict(X).
         """
-        return self.fit(X, **kwargs).labels_
+        return self.fit(X, **kwargs).predict(X, **kwargs)
 
     def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
@@ -388,7 +389,8 @@ class KModes(BaseEstimator, ClusterMixin):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim, genMembshipArray(self.labels_), self.X)[0]
+        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim,
+                            gen_membship_array(self.labels_), self.X)[0]
 
     @property
     def cluster_centroids_(self):

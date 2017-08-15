@@ -11,7 +11,8 @@ from scipy import sparse
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, genMembshipArray
+from .util import get_max_value_key, encode_features, get_unique_rows, \
+    decode_centroids, gen_membship_array
 from .util.dissim import matching_dissim, euclidean_dissim
 
 # Number of tries we give the initialization methods to find non-empty
@@ -401,15 +402,15 @@ class KPrototypes(kmodes.KModes):
         # the data. The function below returns its value.
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_,\
             self.n_iter_, self.gamma, self.Xcat = k_prototypes(X,
-                                                    categorical,
-                                                    self.n_clusters,
-                                                    self.max_iter,
-                                                    self.num_dissim,
-                                                    self.cat_dissim,
-                                                    self.gamma,
-                                                    self.init,
-                                                    self.n_init,
-                                                    self.verbose)
+                                                               categorical,
+                                                               self.n_clusters,
+                                                               self.max_iter,
+                                                               self.num_dissim,
+                                                               self.cat_dissim,
+                                                               self.gamma,
+                                                               self.init,
+                                                               self.n_init,
+                                                               self.verbose)
         return self
 
     def predict(self, X, categorical=None):
@@ -432,7 +433,8 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
         return _labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                            self.num_dissim, self.cat_dissim, self.gamma, genMembshipArray(self.labels_), self.Xcat)[0]
+                            self.num_dissim, self.cat_dissim, self.gamma,
+                            gen_membship_array(self.labels_))[0]
 
     @property
     def cluster_centroids_(self):
