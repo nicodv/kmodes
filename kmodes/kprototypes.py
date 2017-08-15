@@ -11,7 +11,7 @@ from scipy import sparse
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
+from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, genMembshipArray
 from .util.dissim import matching_dissim, euclidean_dissim
 
 # Number of tries we give the initialization methods to find non-empty
@@ -46,7 +46,7 @@ def _split_num_cat(X, categorical):
     return Xnum, Xcat
 
 
-def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship):
+def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship, XcatInit=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-prototypes algorithm.
     """
@@ -59,7 +59,7 @@ def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship)
     for ipoint in range(npoints):
         # Numerical cost = sum of Euclidean distances
         num_costs = num_dissim(centroids[0], Xnum[ipoint])
-        cat_costs = cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
+        cat_costs = cat_dissim(centroids[1], Xcat[ipoint], X=(Xcat if XcatInit is None else XcatInit), membship=membship)
         # Gamma relates the categorical cost to the numerical cost.
         tot_costs = num_costs + gamma * cat_costs
         clust = np.argmin(tot_costs)
@@ -304,7 +304,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
 
     # Note: return gamma in case it was automatically determined.
     return all_centroids[best], enc_map, all_labels[best], \
-        all_costs[best], all_n_iters[best], gamma
+        all_costs[best], all_n_iters[best], gamma, Xcat
 
 
 class KPrototypes(kmodes.KModes):
@@ -400,7 +400,7 @@ class KPrototypes(kmodes.KModes):
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_,\
-            self.n_iter_, self.gamma = k_prototypes(X,
+            self.n_iter_, self.gamma, self.Xcat = k_prototypes(X,
                                                     categorical,
                                                     self.n_clusters,
                                                     self.max_iter,
@@ -411,9 +411,6 @@ class KPrototypes(kmodes.KModes):
                                                     self.n_init,
                                                     self.verbose)
         return self
-
-    def genMembshipArray(self):
-        return np.array([[1 if v == num else 0 for v in self.labels_ ] for num in range(0, np.amax(self.labels_) + 1)])
 
     def predict(self, X, categorical=None):
         """Predict the closest cluster each sample in X belongs to.
@@ -435,7 +432,7 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
         return _labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                            self.num_dissim, self.cat_dissim, self.gamma, self.genMembshipArray())[0]
+                            self.num_dissim, self.cat_dissim, self.gamma, genMembshipArray(self.labels_), self.Xcat)[0]
 
     @property
     def cluster_centroids_(self):

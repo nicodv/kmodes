@@ -11,7 +11,7 @@ from scipy import sparse
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
+from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, genMembshipArray
 from .util.dissim import matching_dissim
 
 
@@ -112,7 +112,7 @@ def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
     return cl_attr_freq, membship, centroids
 
 
-def _labels_cost(X, centroids, dissim, membship):
+def _labels_cost(X, centroids, dissim, membship, Xinit=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-modes algorithm.
     """
@@ -123,7 +123,7 @@ def _labels_cost(X, centroids, dissim, membship):
     cost = 0.
     labels = np.empty(npoints, dtype=np.uint8)
     for ipoint, curpoint in enumerate(X):
-        diss = dissim(centroids, curpoint, X=X, membship=membship)
+        diss = dissim(centroids, curpoint, X=(X if Xinit is None else Xinit), membship=membship)
         clust = np.argmin(diss)
         labels[ipoint] = clust
         cost += diss[clust]
@@ -268,7 +268,7 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
         print("Best run was number {}".format(best + 1))
 
     return all_centroids[best], enc_map, all_labels[best], \
-        all_costs[best], all_n_iters[best]
+        all_costs[best], all_n_iters[best], X
 
 
 class KModes(BaseEstimator, ClusterMixin):
@@ -355,7 +355,7 @@ class KModes(BaseEstimator, ClusterMixin):
         """
 
         self._enc_cluster_centroids, self._enc_map, self.labels_,\
-            self.cost_, self.n_iter_ = k_modes(X,
+            self.cost_, self.n_iter_, self.X = k_modes(X,
                                                self.n_clusters,
                                                self.max_iter,
                                                self.cat_dissim,
@@ -371,9 +371,6 @@ class KModes(BaseEstimator, ClusterMixin):
         predict(X).
         """
         return self.fit(X, **kwargs).labels_
-
-    def genMembshipArray(self):
-        return np.array([[1 if v == num else 0 for v in self.labels_ ] for num in range(0, np.amax(self.labels_) + 1)])
 
     def predict(self, X, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
@@ -391,7 +388,7 @@ class KModes(BaseEstimator, ClusterMixin):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim, self.genMembshipArray())[0]
+        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim, genMembshipArray(self.labels_), self.X)[0]
 
     @property
     def cluster_centroids_(self):
