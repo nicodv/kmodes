@@ -51,12 +51,12 @@ def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=
     a list of centroids for the k-prototypes algorithm.
     """
 
-    npoints = Xnum.shape[0]
+    n_points = Xnum.shape[0]
     Xnum = check_array(Xnum)
 
     cost = 0.
-    labels = np.empty(npoints, dtype=np.uint8)
-    for ipoint in range(npoints):
+    labels = np.empty(n_points, dtype=np.uint8)
+    for ipoint in range(n_points):
         # Numerical cost = sum of Euclidean distances
         num_costs = num_dissim(centroids[0], Xnum[ipoint])
         cat_costs = cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
@@ -145,8 +145,8 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
 
     ncatattrs = len(categorical)
     nnumattrs = X.shape[1] - ncatattrs
-    npoints = X.shape[0]
-    assert n_clusters <= npoints, "More clusters than data points?"
+    n_points = X.shape[0]
+    assert n_clusters <= n_points, "More clusters than data points?"
 
     Xnum, Xcat = _split_num_cat(X, categorical)
     Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
@@ -191,7 +191,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             elif isinstance(init, str) and init.lower() == 'cao':
                 centroids = kmodes.init_cao(Xcat, n_clusters, cat_dissim)
             elif isinstance(init, str) and init.lower() == 'random':
-                seeds = np.random.choice(range(npoints), n_clusters)
+                seeds = np.random.choice(range(n_points), n_clusters)
                 centroids = Xcat[seeds]
             elif isinstance(init, list):
                 # Make sure inits are 2D arrays.
@@ -227,7 +227,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
 
             if verbose:
                 print("Init: initializing clusters")
-            membship = np.zeros((n_clusters, npoints), dtype=np.uint8)
+            membship = np.zeros((n_clusters, n_points), dtype=np.uint8)
             # Keep track of the sum of attribute values per cluster so that we
             # can do k-means on the numerical attributes.
             cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
@@ -235,11 +235,11 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             # the frequencies of values per cluster and attribute.
             cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
                             for _ in range(n_clusters)]
-            for ipoint in range(npoints):
+            for ipoint in range(n_points):
                 # Initial assignment to clusters
                 clust = np.argmin(
-                    num_dissim(centroids[0], Xnum[ipoint]) +
-                    gamma * cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
+                    num_dissim(centroids[0], Xnum[ipoint]) + gamma *
+                    cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
                 )
                 membship[clust, ipoint] = 1
                 # Count attribute values per cluster.

@@ -17,10 +17,10 @@ from .util.dissim import matching_dissim
 
 def init_huang(X, n_clusters, dissim):
     """Initialize centroids according to method by Huang [1997]."""
-    npoints, nattrs = X.shape
-    centroids = np.empty((n_clusters, nattrs), dtype='object')
+    n_attrs = X.shape[1]
+    centroids = np.empty((n_clusters, n_attrs), dtype='object')
     # determine frequencies of attributes
-    for iattr in range(nattrs):
+    for iattr in range(n_attrs):
         freq = defaultdict(int)
         for curattr in X[:, iattr]:
             freq[curattr] += 1
@@ -52,17 +52,17 @@ def init_cao(X, n_clusters, dissim):
 
     Note: O(N * attr * n_clusters**2), so watch out with large n_clusters
     """
-    npoints, nattrs = X.shape
-    centroids = np.empty((n_clusters, nattrs), dtype='object')
+    n_points, n_attrs = X.shape
+    centroids = np.empty((n_clusters, n_attrs), dtype='object')
     # Method is based on determining density of points.
-    dens = np.zeros(npoints)
-    for iattr in range(nattrs):
+    dens = np.zeros(n_points)
+    for iattr in range(n_attrs):
         freq = defaultdict(int)
         for val in X[:, iattr]:
             freq[val] += 1
-        for ipoint in range(npoints):
-            dens[ipoint] += freq[X[ipoint, iattr]] / float(nattrs)
-    dens /= npoints
+        for ipoint in range(n_points):
+            dens[ipoint] += freq[X[ipoint, iattr]] / float(n_attrs)
+    dens /= n_points
 
     # Choose initial centroids based on distance and density.
     centroids[0] = X[np.argmax(dens)]
@@ -70,7 +70,7 @@ def init_cao(X, n_clusters, dissim):
         # For the remaining centroids, choose maximum dens * dissim to the
         # (already assigned) centroid with the lowest dens * dissim.
         for ik in range(1, n_clusters):
-            dd = np.empty((ik, npoints))
+            dd = np.empty((ik, n_points))
             for ikk in range(ik):
                 dd[ikk] = dissim(X, centroids[ikk], X=X) * dens
             centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
@@ -117,9 +117,9 @@ def _labels_cost(X, centroids, dissim, membship=None):
 
     X = check_array(X)
 
-    npoints = X.shape[0]
+    n_points = X.shape[0]
     cost = 0.
-    labels = np.empty(npoints, dtype=np.uint8)
+    labels = np.empty(n_points, dtype=np.uint8)
     for ipoint, curpoint in enumerate(X):
         diss = dissim(centroids, curpoint, X=X, membship=membship)
         clust = np.argmin(diss)
