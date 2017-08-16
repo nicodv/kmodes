@@ -17,7 +17,7 @@ def euclidean_dissim(a, b, **_):
     return np.sum((a - b) ** 2, axis=1)
 
 
-def ng_dissim(a, b, X, membship):
+def ng_dissim(a, b, X, membship=None):
     """Ng et al.'s dissimilarity measure, as presented in
     Michael K. Ng, Mark Junjie Li, Joshua Zhexue Huang, and Zengyou He, "On the
     Impact of Dissimilarity Measure in k-Modes Clustering Algorithm", IEEE
@@ -26,16 +26,23 @@ def ng_dissim(a, b, X, membship):
 
     Note that membship must be a rectangular array such that the
     len(membship) = len(a) and len(membship[i]) = X.shape[1]
+
+    In case of missing membship, this function reverts back to
+    matching dissimilarity.
     """
-    def calcCJR(b, X, memj, idr):
+    # Without membership, revert to matching dissimilarity
+    if membship is None:
+        return matching_dissim(a, b)
+
+    def calc_cjr(b, X, memj, idr):
         """Num objects w/ category value x_{i,r} for rth attr in jth cluster"""
-        xcids = np.where(np.in1d(memj.ravel(), [1]).reshape(memj.shape))
+        xcids = np.where(memj == 1)
         return float((np.take(X, xcids, axis=0)[0][:, idr] == b[idr]).sum(0))
 
     def calc_dissim(b, X, memj, idr):
         # Size of jth cluster
-        CJ = float(np.sum(memj))
-        return (1.0 - (calcCJR(b, X, memj, idr) / CJ)) if CJ != 0.0 else 0.0
+        cj = float(np.sum(memj))
+        return (1.0 - (calc_cjr(b, X, memj, idr) / cj)) if cj != 0.0 else 0.0
 
     if len(membship) != a.shape[0] and len(membship[0]) != X.shape[1]:
         raise ValueError("'membship' must be a rectangular array where "
