@@ -23,7 +23,7 @@ setup(
     install_requires=[
         'numpy>=1.13.0, <1.14.0',
         'scikit-learn>=0.18.0, <0.19.0',
-        'scipy>=0.19.0, <0.20.0',
+        'scipy>=0.13.3',
     ],
     classifiers=['Development Status :: 3 - Alpha',
                  'Intended Audience :: Science/Research',
