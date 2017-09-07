@@ -21,9 +21,13 @@ setup(
     description=DESCRIPTION,
     long_description=open('README.rst', 'r').read(),
     install_requires=[
-        'numpy>=1.13.0, <1.14.0',
+        # Note: minimum numpy and scipy versions should ideally be the same
+        # as what scikit-learn uses, but versions of numpy<1.10.4
+        # give import problems.
+        # scikit-learn version is capped to avoid compatibility issues.
+        'numpy>=1.10.4',
         'scikit-learn>=0.19.0, <0.20.0',
-        'scipy>=0.19.0, <0.20.0',
+        'scipy>=0.13.3',
     ],
     classifiers=['Development Status :: 3 - Alpha',
                  'Intended Audience :: Science/Research',
