@@ -153,7 +153,8 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     ncatattrs = len(categorical)
     nnumattrs = X.shape[1] - ncatattrs
     npoints = X.shape[0]
-    assert n_clusters <= npoints, "More clusters than data points?"
+    assert n_clusters <= npoints, "Cannot have more clusters ({}) " \
+                                  "than data points ({}).".format(n_clusters, npoints)
 
     Xnum, Xcat = _split_num_cat(X, categorical)
     Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)

@@ -180,7 +180,8 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
     X, enc_map = encode_features(X)
 
     npoints, nattrs = X.shape
-    assert n_clusters <= npoints, "More clusters than data points?"
+    assert n_clusters <= npoints, "Cannot have more clusters ({}) " \
+                                  "than data points ({}).".format(n_clusters, npoints)
 
     # Are there more n_clusters than unique rows? Then set the unique
     # rows as initial values and skip iteration.
