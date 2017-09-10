@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 import numpy as np
-from kmodes import kmodes
+from kmodes.kmodes import KModes
 
 # reproduce results on small soybean data set
 x = np.genfromtxt('soybean.csv', dtype=int, delimiter=',')[:, :-1]
 y = np.genfromtxt('soybean.csv', dtype=str, delimiter=',', usecols=(35, ))
 
-kmodes_huang = kmodes.KModes(n_clusters=4, init='Huang', verbose=1)
+kmodes_huang = KModes(n_clusters=4, init='Huang', verbose=1)
 kmodes_huang.fit(x)
 
 # Print cluster centroids of the trained model.
@@ -17,7 +17,7 @@ print(kmodes_huang.cluster_centroids_)
 print('Final training cost: {}'.format(kmodes_huang.cost_))
 print('Training iterations: {}'.format(kmodes_huang.n_iter_))
 
-kmodes_cao = kmodes.KModes(n_clusters=4, init='Cao', verbose=1)
+kmodes_cao = KModes(n_clusters=4, init='Cao', verbose=1)
 kmodes_cao.fit(x)
 
 # Print cluster centroids of the trained model.
