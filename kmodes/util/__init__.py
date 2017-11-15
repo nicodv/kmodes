@@ -2,9 +2,6 @@
 Generic utilities for clustering
 """
 
-# Author: 'Nico de Vos' <njdevos@gmail.com>
-# License: MIT
-
 import numpy as np
 
 

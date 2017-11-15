@@ -1,5 +1,5 @@
 """
-Tests for dissimilarity measures
+Tests for utils
 """
 
 import unittest

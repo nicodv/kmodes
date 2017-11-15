@@ -10,6 +10,7 @@ from sklearn.utils.testing import assert_equal
 
 from kmodes import kprototypes
 from kmodes.tests.test_kmodes import assert_cluster_splits_equal
+from kmodes.util.dissim import ng_dissim
 
 STOCKS = np.array([
     [738.5, 'tech', 'USA'],
@@ -244,3 +245,49 @@ class TestKProtoTypes(unittest.TestCase):
         kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
         with self.assertRaises(NotImplementedError):
             kproto_cao.fit(STOCKS, categorical=[])
+
+    def test_kprotoypes_huang_stocks_ng(self):
+        np.random.seed(42)
+        kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1, init='Huang', verbose=2, cat_dissim=ng_dissim)
+        # Untrained model
+        with self.assertRaises(AssertionError):
+            kproto_huang.predict(STOCKS, categorical=[1, 2])
+        result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
+        expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kprotoypes_cao_stocks_ng(self):
+        np.random.seed(42)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2, cat_dissim=ng_dissim)
+        result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
+        expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kprotoypes_predict_stocks_ng(self):
+        np.random.seed(42)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2, cat_dissim=ng_dissim)
+        kproto_cao = kproto_cao.fit(STOCKS, categorical=[1, 2])
+        result = kproto_cao.predict(STOCKS2, categorical=[1, 2])
+        expected = np.array([1, 1, 3, 1])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kprotoypes_init_stocks_ng(self):
+        init_vals = [
+            np.array([[356.975],
+                      [275.35],
+                      [738.5],
+                      [197.667]]),
+            np.array([[3, 2],
+                      [0, 2],
+                      [3, 2],
+                      [2, 2]])
+        ]
+        np.random.seed(42)
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2, cat_dissim=ng_dissim)
+        result = kproto_init.fit_predict(STOCKS, categorical=[1, 2])
+        expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))

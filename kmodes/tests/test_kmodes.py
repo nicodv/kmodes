@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.utils.testing import assert_equal
 
 from kmodes.kmodes import KModes
+from kmodes.util.dissim import ng_dissim
 
 
 SOYBEAN = np.array([
@@ -192,6 +193,51 @@ class TestKModes(unittest.TestCase):
         ])
         np.random.seed(42)
         kmodes_cao = KModes(n_clusters=6, init='Cao', verbose=2)
+        result = kmodes_cao.fit_predict(data, categorical=[1])
+        expected = np.array([0, 0, 0, 1, 1, 1])
+        assert_cluster_splits_equal(result, expected)
+        np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
+                                      np.array([[0, 1],
+                                                [0, 2]]))
+
+    def test_kmodes_huang_soybean_ng(self):
+        np.random.seed(42)
+        kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2, cat_dissim=ng_dissim)
+        result = kmodes_huang.fit_predict(SOYBEAN)
+        expected = np.array([3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+                             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kmodes_cao_soybean_ng(self):
+        kmodes_cao = KModes(n_clusters=4, init='Cao', verbose=2, cat_dissim=ng_dissim)
+        result = kmodes_cao.fit_predict(SOYBEAN)
+        expected = np.array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1,
+                             1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0,
+                             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kmodes_predict_soybean_ng(self):
+        kmodes_cao = KModes(n_clusters=4, init='Cao', verbose=2, cat_dissim=ng_dissim)
+        kmodes_cao = kmodes_cao.fit(SOYBEAN)
+        result = kmodes_cao.predict(SOYBEAN2)
+        expected = np.array([2, 1, 3, 0])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
+    def test_kmodes_nunique_nclusters_ng(self):
+        data = np.array([
+            [0, 1],
+            [0, 1],
+            [0, 1],
+            [0, 2],
+            [0, 2],
+            [0, 2]
+        ])
+        np.random.seed(42)
+        kmodes_cao = KModes(n_clusters=6, init='Cao', verbose=2, cat_dissim=ng_dissim)
         result = kmodes_cao.fit_predict(data, categorical=[1])
         expected = np.array([0, 0, 0, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
