@@ -101,15 +101,15 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
         # of all values
         for iattr in range(len(Xnum[ipoint])):
             for curc in (clust, old_clust):
-                if sum(membship[curc, :]):
-                    centroids[0][curc, iattr] = \
-                        cl_attr_sum[curc, iattr] / sum(membship[curc, :])
+                sum_memb = sum(membship[curc, :])
+                if sum_memb:
+                    centroids[0][curc, iattr] = cl_attr_sum[curc, iattr] / sum_memb
                 else:
                     centroids[0][curc, iattr] = 0.
 
         # In case of an empty cluster, reinitialize with a random point
         # from largest cluster.
-        if sum(membship[old_clust, :]) == 0:
+        if not membship[old_clust, :].any():
             from_clust = membship.sum(axis=1).argmax()
             choices = \
                 [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
