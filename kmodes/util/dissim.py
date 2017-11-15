@@ -17,18 +17,20 @@ def euclidean_dissim(a, b, **_):
     return np.sum((a - b) ** 2, axis=1)
 
 
-def ng_dissim(a, b, X, membship=None):
+def ng_dissim(a, b, X=None, membship=None):
     """Ng et al.'s dissimilarity measure, as presented in
     Michael K. Ng, Mark Junjie Li, Joshua Zhexue Huang, and Zengyou He, "On the
     Impact of Dissimilarity Measure in k-Modes Clustering Algorithm", IEEE
     Transactions on Pattern Analysis and Machine Intelligence, Vol. 29, No. 3,
     January, 2007
 
+    This function can potentially speed up training convergence.
+
     Note that membship must be a rectangular array such that the
     len(membship) = len(a) and len(membship[i]) = X.shape[1]
 
     In case of missing membship, this function reverts back to
-    matching dissimilarity.
+    matching dissimilarity (e.g., when predicting).
     """
     # Without membership, revert to matching dissimilarity
     if membship is None:

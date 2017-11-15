@@ -12,7 +12,7 @@ from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 
 from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
-from .util.dissim import matching_dissim
+from .util.dissim import matching_dissim, ng_dissim
 
 
 def init_huang(X, n_clusters, dissim):
@@ -38,7 +38,7 @@ def init_huang(X, n_clusters, dissim):
     # The previously chosen centroids could result in empty clusters,
     # so set centroid to closest point in X.
     for ik in range(n_clusters):
-        ndx = np.argsort(dissim(X, centroids[ik], X=X))
+        ndx = np.argsort(dissim(X, centroids[ik]))
         # We want the centroid to be unique.
         while np.all(X[ndx[0]] == centroids, axis=1).any():
             ndx = np.delete(ndx, 0)
@@ -72,7 +72,7 @@ def init_cao(X, n_clusters, dissim):
         for ik in range(1, n_clusters):
             dd = np.empty((ik, n_points))
             for ikk in range(ik):
-                dd[ikk] = dissim(X, centroids[ikk], X=X) * dens
+                dd[ikk] = dissim(X, centroids[ikk]) * dens
             centroids[ik] = X[np.argmax(np.min(dd, axis=0))]
 
     return centroids
@@ -389,6 +389,12 @@ class KModes(BaseEstimator, ClusterMixin):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
+
+        if self.verbose and self.cat_dissim == ng_dissim:
+            print("Ng's dissimilarity measure was used to train this model, "
+                  "but now that it is predicting the model will fall back to "
+                  "using simple matching dissimilarity.")
+
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
         return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim)[0]
