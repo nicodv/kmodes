@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import timeit
+
 import numpy as np
+
 from kmodes.kprototypes import KPrototypes
 
 # number of clusters
