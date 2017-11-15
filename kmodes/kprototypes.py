@@ -25,15 +25,16 @@ MAX_INIT_TRIES = 20
 RAISE_INIT_TRIES = 100
 
 
-def move_point_num(point, ipoint, to_clust, from_clust, cl_attr_sum, membship):
+def move_point_num(point, to_clust, from_clust, cl_attr_sum, cl_memb_sum):
     """Move point between clusters, numerical attributes."""
-    membship[to_clust, ipoint] = 1
-    membship[from_clust, ipoint] = 0
     # Update sum of attributes in cluster.
     for iattr, curattr in enumerate(point):
         cl_attr_sum[to_clust][iattr] += curattr
         cl_attr_sum[from_clust][iattr] -= curattr
-    return cl_attr_sum, membship
+    # Update sums of memberships in cluster
+    cl_memb_sum[to_clust] += 1
+    cl_memb_sum[from_clust] -= 1
+    return cl_attr_sum, cl_memb_sum
 
 
 def _split_num_cat(X, categorical):
@@ -72,7 +73,7 @@ def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma):
     return labels, cost
 
 
-def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
+def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq,
                        membship, num_dissim, cat_dissim, gamma):
     """Single iteration of the k-prototypes algorithm"""
     moves = 0
@@ -89,34 +90,34 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_attr_freq,
         moves += 1
         old_clust = np.argwhere(membship[:, ipoint])[0][0]
 
-        cl_attr_sum, membship = move_point_num(
-            Xnum[ipoint], ipoint, clust, old_clust, cl_attr_sum, membship
+        # Note that membship gets updated by kmodes.move_point_cat.
+        # move_point_num only updates things specific to the k-means part.
+        cl_attr_sum, cl_memb_sum = move_point_num(
+            Xnum[ipoint], clust, old_clust, cl_attr_sum, cl_memb_sum
         )
         cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
             Xcat[ipoint], ipoint, clust, old_clust,
             cl_attr_freq, membship, centroids[1]
         )
 
-        # Update old and new centroids for numerical attributes using the mean
-        # of all values
+        # Update old and new centroids for numerical attributes using
+        # the means and sums of all values
         for iattr in range(len(Xnum[ipoint])):
             for curc in (clust, old_clust):
-                sum_memb = sum(membship[curc, :])
-                if sum_memb:
-                    centroids[0][curc, iattr] = cl_attr_sum[curc, iattr] / sum_memb
+                if cl_memb_sum[curc]:
+                    centroids[0][curc, iattr] = cl_attr_sum[curc, iattr] / cl_memb_sum[curc]
                 else:
                     centroids[0][curc, iattr] = 0.
 
         # In case of an empty cluster, reinitialize with a random point
         # from largest cluster.
-        if not membship[old_clust, :].any():
+        if not cl_memb_sum[old_clust]:
             from_clust = membship.sum(axis=1).argmax()
-            choices = \
-                [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
+            choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
 
-            cl_attr_sum, membship = move_point_num(
-                Xnum[rindx], rindx, old_clust, from_clust, cl_attr_sum, membship
+            cl_attr_sum, cl_memb_sum = move_point_num(
+                Xnum[rindx], old_clust, from_clust, cl_attr_sum, cl_memb_sum
             )
             cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
                 Xcat[rindx], rindx, old_clust, from_clust,
@@ -239,6 +240,8 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             # Keep track of the sum of attribute values per cluster so that we
             # can do k-means on the numerical attributes.
             cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
+            # Same for the membership sum per cluster
+            cl_memb_sum = np.zeros(n_clusters, dtype=int)
             # cl_attr_freq is a list of lists with dictionaries that contain
             # the frequencies of values per cluster and attribute.
             cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
@@ -250,6 +253,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                     gamma * cat_dissim(centroids[1], Xcat[ipoint])
                 )
                 membship[clust, ipoint] = 1
+                cl_memb_sum[clust] += 1
                 # Count attribute values per cluster.
                 for iattr, curattr in enumerate(Xnum[ipoint]):
                     cl_attr_sum[clust, iattr] += curattr
@@ -273,11 +277,9 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
         # Perform an initial centroid update.
         for ik in range(n_clusters):
             for iattr in range(nnumattrs):
-                centroids[0][ik, iattr] = \
-                    cl_attr_sum[ik, iattr] / sum(membship[ik, :])
+                centroids[0][ik, iattr] = cl_attr_sum[ik, iattr] / cl_memb_sum[ik]
             for iattr in range(ncatattrs):
-                centroids[1][ik, iattr] = \
-                    get_max_value_key(cl_attr_freq[ik][iattr])
+                centroids[1][ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
 
         # _____ ITERATION _____
         if verbose:
@@ -288,7 +290,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
         while itr <= max_iter and not converged:
             itr += 1
             centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
-                                                  cl_attr_sum, cl_attr_freq,
+                                                  cl_attr_sum, cl_memb_sum, cl_attr_freq,
                                                   membship, num_dissim, cat_dissim, gamma)
 
             # All points seen in this iteration
