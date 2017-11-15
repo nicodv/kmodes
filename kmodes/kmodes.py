@@ -148,7 +148,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim):
 
         # In case of an empty cluster, reinitialize with a random point
         # from the largest cluster.
-        if np.sum(membship[old_clust, :]) == 0:
+        if not membship[old_clust, :].any():
             from_clust = membship.sum(axis=1).argmax()
             choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
@@ -177,7 +177,8 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
     X, enc_map = encode_features(X)
 
     n_points, n_attrs = X.shape
-    assert n_clusters <= n_points, "More clusters than data points?"
+    assert n_clusters <= n_points, "Cannot have more clusters ({}) " \
+                                   "than data points ({}).".format(n_clusters, n_points)
 
     # Are there more n_clusters than unique rows? Then set the unique
     # rows as initial values and skip iteration.
