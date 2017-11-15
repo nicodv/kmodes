@@ -151,7 +151,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim):
 
         # In case of an empty cluster, reinitialize with a random point
         # from the largest cluster.
-        if np.sum(membship[old_clust, :]) == 0:
+        if not membship[old_clust, :].any():
             from_clust = membship.sum(axis=1).argmax()
             choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
             rindx = np.random.choice(choices)
