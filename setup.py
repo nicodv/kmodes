@@ -16,8 +16,6 @@ setup(
     author='Nico de Vos',
     author_email='njdevos@gmail.com',
     license='MIT',
-    summary='Python implementations of the k-modes and k-prototypes clustering '
-            'algorithms, for clustering categorical data.',
     description=DESCRIPTION,
     long_description=open('README.rst', 'r').read(),
     install_requires=[
