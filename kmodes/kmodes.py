@@ -8,16 +8,16 @@ from collections import defaultdict
 
 import numpy as np
 from scipy import sparse
-from matching.algorithms import extended_galeshapley
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
+from matching.algorithms import extended_galeshapley
 
 from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
 from .util.dissim import matching_dissim, ng_dissim
 
 def init_matching(X, n_clusters, dissim):
     """Initialise centroids according to Huang's method, where the random
-    allocation of centroids to datapoints uses the extended Gale-Shapley 
+    allocation of centroids to datapoints uses the extended Gale-Shapley
     algorithm to solve a capacitated matching game.
 
     Parameters
@@ -267,7 +267,9 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
         # _____ INIT _____
         if verbose:
             print("Init: initializing centroids")
-        if isinstance(init, str) and init.lower() == 'huang':
+        if isinstance(init, str) and init.lower() == 'matching':
+            centroids = init_matching(X, n_clusters, dissim)
+        elif isinstance(init, str) and init.lower() == 'huang':
             centroids = init_huang(X, n_clusters, dissim)
         elif isinstance(init, str) and init.lower() == 'cao':
             centroids = init_cao(X, n_clusters, dissim)
@@ -360,12 +362,15 @@ class KModes(BaseEstimator, ClusterMixin):
         Dissimilarity function used by the k-modes algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
 
-    init : {'Huang', 'Cao', 'random' or an ndarray}, default: 'Cao'
+    init : {'Huang', 'Cao', 'random', 'matching' or an ndarray}, default: 'Cao'
         Method for initialization:
         'Huang': Method in Huang [1997, 1998]
         'Cao': Method in Cao et al. [2009]
         'random': choose 'n_clusters' observations (rows) at random from
         data for the initial centroids.
+        'matching': Follow Huang's method and assign centroids to points in the
+        set by considering the situation as a capacitated matching game to be
+        solved with an extension of the Gale-Shapley algorithm.
         If an ndarray is passed, it should be of shape (n_clusters, n_features)
         and gives the initial centroids.
 
