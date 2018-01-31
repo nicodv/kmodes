@@ -26,6 +26,7 @@ setup(
         'numpy>=1.10.4',
         'scikit-learn>=0.19.0, <0.20.0',
         'scipy>=0.13.3',
+        'matching'
     ],
     classifiers=['Development Status :: 3 - Alpha',
                  'Intended Audience :: Science/Research',
