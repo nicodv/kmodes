@@ -8,11 +8,79 @@ from collections import defaultdict
 
 import numpy as np
 from scipy import sparse
+from matching.algorithms import extended_galeshapley
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 
 from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
 from .util.dissim import matching_dissim, ng_dissim
+
+def init_matching(X, n_clusters, dissim):
+    """Initialise centroids according to Huang's method, where the random
+    allocation of centroids to datapoints uses the extended Gale-Shapley 
+    algorithm to solve a capacitated matching game.
+
+    Parameters
+    ----------
+    X : {array-like}, shape = (N, n_attrs)
+        The dataset with N elements described by n_attrs attributes
+    n_clusters : int
+        The number of clusters to be found
+    dissim : str
+        The dissimilarity measure to be used
+
+    Returns
+    -------
+    centroids : {array-like}, shape = (n_clusters, n_attrs)
+        The initial centroids for the k-modes algorithm
+    """
+    n_attrs = X.shape[1]
+    centroids = np.empty((n_clusters, n_attrs), dtype='object')
+
+    # Follow Huang's method
+    for i_attr in range(n_attrs):
+        freq = defaultdict(int)
+        for curr_attr in X[:, i_attr]:
+            freq[curr_attr] += 1
+
+        choices = [
+            choice for choice, weight in freq.items() for _ in range(weight)
+        ]
+        choices = sorted(choices)
+        centroids[:, i_attr] = np.random.choice(choices, n_clusters)
+
+    # Set up preference dictionaries for suitors and reviewers, giving all
+    # reviewers a capacity of 1.
+    suitors = []
+    suitor_pref_dict = {}
+    reviewers = centroids
+    reviewer_pref_dict = {}
+    capacities = {tuple(r): 1 for r in reviewers}
+
+    # Build our set of potential suitors
+    for r in reviewers:
+        sorted_idxs = np.argsort(dissim(X, r))
+        suitors.append(X[sorted_idxs[:n_clusters]])
+
+    suitors = np.concatenate(suitors)
+
+    # Here we decide how to build the suitors' preference lists.
+    for i in range(n_clusters ** 2):
+        s = suitors[i]
+        sorted_idxs = np.argsort(dissim(reviewers, s))
+        suitor_pref_dict[tuple(s)] = reviewers[sorted_idxs].tolist()
+
+    # Create preference lists for each reviewer.
+    for r in reviewers:
+        sorted_idxs = np.argsort(dissim(suitors, r))
+        reviewer_pref_dict[tuple(r)] = suitors[sorted_idxs].tolist()
+
+    solution = extended_galeshapley(suitor_pref_dict,
+                                    reviewer_pref_dict,
+                                    capacities)
+    centroids = np.concatenate(list(solution.values()), axis=0).astype('object')
+
+    return centroids
 
 
 def init_huang(X, n_clusters, dissim):
