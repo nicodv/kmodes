@@ -192,7 +192,9 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             # _____ INIT _____
             if verbose:
                 print("Init: initializing centroids")
-            if isinstance(init, str) and init.lower() == 'huang':
+            if isinstance(init, str) and init.lower() == 'matching':
+                centroids = kmodes.init_matching(Xcat, n_clusters, cat_dissim)
+            elif isinstance(init, str) and init.lower() == 'huang':
                 centroids = kmodes.init_huang(Xcat, n_clusters, cat_dissim)
             elif isinstance(init, str) and init.lower() == 'cao':
                 centroids = kmodes.init_cao(Xcat, n_clusters, cat_dissim)
@@ -340,12 +342,15 @@ class KPrototypes(kmodes.KModes):
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of cost.
 
-    init : {'Huang', 'Cao', 'random' or a list of ndarrays}, default: 'Cao'
+    init : {'Huang', 'Cao', 'random', 'matching' or a list of ndarrays}, default: 'Cao'
         Method for initialization:
         'Huang': Method in Huang [1997, 1998]
         'Cao': Method in Cao et al. [2009]
         'random': choose 'n_clusters' observations (rows) at random from
         data for the initial centroids.
+        'matching': Follow Huang's method and assign centroids to points in the
+        set by considering the situation as a capacitated matching game to be
+        solved with an extension of the Gale-Shapley algorithm.
         If a list of ndarrays is passed, it should be of length 2, with
         shapes (n_clusters, n_features) for numerical and categorical
         data respectively. These are the initial centroids.
