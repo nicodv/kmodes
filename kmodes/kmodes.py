@@ -8,6 +8,7 @@ from collections import defaultdict
 
 import numpy as np
 from scipy import sparse
+from matching.algorithms import extended_galeshapley
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_array
 from matching.algorithms import extended_galeshapley
