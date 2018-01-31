@@ -108,6 +108,15 @@ class TestKModes(unittest.TestCase):
         assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint8))
 
+    def test_kmodes_matching_soybean(self):
+        kmodes_matching = KModes(n_clusters=4, init='matching', verbose=2)
+        result = kmodes_matching.fit_predict(SOYBEAN)
+        expected = np.array([3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+                             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint8))
+
     def test_kmodes_predict_soybean(self):
         kmodes_cao = KModes(n_clusters=4, init='Cao', verbose=2)
         kmodes_cao = kmodes_cao.fit(SOYBEAN)
