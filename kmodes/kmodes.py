@@ -39,8 +39,8 @@ def init_huang(X, n_clusters, dissim):
     # so set centroid to closest point in X.
     for ik in range(n_clusters):
         ndx = np.argsort(dissim(X, centroids[ik]))
-        # We want the centroid to be unique.
-        while np.all(X[ndx[0]] == centroids, axis=1).any():
+        # We want the centroid to be unique, if possible.
+        while np.all(X[ndx[0]] == centroids, axis=1).any() and ndx.shape[0] > 1:
             ndx = np.delete(ndx, 0)
         centroids[ik] = X[ndx[0]]
 
