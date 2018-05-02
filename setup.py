@@ -15,8 +15,8 @@ setup(
     author='Nico de Vos',
     author_email='njdevos@gmail.com',
     license='MIT',
-    description='Python implementations of the k-modes and k-prototypes clustering '
-                'algorithms for clustering categorical data.',
+    description='Python implementations of the k-modes and k-prototypes '
+                'clustering algorithms for clustering categorical data.',
     long_description=open('README.rst', 'r').read(),
     install_requires=[
         # Note: minimum numpy and scipy versions should ideally be the same
