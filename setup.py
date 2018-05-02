@@ -2,7 +2,6 @@ from setuptools import setup, find_packages
 
 import kmodes
 
-DESCRIPTION = kmodes.__doc__
 VERSION = kmodes.__version__
 
 setup(
@@ -16,7 +15,8 @@ setup(
     author='Nico de Vos',
     author_email='njdevos@gmail.com',
     license='MIT',
-    description=DESCRIPTION,
+    description='Python implementations of the k-modes and k-prototypes clustering '
+                'algorithms for clustering categorical data.',
     long_description=open('README.rst', 'r').read(),
     install_requires=[
         # Note: minimum numpy and scipy versions should ideally be the same
