@@ -8,6 +8,8 @@ from collections import defaultdict
 
 import numpy as np
 from scipy import sparse
+from sklearn.externals.joblib import Parallel, delayed
+from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_array
 
 from . import kmodes
@@ -71,7 +73,7 @@ def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=
 
 
 def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq,
-                       membship, num_dissim, cat_dissim, gamma):
+                       membship, num_dissim, cat_dissim, gamma, random_state):
     """Single iteration of the k-prototypes algorithm"""
     moves = 0
     for ipoint in range(Xnum.shape[0]):
@@ -111,7 +113,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
         if not cl_memb_sum[old_clust]:
             from_clust = membship.sum(axis=1).argmax()
             choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
-            rindx = np.random.choice(choices)
+            rindx = random_state.choice(choices)
 
             cl_attr_sum, cl_memb_sum = move_point_num(
                 Xnum[rindx], old_clust, from_clust, cl_attr_sum, cl_memb_sum
@@ -124,10 +126,135 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
     return centroids, moves
 
 
-def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
-                 gamma, init, n_init, verbose):
-    """k-prototypes algorithm"""
+def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
+                        max_iter, num_dissim, cat_dissim, gamma, init, init_no,
+                        verbose, random_state):
+    # For numerical part of initialization, we don't have a guarantee
+    # that there is not an empty cluster, so we need to retry until
+    # there is none.
+    random_state = check_random_state(random_state)
+    init_tries = 0
+    while True:
+        init_tries += 1
+        # _____ INIT _____
+        if verbose:
+            print("Init: initializing centroids")
+        if isinstance(init, str) and init.lower() == 'huang':
+            centroids = kmodes.init_huang(Xcat, n_clusters, cat_dissim, random_state)
+        elif isinstance(init, str) and init.lower() == 'cao':
+            centroids = kmodes.init_cao(Xcat, n_clusters, cat_dissim)
+        elif isinstance(init, str) and init.lower() == 'random':
+            seeds = random_state.choice(range(n_points), n_clusters)
+            centroids = Xcat[seeds]
+        elif isinstance(init, list):
+            # Make sure inits are 2D arrays.
+            init = [np.atleast_2d(cur_init).T if len(cur_init.shape) == 1
+                    else cur_init
+                    for cur_init in init]
+            assert init[0].shape[0] == n_clusters, \
+                "Wrong number of initial numerical centroids in init " \
+                "({}, should be {}).".format(init[0].shape[0], n_clusters)
+            assert init[0].shape[1] == nnumattrs, \
+                "Wrong number of numerical attributes in init ({}, should be {})." \
+                    .format(init[0].shape[1], nnumattrs)
+            assert init[1].shape[0] == n_clusters, \
+                "Wrong number of initial categorical centroids in init ({}, " \
+                "should be {}).".format(init[1].shape[0], n_clusters)
+            assert init[1].shape[1] == ncatattrs, \
+                "Wrong number of categorical attributes in init ({}, should be {})." \
+                    .format(init[1].shape[1], ncatattrs)
+            centroids = [np.asarray(init[0], dtype=np.float64),
+                         np.asarray(init[1], dtype=np.uint8)]
+        else:
+            raise NotImplementedError("Initialization method not supported.")
 
+        if not isinstance(init, list):
+            # Numerical is initialized by drawing from normal distribution,
+            # categorical following the k-modes methods.
+            meanx = np.mean(Xnum, axis=0)
+            stdx = np.std(Xnum, axis=0)
+            centroids = [
+                meanx + random_state.randn(n_clusters, nnumattrs) * stdx,
+                centroids
+            ]
+
+        if verbose:
+            print("Init: initializing clusters")
+        membship = np.zeros((n_clusters, n_points), dtype=np.uint8)
+        # Keep track of the sum of attribute values per cluster so that we
+        # can do k-means on the numerical attributes.
+        cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
+        # Same for the membership sum per cluster
+        cl_memb_sum = np.zeros(n_clusters, dtype=int)
+        # cl_attr_freq is a list of lists with dictionaries that contain
+        # the frequencies of values per cluster and attribute.
+        cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
+                        for _ in range(n_clusters)]
+        for ipoint in range(n_points):
+            # Initial assignment to clusters
+            clust = np.argmin(
+                num_dissim(centroids[0], Xnum[ipoint]) + gamma *
+                cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
+            )
+            membship[clust, ipoint] = 1
+            cl_memb_sum[clust] += 1
+            # Count attribute values per cluster.
+            for iattr, curattr in enumerate(Xnum[ipoint]):
+                cl_attr_sum[clust, iattr] += curattr
+            for iattr, curattr in enumerate(Xcat[ipoint]):
+                cl_attr_freq[clust][iattr][curattr] += 1
+
+        # If no empty clusters, then consider initialization finalized.
+        if membship.sum(axis=1).min() > 0:
+            break
+
+        if init_tries == MAX_INIT_TRIES:
+            # Could not get rid of empty clusters. Randomly
+            # initialize instead.
+            init = 'random'
+        elif init_tries == RAISE_INIT_TRIES:
+            raise ValueError(
+                "Clustering algorithm could not initialize. "
+                "Consider assigning the initial clusters manually."
+            )
+
+    # Perform an initial centroid update.
+    for ik in range(n_clusters):
+        for iattr in range(nnumattrs):
+            centroids[0][ik, iattr] = cl_attr_sum[ik, iattr] / cl_memb_sum[ik]
+        for iattr in range(ncatattrs):
+            centroids[1][ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
+
+    # _____ ITERATION _____
+    if verbose:
+        print("Starting iterations...")
+    itr = 0
+    labels = None
+    converged = False
+    cost = np.Inf
+    while itr <= max_iter and not converged:
+        itr += 1
+        centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
+                                              cl_attr_sum, cl_memb_sum, cl_attr_freq,
+                                              membship, num_dissim, cat_dissim, gamma,
+                                              random_state)
+
+        # All points seen in this iteration
+        labels, ncost = _labels_cost(Xnum, Xcat, centroids,
+                                     num_dissim, cat_dissim, gamma, membship)
+        converged = (moves == 0) or (ncost >= cost)
+        cost = ncost
+        if verbose:
+            print("Run: {}, iteration: {}/{}, moves: {}, ncost: {}"
+                  .format(init_no + 1, itr, max_iter, moves, ncost))
+
+    return centroids, labels, cost, itr
+
+
+def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
+                 gamma, init, n_init, verbose, random_state, n_jobs):
+    """k-prototypes algorithm"""
+    random_state = check_random_state(random_state)
     if sparse.issparse(X):
         raise TypeError("k-prototypes does not support sparse data.")
 
@@ -177,133 +304,22 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     if gamma is None:
         gamma = 0.5 * Xnum.std()
 
-    all_centroids = []
-    all_labels = []
-    all_costs = []
-    all_n_iters = []
-    for init_no in range(n_init):
-
-        # For numerical part of initialization, we don't have a guarantee
-        # that there is not an empty cluster, so we need to retry until
-        # there is none.
-        init_tries = 0
-        while True:
-            init_tries += 1
-            # _____ INIT _____
-            if verbose:
-                print("Init: initializing centroids")
-            if isinstance(init, str) and init.lower() == 'huang':
-                centroids = kmodes.init_huang(Xcat, n_clusters, cat_dissim)
-            elif isinstance(init, str) and init.lower() == 'cao':
-                centroids = kmodes.init_cao(Xcat, n_clusters, cat_dissim)
-            elif isinstance(init, str) and init.lower() == 'random':
-                seeds = np.random.choice(range(n_points), n_clusters)
-                centroids = Xcat[seeds]
-            elif isinstance(init, list):
-                # Make sure inits are 2D arrays.
-                init = [np.atleast_2d(cur_init).T if len(cur_init.shape) == 1
-                        else cur_init
-                        for cur_init in init]
-                assert init[0].shape[0] == n_clusters, \
-                    "Wrong number of initial numerical centroids in init " \
-                    "({}, should be {}).".format(init[0].shape[0], n_clusters)
-                assert init[0].shape[1] == nnumattrs, \
-                    "Wrong number of numerical attributes in init ({}, should be {})."\
-                    .format(init[0].shape[1], nnumattrs)
-                assert init[1].shape[0] == n_clusters, \
-                    "Wrong number of initial categorical centroids in init ({}, " \
-                    "should be {}).".format(init[1].shape[0], n_clusters)
-                assert init[1].shape[1] == ncatattrs, \
-                    "Wrong number of categorical attributes in init ({}, should be {})."\
-                    .format(init[1].shape[1], ncatattrs)
-                centroids = [np.asarray(init[0], dtype=np.float64),
-                             np.asarray(init[1], dtype=np.uint8)]
-            else:
-                raise NotImplementedError("Initialization method not supported.")
-
-            if not isinstance(init, list):
-                # Numerical is initialized by drawing from normal distribution,
-                # categorical following the k-modes methods.
-                meanx = np.mean(Xnum, axis=0)
-                stdx = np.std(Xnum, axis=0)
-                centroids = [
-                    meanx + np.random.randn(n_clusters, nnumattrs) * stdx,
-                    centroids
-                ]
-
-            if verbose:
-                print("Init: initializing clusters")
-            membship = np.zeros((n_clusters, n_points), dtype=np.uint8)
-            # Keep track of the sum of attribute values per cluster so that we
-            # can do k-means on the numerical attributes.
-            cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
-            # Same for the membership sum per cluster
-            cl_memb_sum = np.zeros(n_clusters, dtype=int)
-            # cl_attr_freq is a list of lists with dictionaries that contain
-            # the frequencies of values per cluster and attribute.
-            cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
-                            for _ in range(n_clusters)]
-            for ipoint in range(n_points):
-                # Initial assignment to clusters
-                clust = np.argmin(
-                    num_dissim(centroids[0], Xnum[ipoint]) + gamma *
-                    cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
-                )
-                membship[clust, ipoint] = 1
-                cl_memb_sum[clust] += 1
-                # Count attribute values per cluster.
-                for iattr, curattr in enumerate(Xnum[ipoint]):
-                    cl_attr_sum[clust, iattr] += curattr
-                for iattr, curattr in enumerate(Xcat[ipoint]):
-                    cl_attr_freq[clust][iattr][curattr] += 1
-
-            # If no empty clusters, then consider initialization finalized.
-            if membship.sum(axis=1).min() > 0:
-                break
-
-            if init_tries == MAX_INIT_TRIES:
-                # Could not get rid of empty clusters. Randomly
-                # initialize instead.
-                init = 'random'
-            elif init_tries == RAISE_INIT_TRIES:
-                raise ValueError(
-                    "Clustering algorithm could not initialize. "
-                    "Consider assigning the initial clusters manually."
-                )
-
-        # Perform an initial centroid update.
-        for ik in range(n_clusters):
-            for iattr in range(nnumattrs):
-                centroids[0][ik, iattr] = cl_attr_sum[ik, iattr] / cl_memb_sum[ik]
-            for iattr in range(ncatattrs):
-                centroids[1][ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
-
-        # _____ ITERATION _____
-        if verbose:
-            print("Starting iterations...")
-        itr = 0
-        converged = False
-        cost = np.Inf
-        while itr <= max_iter and not converged:
-            itr += 1
-            centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
-                                                  cl_attr_sum, cl_memb_sum, cl_attr_freq,
-                                                  membship, num_dissim, cat_dissim, gamma)
-
-            # All points seen in this iteration
-            labels, ncost = _labels_cost(Xnum, Xcat, centroids,
-                                         num_dissim, cat_dissim, gamma, membship)
-            converged = (moves == 0) or (ncost >= cost)
-            cost = ncost
-            if verbose:
-                print("Run: {}, iteration: {}/{}, moves: {}, ncost: {}"
-                      .format(init_no + 1, itr, max_iter, moves, ncost))
-
-        # Store results of current run.
-        all_centroids.append(centroids)
-        all_labels.append(labels)
-        all_costs.append(cost)
-        all_n_iters.append(itr)
+    results = []
+    seeds = random_state.randint(np.iinfo(np.int32).max, size=n_init)
+    if n_jobs == 1:
+        for init_no in range(n_init):
+            results.append(k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs,
+                                               n_clusters, n_points, max_iter,
+                                               num_dissim, cat_dissim, gamma,
+                                               init, init_no, verbose, seeds[init_no]))
+    else:
+        results = Parallel(n_jobs=n_jobs, verbose=0)(
+            delayed(k_prototypes_single)(Xnum, Xcat, nnumattrs, ncatattrs,
+                                         n_clusters, n_points, max_iter,
+                                         num_dissim, cat_dissim, gamma,
+                                         init, init_no, verbose, seed)
+            for init_no, seed in enumerate(seeds))
+    all_centroids, all_labels, all_costs, all_n_iters = zip(*results)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
@@ -387,10 +403,11 @@ class KPrototypes(kmodes.KModes):
 
     def __init__(self, n_clusters=8, max_iter=100, num_dissim=euclidean_dissim,
                  cat_dissim=matching_dissim, init='Huang', n_init=10, gamma=None,
-                 verbose=0):
+                 verbose=0, random_state=None, n_jobs=1):
 
         super(KPrototypes, self).__init__(n_clusters, max_iter, cat_dissim,
-                                          init, n_init, verbose)
+                                          init, n_init, verbose, random_state,
+                                          n_jobs)
 
         self.num_dissim = num_dissim
         self.gamma = gamma
@@ -404,6 +421,7 @@ class KPrototypes(kmodes.KModes):
         categorical : Index of columns that contain categorical data
         """
 
+        random_state = check_random_state(self.random_state)
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_,\
@@ -416,7 +434,9 @@ class KPrototypes(kmodes.KModes):
                                                     self.gamma,
                                                     self.init,
                                                     self.n_init,
-                                                    self.verbose)
+                                                    self.verbose,
+                                                    random_state,
+                                                    self.n_jobs)
         return self
 
     def predict(self, X, categorical=None):
