@@ -193,6 +193,7 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
     all_labels = []
     all_costs = []
     all_n_iters = []
+    all_epoch_costs = []
     for init_no in range(n_init):
 
         # _____ INIT _____
@@ -242,17 +243,20 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
                 else:
                     centroids[ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
 
+        _, cost = _labels_cost(X, centroids, dissim, membship)
+
         # _____ ITERATION _____
         if verbose:
             print("Starting iterations...")
         itr = 0
         converged = False
-        cost = np.Inf
+        epoch_costs = [cost]
         while itr <= max_iter and not converged:
             itr += 1
             centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim)
             # All points seen in this iteration
             labels, ncost = _labels_cost(X, centroids, dissim, membship)
+            epoch_costs.append(ncost)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
@@ -264,13 +268,14 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose):
         all_labels.append(labels)
         all_costs.append(cost)
         all_n_iters.append(itr)
+        all_epoch_costs.append(epoch_costs)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
     return all_centroids[best], enc_map, all_labels[best], \
-        all_costs[best], all_n_iters[best]
+        all_costs[best], all_n_iters[best], all_epoch_costs[best]
 
 
 class KModes(BaseEstimator, ClusterMixin):
@@ -323,6 +328,9 @@ class KModes(BaseEstimator, ClusterMixin):
     n_iter_ : int
         The number of iterations the algorithm ran for.
 
+    epoch_costs_ :
+        The cost of the algorithm at each epoch from start to completion.
+
     Notes
     -----
     See:
@@ -357,13 +365,13 @@ class KModes(BaseEstimator, ClusterMixin):
         """
 
         self._enc_cluster_centroids, self._enc_map, self.labels_,\
-            self.cost_, self.n_iter_ = k_modes(X,
-                                               self.n_clusters,
-                                               self.max_iter,
-                                               self.cat_dissim,
-                                               self.init,
-                                               self.n_init,
-                                               self.verbose)
+        self.cost_, self.n_iter_, self.epoch_costs_ = k_modes(X,
+                                                          self.n_clusters,
+                                                          self.max_iter,
+                                                          self.cat_dissim,
+                                                          self.init,
+                                                          self.n_init,
+                                                          self.verbose)
         return self
 
     def fit_predict(self, X, y=None, **kwargs):
