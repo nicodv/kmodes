@@ -229,7 +229,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                 stdx = np.std(Xnum, axis=0)
                 centroids = [
                     meanx + np.random.randn(n_clusters, nnumattrs) * stdx,
-                    centroids)
+                    centroids
                 ]
 
             if verbose:
