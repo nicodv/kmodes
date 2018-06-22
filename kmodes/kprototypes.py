@@ -181,6 +181,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     all_labels = []
     all_costs = []
     all_n_iters = []
+    all_epoch_costs = []
     for init_no in range(n_init):
 
         # For numerical part of initialization, we don't have a guarantee
@@ -228,7 +229,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                 stdx = np.std(Xnum, axis=0)
                 centroids = [
                     meanx + np.random.randn(n_clusters, nnumattrs) * stdx,
-                    centroids
+                    centroids)
                 ]
 
             if verbose:
@@ -278,12 +279,15 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             for iattr in range(ncatattrs):
                 centroids[1][ik, iattr] = get_max_value_key(cl_attr_freq[ik][iattr])
 
+        _, cost = _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim,
+                               gamma, membship)
+
         # _____ ITERATION _____
         if verbose:
             print("Starting iterations...")
         itr = 0
         converged = False
-        cost = np.Inf
+        epoch_costs = [cost]
         while itr <= max_iter and not converged:
             itr += 1
             centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
@@ -293,6 +297,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             # All points seen in this iteration
             labels, ncost = _labels_cost(Xnum, Xcat, centroids,
                                          num_dissim, cat_dissim, gamma, membship)
+            epoch_costs.append(ncost)
             converged = (moves == 0) or (ncost >= cost)
             cost = ncost
             if verbose:
@@ -304,14 +309,15 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
         all_labels.append(labels)
         all_costs.append(cost)
         all_n_iters.append(itr)
+        all_epoch_costs.append(epoch_costs)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
     # Note: return gamma in case it was automatically determined.
-    return all_centroids[best], enc_map, all_labels[best], \
-        all_costs[best], all_n_iters[best], gamma
+    return all_centroids[best], enc_map, all_labels[best], all_costs[best], \
+        all_n_iters[best], all_epoch_costs[best], gamma
 
 
 class KPrototypes(kmodes.KModes):
@@ -373,6 +379,9 @@ class KPrototypes(kmodes.KModes):
     n_iter_ : int
         The number of iterations the algorithm ran for.
 
+    epoch_costs_ :
+        The cost of the algorithm at each epoch from start to completion.
+
     gamma : float
         The (potentially calculated) weighing factor.
 
@@ -406,17 +415,18 @@ class KPrototypes(kmodes.KModes):
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
-        self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_,\
-            self.n_iter_, self.gamma = k_prototypes(X,
-                                                    categorical,
-                                                    self.n_clusters,
-                                                    self.max_iter,
-                                                    self.num_dissim,
-                                                    self.cat_dissim,
-                                                    self.gamma,
-                                                    self.init,
-                                                    self.n_init,
-                                                    self.verbose)
+        self._enc_cluster_centroids, self._enc_map,
+        self.labels_, self.cost_, self.n_iter_,
+        self.epoch_costs_, self.gamma = k_prototypes(X,
+                                            categorical,
+                                            self.n_clusters,
+                                            self.max_iter,
+                                            self.num_dissim,
+                                            self.cat_dissim,
+                                            self.gamma,
+                                            self.init,
+                                            self.n_init,
+                                            self.verbose)
         return self
 
     def predict(self, X, categorical=None):
