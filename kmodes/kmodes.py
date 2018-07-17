@@ -172,7 +172,7 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
     elif isinstance(init, str) and init.lower() == 'cao':
         centroids = init_cao(X, n_clusters, dissim)
     elif isinstance(init, str) and init.lower() == 'random':
-        seeds = random_state.random.choice(range(n_points), n_clusters)
+        seeds = random_state.choice(range(n_points), n_clusters)
         centroids = X[seeds]
     elif hasattr(init, '__array__'):
         # Make sure init is a 2D array.
@@ -267,11 +267,11 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
     if n_jobs == 1:
         for init_no in range(n_init):
             results.append(k_modes_single(X, n_clusters, n_points, n_attrs, max_iter,
-                                          dissim, init, init_no, verbose, random_state))
+                                          dissim, init, init_no, verbose, seeds[init_no]))
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
             delayed(k_modes_single)(X, n_clusters, n_points, n_attrs, max_iter,
-                                    dissim, init, init_no, verbose, random_state)
+                                    dissim, init, init_no, verbose, seed)
             for init_no, seed in enumerate(seeds))
     all_centroids, all_labels, all_costs, all_n_iters = zip(*results)
 
