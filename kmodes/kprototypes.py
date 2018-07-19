@@ -374,6 +374,20 @@ class KPrototypes(kmodes.KModes):
     verbose : integer, optional
         Verbosity mode.
 
+    random_state : int, RandomState instance or None, optional, default: None
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+
+    n_jobs : int, default: 1
+        The number of jobs to use for the computation. This works by computing
+        each of the n_init runs in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+
     Attributes
     ----------
     cluster_centroids_ : array, [n_clusters, n_features]
