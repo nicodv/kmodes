@@ -121,6 +121,20 @@ the categorical variables, but does *not* accept missing values for the
 numerical values. It is up to the user to come up with a way of
 handling these missing data that is appropriate for the problem at hand.
 
+Parallel execution
+------------------
+
+The k-modes and k-prototypes implementations both offer support for threaded
+execution via the `joblib library<https://pythonhosted.org/joblib/generated/joblib.Parallel.html>`_,
+similar to e.g. scikit-learn's implementation of k-means, using the
+:code:`n_jobs` parameter.
+
+This potentially speeds up any execution with more than one run,
+:code:`n_jobs > 1`, which may be helpful to reduce the execution time for
+larger problems. Note that it depends on your problem whether multithreading
+actually helps, so be sure to try that out first. You can check out the
+examples for some benchmarks.
+
 References
 ----------
 
