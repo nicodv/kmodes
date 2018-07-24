@@ -18,64 +18,53 @@ N_kmodes = int(1e5)
 M = 10
 # no. of numerical dimensions
 MN = 5
+# max no. of cores to run on
+C = 4
 
 data = np.random.randint(1, 1000, (max(N_kproto, N_kmodes), M))
 
 
-def kprototypes():
-    # Draw a seed, so both jobs converge in an equal amount of iterations
-    seed = np.random.randint(np.iinfo(np.int32).max)
-
-    start = time.time()
-    KPrototypes(n_clusters=K, init='Huang', n_init=4, verbose=2,
+def _kprototypes(k, n_init, n_jobs, seed):
+    KPrototypes(n_clusters=k, init='Huang', n_init=n_init, n_jobs=n_jobs,
                 random_state=seed) \
         .fit(data[:N_kproto, :], categorical=list(range(M - MN, M)))
-    single = time.time() - start
-    print('Finished 4 runs on 1 thread in {:.2f} seconds'.format(single))
-
-    np.random.seed(seed)
-    start = time.time()
-    KPrototypes(n_clusters=K, init='Huang', n_init=4, n_jobs=4, verbose=2,
-                random_state=seed) \
-        .fit(data[:N_kproto, :], categorical=list(range(M - MN, M)))
-    multi = time.time() - start
-    print('Finished 4 runs on 4 threads in {:.2f} seconds'.format(multi))
-
-    return single, multi
 
 
-def kmodes():
+def _kmodes(k, n_init, n_jobs, seed):
+    KModes(n_clusters=k, init='Huang', n_init=n_init, n_jobs=n_jobs,
+           random_state=seed) \
+        .fit(data[:N_kmodes, :])
+
+
+def run(task, stop):
     # Draw a seed, so both jobs converge in an equal amount of iterations
     seed = np.random.randint(np.iinfo(np.int32).max)
+    baseline = 0
 
-    start = time.time()
-    KModes(n_clusters=K, init='Huang', n_init=4, verbose=2,
-           random_state=seed).fit(data[:N_kmodes, :])
-    single = time.time() - start
-    print('Finished 4 runs on 1 thread in {:.2f} seconds'.format(single))
+    for n_jobs in range(1, stop + 1):
+        print('Starting runs on {} core(s)'.format(n_jobs))
+        t_start = time.time()
+        task(K, stop, n_jobs, seed)
+        runtime = time.time() - t_start
 
-    start = time.time()
-    KModes(n_clusters=K, init='Huang', n_init=4, n_jobs=4, verbose=2,
-           random_state=seed).fit(data[:N_kmodes, :])
-    multi = time.time() - start
-    print('Finished 4 runs on 4 threads in {:.2f} seconds'.format(multi))
-
-    return single, multi
+        if n_jobs == 1:
+            baseline = runtime
+            print('Finished {} runs on 1 core in {:.2f} seconds'.format(stop, runtime))
+        else:
+            print('Finished {} runs on {} cores in {:.2f} seconds, a {:.1f}x '
+                  'speed-up'.format(stop, n_jobs, runtime, baseline / runtime))
 
 
 if __name__ == '__main__':
-    print('Starting K-Prototypes on 1 and on 4 threads for {} clusters with {}'
-          ' points of {} features'.format(K, N_kproto, M))
-    res_kproto = kprototypes()
-    print('Starting K-Modes on 1 and on 4 threads for {} clusters with {}'
-          ' points of {} features'.format(K, N_kmodes, M))
-    res_kmodes = kmodes()
-    print()
-    print('K-Protoypes took {:.2f} s for 1 thread and {:.2f} s for 4 threads:'
-          ' a {:.1f}x speed-up'.format(res_kproto[0], res_kproto[1],
-                                       res_kproto[0] / res_kproto[1]))
-    print('K-Modes took {:.2f} s for 1 thread and {:.2f} s for 4 threads:'
-          ' a {:.1f}x speed-up'.format(res_kmodes[0], res_kmodes[1],
-                                       res_kmodes[0] / res_kmodes[1]))
+    print('Running K-Prototypes on 1 to {} cores for {} initialization tries '
+          'of {} clusters with {}' ' points of {} features'.format(
+           C, C, K, N_kproto, M))
+    run(_kprototypes, C)
+
+    print('\nRunning K-Modes on 1 to {} cores for {} initialization tries '
+          'of {} clusters with {}' ' points of {} features'.format(
+           C, C, K, N_kmodes, M))
+    run(_kmodes, C)
+
 
 
