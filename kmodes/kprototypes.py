@@ -425,7 +425,7 @@ class KPrototypes(kmodes.KModes):
         self.num_dissim = num_dissim
         self.gamma = gamma
         self.n_init = n_init
-        if hasattr(self.init, '__array__') and self.n_init > 1:
+        if isinstance(self.init, list) and self.n_init > 1:
             if self.verbose:
                 print("Initialization method is deterministic. "
                       "Setting n_init to 1.")
