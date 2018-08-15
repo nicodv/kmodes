@@ -61,7 +61,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_huang_stocks_parallel(self):
         kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=4,
@@ -73,7 +73,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_cao_stocks(self):
         kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
@@ -81,7 +81,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_predict_stocks(self):
         kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
@@ -90,7 +90,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_cao.predict(STOCKS2, categorical=[1, 2])
         expected = np.array([1, 1, 3, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprototypes_predict_unfitted(self):
         kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
@@ -161,7 +161,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_init.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_missings(self):
         init_vals = [
@@ -276,7 +276,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_cao_stocks_ng(self):
         kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
@@ -285,7 +285,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_predict_stocks_ng(self):
         kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
@@ -295,7 +295,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_cao.predict(STOCKS2, categorical=[1, 2])
         expected = np.array([1, 1, 3, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_init_stocks_ng(self):
         init_vals = [
@@ -314,7 +314,7 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto_init.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprototypes_ninit(self):
         kmodes = kprototypes.KPrototypes(n_init=10, init='Huang')
