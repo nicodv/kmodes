@@ -315,3 +315,11 @@ class TestKProtoTypes(unittest.TestCase):
         expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
         assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint16))
+
+    def test_kprototypes_ninit(self):
+        kmodes = kprototypes.KPrototypes(n_init=10, init='Huang')
+        self.assertEqual(kmodes.n_init, 10)
+        kmodes = kprototypes.KPrototypes(n_init=10, init='Cao')
+        self.assertEqual(kmodes.n_init, 10)
+        kmodes = kprototypes.KPrototypes(n_init=10, init=[np.array([]), np.array([])])
+        self.assertEqual(kmodes.n_init, 1)

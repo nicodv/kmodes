@@ -257,3 +257,11 @@ class TestKModes(unittest.TestCase):
         np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
                                       np.array([[0, 1],
                                                 [0, 2]]))
+
+    def test_kmodes_ninit(self):
+        kmodes = KModes(n_init=10, init='Huang')
+        self.assertEqual(kmodes.n_init, 10)
+        kmodes = KModes(n_init=10)
+        self.assertEqual(kmodes.n_init, 1)
+        kmodes = KModes(n_init=10, init=np.array([1, 1]))
+        self.assertEqual(kmodes.n_init, 1)

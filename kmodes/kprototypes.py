@@ -419,12 +419,17 @@ class KPrototypes(kmodes.KModes):
                  cat_dissim=matching_dissim, init='Huang', n_init=10, gamma=None,
                  verbose=0, random_state=None, n_jobs=1):
 
-        super(KPrototypes, self).__init__(n_clusters, max_iter, cat_dissim,
-                                          init, n_init, verbose, random_state,
-                                          n_jobs)
-
+        super(KPrototypes, self).__init__(n_clusters, max_iter, cat_dissim, init,
+                                          verbose=verbose, random_state=random_state,
+                                          n_jobs=n_jobs)
         self.num_dissim = num_dissim
         self.gamma = gamma
+        self.n_init = n_init
+        if isinstance(self.init, list) and self.n_init > 1:
+            if self.verbose:
+                print("Initialization method is deterministic. "
+                      "Setting n_init to 1.")
+            self.n_init = 1
 
     def fit(self, X, y=None, categorical=None):
         """Compute k-prototypes clustering.
