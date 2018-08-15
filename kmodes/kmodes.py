@@ -120,7 +120,7 @@ def _labels_cost(X, centroids, dissim, membship=None):
 
     n_points = X.shape[0]
     cost = 0.
-    labels = np.empty(n_points, dtype=np.uint64)
+    labels = np.empty(n_points, dtype=np.uint16)
     for ipoint, curpoint in enumerate(X):
         diss = dissim(centroids, curpoint, X=X, membship=membship)
         clust = np.argmin(diss)
@@ -184,13 +184,13 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
         assert init.shape[1] == n_attrs, \
             "Wrong number of attributes in init ({}, should be {})." \
                 .format(init.shape[1], n_attrs)
-        centroids = np.asarray(init, dtype=np.uint64)
+        centroids = np.asarray(init, dtype=np.uint16)
     else:
         raise NotImplementedError
 
     if verbose:
         print("Init: initializing clusters")
-    membship = np.zeros((n_clusters, n_points), dtype=np.uint64)
+    membship = np.zeros((n_clusters, n_points), dtype=np.uint8)
     # cl_attr_freq is a list of lists with dictionaries that contain the
     # frequencies of values per cluster and attribute.
     cl_attr_freq = [[defaultdict(int) for _ in range(n_attrs)]

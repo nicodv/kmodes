@@ -58,7 +58,7 @@ def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=
     Xnum = check_array(Xnum)
 
     cost = 0.
-    labels = np.empty(n_points, dtype=np.uint8)
+    labels = np.empty(n_points, dtype=np.uint16)
     for ipoint in range(n_points):
         # Numerical cost = sum of Euclidean distances
         num_costs = num_dissim(centroids[0], Xnum[ipoint])
@@ -164,7 +164,7 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
                 "Wrong number of categorical attributes in init ({}, should be {})." \
                     .format(init[1].shape[1], ncatattrs)
             centroids = [np.asarray(init[0], dtype=np.float64),
-                         np.asarray(init[1], dtype=np.uint8)]
+                         np.asarray(init[1], dtype=np.uint16)]
         else:
             raise NotImplementedError("Initialization method not supported.")
 
