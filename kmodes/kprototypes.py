@@ -231,8 +231,11 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
     itr = 0
     labels = None
     converged = False
-    cost = np.Inf
-    epoch_costs = []
+
+    _, cost = _labels_cost(Xnum, Xcat, centroids,
+                           num_dissim, cat_dissim, gamma, membship)
+
+    epoch_costs = [cost]
     while itr <= max_iter and not converged:
         itr += 1
         centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,

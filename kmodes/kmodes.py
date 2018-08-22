@@ -217,8 +217,10 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
     itr = 0
     labels = None
     converged = False
-    cost = np.Inf
-    epoch_costs = []
+
+    _, cost = _labels_cost(X, centroids, dissim, membship)
+
+    epoch_costs = [cost]
     while itr <= max_iter and not converged:
         itr += 1
         centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state)
