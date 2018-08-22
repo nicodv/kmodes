@@ -229,7 +229,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                 stdx = np.std(Xnum, axis=0)
                 centroids = [
                     meanx + np.random.randn(n_clusters, nnumattrs) * stdx,
-                    centroids)
+                    centroids
                 ]
 
             if verbose:
@@ -415,8 +415,8 @@ class KPrototypes(kmodes.KModes):
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
-        self._enc_cluster_centroids, self._enc_map,
-        self.labels_, self.cost_, self.n_iter_,
+        self._enc_cluster_centroids, self._enc_map, \
+        self.labels_, self.cost_, self.n_iter_, \
         self.epoch_costs_, self.gamma = k_prototypes(X,
                                             categorical,
                                             self.n_clusters,
