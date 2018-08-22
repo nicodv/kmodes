@@ -52,43 +52,57 @@ class TestKProtoTypes(unittest.TestCase):
         self.assertIsInstance(result, kprototypes.KPrototypes)
 
     def test_kprotoypes_huang_stocks(self):
-        np.random.seed(42)
-        kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1, init='Huang', verbose=2)
+        kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1,
+                                               init='Huang', verbose=2,
+                                               random_state=42)
         # Untrained model
         with self.assertRaises(AssertionError):
             kproto_huang.predict(STOCKS, categorical=[1, 2])
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
+
+    def test_kprotoypes_huang_stocks_parallel(self):
+        kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=4,
+                                               init='Huang', verbose=2,
+                                               random_state=42, n_jobs=4)
+        # Untrained model
+        with self.assertRaises(AssertionError):
+            kproto_huang.predict(STOCKS, categorical=[1, 2])
+        result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
+        expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_cao_stocks(self):
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
+                                             verbose=2, random_state=42)
         result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_predict_stocks(self):
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
+                                             verbose=2, random_state=42)
         kproto_cao = kproto_cao.fit(STOCKS, categorical=[1, 2])
         result = kproto_cao.predict(STOCKS2, categorical=[1, 2])
         expected = np.array([1, 1, 3, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprototypes_predict_unfitted(self):
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
+                                             verbose=2, random_state=42)
         with self.assertRaises(AssertionError):
             kproto_cao.predict(STOCKS)
         with self.assertRaises(AttributeError):
             kproto_cao.cluster_centroids_
 
     def test_kprotoypes_random_stocks(self):
-        kproto_random = kprototypes.KPrototypes(n_clusters=4, init='random', verbose=2)
+        kproto_random = kprototypes.KPrototypes(n_clusters=4, init='random',
+                                                verbose=2)
         result = kproto_random.fit(STOCKS, categorical=[1, 2])
         self.assertIsInstance(result, kprototypes.KPrototypes)
 
@@ -104,7 +118,8 @@ class TestKProtoTypes(unittest.TestCase):
                       [738.5],
                       [197.667]])
         ]
-        kproto_init = kprototypes.KPrototypes(n_clusters=2, init=init_vals, verbose=2)
+        kproto_init = kprototypes.KPrototypes(n_clusters=2, init=init_vals,
+                                              verbose=2)
         with self.assertRaises(AssertionError):
             kproto_init.fit_predict(STOCKS, categorical=[1, 2])
 
@@ -116,7 +131,8 @@ class TestKProtoTypes(unittest.TestCase):
                       [3, 2],
                       [2, 2]])
         ]
-        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals,
+                                              verbose=2)
         with self.assertRaises(AssertionError):
             kproto_init.fit_predict(STOCKS, categorical=[1, 2])
 
@@ -125,7 +141,8 @@ class TestKProtoTypes(unittest.TestCase):
             np.array([356.975, 275.35, 738.5, 197.667]),
             np.array([3, 0, 3, 2])
         ]
-        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals,
+                                              verbose=2)
         with self.assertRaises(AssertionError):
             kproto_init.fit_predict(STOCKS, categorical=[1, 2])
 
@@ -139,12 +156,12 @@ class TestKProtoTypes(unittest.TestCase):
                       [3, 2],
                       [2, 2]])
         ]
-        np.random.seed(42)
-        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals,
+                                              verbose=2, random_state=42)
         result = kproto_init.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_missings(self):
         init_vals = [
@@ -157,12 +174,14 @@ class TestKProtoTypes(unittest.TestCase):
                       [3, 2],
                       [2, 2]])
         ]
-        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2)
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals,
+                                              verbose=2)
         with self.assertRaises(ValueError):
             kproto_init.fit_predict(STOCKS, categorical=[1, 2])
 
     def test_kprototypes_unknowninit_soybean(self):
-        kproto = kprototypes.KPrototypes(n_clusters=4, init='nonsense', verbose=2)
+        kproto = kprototypes.KPrototypes(n_clusters=4, init='nonsense',
+                                         verbose=2)
         with self.assertRaises(NotImplementedError):
             kproto.fit(STOCKS, categorical=[1, 2])
 
@@ -194,8 +213,8 @@ class TestKProtoTypes(unittest.TestCase):
             [0, 'Regular'],
             [0, 'Regular']
         ])
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao',
+                                             verbose=2, random_state=42)
         kproto_cao = kproto_cao.fit(init_problem, categorical=[1])
         self.assertTrue(hasattr(kproto_cao, 'cluster_centroids_'))
 
@@ -205,8 +224,8 @@ class TestKProtoTypes(unittest.TestCase):
             [0., 'Regular'],
             [0., 'Slim']
         ])
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao',
+                                             verbose=2, random_state=42)
         with self.assertRaises(AssertionError):
             kproto_cao.fit_predict(data, categorical=[1])
 
@@ -219,8 +238,8 @@ class TestKProtoTypes(unittest.TestCase):
             [1., 'Slim'],
             [1., 'Slim']
         ])
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao',
+                                             verbose=2, random_state=42)
         kproto_cao.fit_predict(data, categorical=[1])
         # Check if there are only 2 clusters.
         self.assertEqual(kproto_cao.cluster_centroids_[0].shape, (2, 1))
@@ -235,44 +254,48 @@ class TestKProtoTypes(unittest.TestCase):
             [0., 'Slim'],
             [0., 'Slim']
         ])
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=2, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=2, init='Cao',
+                                             verbose=2, random_state=42)
         with self.assertRaises(ValueError):
             kproto_cao.fit_predict(data, categorical=[1])
 
     def test_kprotoypes_no_categoricals(self):
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao', verbose=2)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=6, init='Cao',
+                                             verbose=2, random_state=42)
         with self.assertRaises(NotImplementedError):
             kproto_cao.fit(STOCKS, categorical=[])
 
     def test_kprotoypes_huang_stocks_ng(self):
-        np.random.seed(42)
-        kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1, init='Huang', verbose=2, cat_dissim=ng_dissim)
+        kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1,
+                                               init='Huang', verbose=2,
+                                               cat_dissim=ng_dissim,
+                                               random_state=42)
         # Untrained model
         with self.assertRaises(AssertionError):
             kproto_huang.predict(STOCKS, categorical=[1, 2])
         result = kproto_huang.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_cao_stocks_ng(self):
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2, cat_dissim=ng_dissim)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
+                                             verbose=2, cat_dissim=ng_dissim,
+                                             random_state=42)
         result = kproto_cao.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_predict_stocks_ng(self):
-        np.random.seed(42)
-        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2, cat_dissim=ng_dissim)
+        kproto_cao = kprototypes.KPrototypes(n_clusters=4, init='Cao',
+                                             verbose=2, cat_dissim=ng_dissim,
+                                             random_state=42)
         kproto_cao = kproto_cao.fit(STOCKS, categorical=[1, 2])
         result = kproto_cao.predict(STOCKS2, categorical=[1, 2])
         expected = np.array([1, 1, 3, 1])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kprotoypes_init_stocks_ng(self):
         init_vals = [
@@ -285,9 +308,18 @@ class TestKProtoTypes(unittest.TestCase):
                       [3, 2],
                       [2, 2]])
         ]
-        np.random.seed(42)
-        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals, verbose=2, cat_dissim=ng_dissim)
+        kproto_init = kprototypes.KPrototypes(n_clusters=4, init=init_vals,
+                                              verbose=2, cat_dissim=ng_dissim,
+                                              random_state=42)
         result = kproto_init.fit_predict(STOCKS, categorical=[1, 2])
         expected = np.array([2, 0, 0, 0, 0, 1, 1, 1, 1, 3, 3, 3])
         assert_cluster_splits_equal(result, expected)
-        self.assertTrue(result.dtype == np.dtype(np.uint8))
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
+
+    def test_kprototypes_ninit(self):
+        kmodes = kprototypes.KPrototypes(n_init=10, init='Huang')
+        self.assertEqual(kmodes.n_init, 10)
+        kmodes = kprototypes.KPrototypes(n_init=10, init='Cao')
+        self.assertEqual(kmodes.n_init, 10)
+        kmodes = kprototypes.KPrototypes(n_init=10, init=[np.array([]), np.array([])])
+        self.assertEqual(kmodes.n_init, 1)
