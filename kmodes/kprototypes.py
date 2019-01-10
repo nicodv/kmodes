@@ -440,9 +440,10 @@ class KPrototypes(kmodes.KModes):
         categorical : Index of columns that contain categorical data
         """
         if categorical is not None:
-            assert isinstance(categorical, (list, tuple)), "The 'categorical' \
-                argument needs to be a list or tuple of integer indices \
-                but is: {}.".format(type(categorical))
+            assert isinstance(categorical, (int, list, tuple)), "The 'categorical' \
+                argument needs to be an integer with the index of the categorical \
+                column in your data, or a list or tuple of several of them, \
+                but it is a {}.".format(type(categorical))
 
         random_state = check_random_state(self.random_state)
         # If self.gamma is None, gamma will be automatically determined from
@@ -478,9 +479,10 @@ class KPrototypes(kmodes.KModes):
         """
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
         if categorical is not None:
-            assert isinstance(categorical, (list, tuple)), "The 'categorical' \
-                argument needs to be a list or tuple of integer indices \
-                but is: {}.".format(type(categorical))
+            assert isinstance(categorical, (int, list, tuple)), "The 'categorical' \
+                argument needs to be an integer with the index of the categorical \
+                column in your data, or a list or tuple of several of them, \
+                but it is a {}.".format(type(categorical))
 
         Xnum, Xcat = _split_num_cat(X, categorical)
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
