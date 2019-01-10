@@ -137,6 +137,14 @@ larger problems. Note that it depends on your problem whether multiprocessing
 actually helps, so be sure to try that out first. You can check out the
 examples for some benchmarks.
 
+FAQ
+---
+
+Q: I'm seeing errors such as `TypeError: '<' not supported between instances of 'str' and 'float'`
+when using the `kprototypes` algorithm.
+A: One or more of your numerical feature columns have string values in them. Make sure that all 
+columns have consistent data types.
+
 References
 ----------
 
