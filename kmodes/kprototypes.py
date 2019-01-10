@@ -439,6 +439,10 @@ class KPrototypes(kmodes.KModes):
         X : array-like, shape=[n_samples, n_features]
         categorical : Index of columns that contain categorical data
         """
+        if categorical is not None:
+            assert isinstance(categorical, (list, tuple)), "The 'categorical' \
+                argument needs to be a list or tuple of integer indices \
+                but is: {}.".format(type(categorical))
 
         random_state = check_random_state(self.random_state)
         # If self.gamma is None, gamma will be automatically determined from
@@ -465,7 +469,7 @@ class KPrototypes(kmodes.KModes):
         ----------
         X : array-like, shape = [n_samples, n_features]
             New data to predict.
-        categorical : Index of columns that contain categorical data
+        categorical : Indices of columns that contain categorical data
 
         Returns
         -------
@@ -473,6 +477,10 @@ class KPrototypes(kmodes.KModes):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
+        if categorical is not None:
+            assert isinstance(categorical, (list, tuple)), "The 'categorical' \
+                argument needs to be a list or tuple of integer indices \
+                but is: {}.".format(type(categorical))
 
         Xnum, Xcat = _split_num_cat(X, categorical)
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
