@@ -51,6 +51,11 @@ class TestKProtoTypes(unittest.TestCase):
         result = kproto.fit(STOCKS[:, :2], categorical=1)
         self.assertIsInstance(result, kprototypes.KPrototypes)
 
+    def test_kprotoypes_wrong_categorical_type(self):
+        kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        with self.assertRaises(AssertionError):
+            kproto.fit_predict(STOCKS, categorical={1, 2})
+
     def test_kprotoypes_huang_stocks(self):
         kproto_huang = kprototypes.KPrototypes(n_clusters=4, n_init=1,
                                                init='Huang', verbose=2,
