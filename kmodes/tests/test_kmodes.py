@@ -189,6 +189,31 @@ class TestKModes(unittest.TestCase):
         result = kmodes_init.fit(SOYBEAN)
         self.assertIsInstance(result, KModes)
 
+    def test_kmodes_empty_init_cluster_edge_case(self):
+        # Edge case from: https://github.com/nicodv/kmodes/issues/106,
+        # due to negative values in all-integer data.
+        init_vals = np.array([
+            [ 14,   0,  16,   0,  -1,  -1, 158, 115],
+            [  2,   0,   3,   3, 127, 105, 295, 197],
+            [ 10,   2,  12,   3, 136,  20,  77,  42],
+            [  2,   0,   3,   4, 127,  55, 150,  63],
+            [  1,   0,  21,   5,  39,  -1, 124,  90],
+            [ 17,   2,  12,   3,  22, 175, 242, 164],
+            [  5,   1,   7,  -1,  -1,  -1,  69,  38],
+            [  3,   3,   6,  -1,  -1,  -1, 267, 175],
+            [  1,   0,  21,   4,  71,  -1, 276, 196],
+            [ 11,   2,  12,   5,  -1,  -1, 209, 148],
+            [  2,   0,   3,   5, 127, 105, 375, 263],
+            [  2,   0,   3,   4,  28, 105,  16,   8],
+            [ 13,   2,  12,  -1,  -1,  -1, 263, 187],
+            [  6,   2,   6,   4,  21,  20, 370, 256],
+            [ 10,   2,  12,   3, 136, 137,  59,  31]
+        ])
+        data = np.hstack((init_vals, init_vals))
+        kmodes_init = KModes(n_clusters=15, init='Huang', verbose=2)
+        kmodes_init.fit_predict(data)
+        kmodes_init.cluster_centroids_
+
     def test_kmodes_unknowninit_soybean(self):
         with self.assertRaises(NotImplementedError):
             KModes(n_clusters=4, init='nonsense', verbose=2).fit(SOYBEAN)
@@ -208,8 +233,8 @@ class TestKModes(unittest.TestCase):
         expected = np.array([0, 0, 0, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
         np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
-                                      np.array([[0, 1],
-                                                [0, 2]]))
+                                      np.array([[0, 2],
+                                                [0, 1]]))
 
     def test_kmodes_huang_soybean_ng(self):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
@@ -255,8 +280,8 @@ class TestKModes(unittest.TestCase):
         expected = np.array([0, 0, 0, 1, 1, 1])
         assert_cluster_splits_equal(result, expected)
         np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
-                                      np.array([[0, 1],
-                                                [0, 2]]))
+                                      np.array([[0, 2],
+                                                [0, 1]]))
 
     def test_kmodes_ninit(self):
         kmodes = KModes(n_init=10, init='Huang')
