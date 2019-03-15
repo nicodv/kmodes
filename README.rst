@@ -160,3 +160,8 @@ References
 .. [CAO09] Cao, F., Liang, J, Bai, L.: A new initialization method for
    categorical data clustering, Expert Systems with Applications 36(7),
    pp. 10223-10228., 2009.
+
+
+.. image:: https://api.codacy.com/project/badge/Grade/cb19f1f1093a44fa845ebfdaf76975f6
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/app/nicodv/kmodes?utm_source=github.com&utm_medium=referral&utm_content=nicodv/kmodes&utm_campaign=Badge_Grade_Dashboard
