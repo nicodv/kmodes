@@ -180,10 +180,10 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
             init = np.atleast_2d(init).T
         assert init.shape[0] == n_clusters, \
             "Wrong number of initial centroids in init ({}, should be {})." \
-                .format(init.shape[0], n_clusters)
+            .format(init.shape[0], n_clusters)
         assert init.shape[1] == n_attrs, \
             "Wrong number of attributes in init ({}, should be {})." \
-                .format(init.shape[1], n_attrs)
+            .format(init.shape[1], n_attrs)
         centroids = np.asarray(init, dtype=np.uint16)
     else:
         raise NotImplementedError
@@ -220,7 +220,14 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
     cost = np.Inf
     while itr <= max_iter and not converged:
         itr += 1
-        centroids, moves = _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state)
+        centroids, moves = _k_modes_iter(
+            X,
+            centroids,
+            cl_attr_freq,
+            membship,
+            dissim,
+            random_state
+        )
         # All points seen in this iteration
         labels, ncost = _labels_cost(X, centroids, dissim, membship)
         converged = (moves == 0) or (ncost >= cost)

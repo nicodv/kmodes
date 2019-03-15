@@ -56,15 +56,10 @@ def run(task, stop):
 
 
 if __name__ == '__main__':
-    print('Running K-Prototypes on 1 to {} cores for {} initialization tries '
-          'of {} clusters with {}' ' points of {} features'.format(
-           C, C, K, N_kproto, M))
+    print(f"Running K-Prototypes on 1 to {C} cores for {C} initialization tries "
+          f"of {K} clusters with {N_kproto} points of {M} features")
     run(_kprototypes, C)
 
-    print('\nRunning K-Modes on 1 to {} cores for {} initialization tries '
-          'of {} clusters with {}' ' points of {} features'.format(
-           C, C, K, N_kmodes, M))
+    print(f"\nRunning K-Modes on 1 to {C} cores for {C} initialization tries "
+          f"of {K} clusters with {N_kmodes} points of {M} features")
     run(_kmodes, C)
-
-
-

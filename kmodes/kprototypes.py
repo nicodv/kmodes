@@ -156,13 +156,13 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
                 "({}, should be {}).".format(init[0].shape[0], n_clusters)
             assert init[0].shape[1] == nnumattrs, \
                 "Wrong number of numerical attributes in init ({}, should be {})." \
-                    .format(init[0].shape[1], nnumattrs)
+                .format(init[0].shape[1], nnumattrs)
             assert init[1].shape[0] == n_clusters, \
                 "Wrong number of initial categorical centroids in init ({}, " \
                 "should be {}).".format(init[1].shape[0], n_clusters)
             assert init[1].shape[1] == ncatattrs, \
                 "Wrong number of categorical attributes in init ({}, should be {})." \
-                    .format(init[1].shape[1], ncatattrs)
+                .format(init[1].shape[1], ncatattrs)
             centroids = [np.asarray(init[0], dtype=np.float64),
                          np.asarray(init[1], dtype=np.uint16)]
         else:

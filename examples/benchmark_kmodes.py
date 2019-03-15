@@ -20,15 +20,30 @@ data = np.random.randint(1, 1000, (N, M))
 
 
 def huang():
-    KModes(n_clusters=K, init='Huang', n_init=1, verbose=2).fit_predict(data)
+    KModes(
+        n_clusters=K,
+        init='Huang',
+        n_init=1,
+        verbose=2
+    ).fit_predict(data)
 
 
 def huang_ng_dissim():
-    KModes(n_clusters=K, init='Huang', cat_dissim=ng_dissim, n_init=1, verbose=2).fit_predict(data)
+    KModes(
+        n_clusters=K,
+        init='Huang',
+        cat_dissim=ng_dissim,
+        n_init=1,
+        verbose=2
+    ).fit_predict(data)
 
 
 def cao():
-    KModes(n_clusters=K, init='Cao', verbose=2).fit_predict(data)
+    KModes(
+        n_clusters=K,
+        init='Cao',
+        verbose=2
+    ).fit_predict(data)
 
 
 if __name__ == '__main__':

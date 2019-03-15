@@ -40,8 +40,10 @@ class TestDissimilarityMeasures(unittest.TestCase):
         centroids = X
         membship = np.array([[1, 0], [0, 1]])
 
-        assert_array_equal(np.array([0., 1.]), ng_dissim(centroids, X[0], X=X, membship=membship))
-        assert_array_equal(np.array([1., 0.]), ng_dissim(centroids, X[1], X=X, membship=membship))
+        assert_array_equal(np.array([0., 1.]),
+                           ng_dissim(centroids, X[0], X=X, membship=membship))
+        assert_array_equal(np.array([1., 0.]),
+                           ng_dissim(centroids, X[1], X=X, membship=membship))
 
         # Unit test for initialization (i.e., same as matching_dissim)
         membship = np.array([[0, 0], [0, 0]])
@@ -49,16 +51,20 @@ class TestDissimilarityMeasures(unittest.TestCase):
         mdiss_01 = matching_dissim(np.array([X[0]]), np.array([X[1]]))[0]
         mdiss_11 = matching_dissim(np.array([X[1]]), np.array([X[1]]))[0]
 
-        assert_array_equal(np.array([mdiss_00, mdiss_01]), ng_dissim(centroids, X[0], X=X, membship=membship))
-        assert_array_equal(np.array([mdiss_01, mdiss_11]), ng_dissim(centroids, X[1], X=X, membship=membship))
+        assert_array_equal(np.array([mdiss_00, mdiss_01]),
+                           ng_dissim(centroids, X[0], X=X, membship=membship))
+        assert_array_equal(np.array([mdiss_01, mdiss_11]),
+                           ng_dissim(centroids, X[1], X=X, membship=membship))
 
         # Unit test for NaN
         X = np.array([[np.NaN, 1, 2, 0, 1, 2], [0, 1, 2, 0, 1, 1]])
         centroids = X
         membship = np.array([[1, 0], [0, 1]])
 
-        assert_array_equal(np.array([1., 2.]), ng_dissim(centroids, X[0], X=X, membship=membship))
-        assert_array_equal(np.array([2., 0.]), ng_dissim(centroids, X[1], X=X, membship=membship))
+        assert_array_equal(np.array([1., 2.]),
+                           ng_dissim(centroids, X[0], X=X, membship=membship))
+        assert_array_equal(np.array([2., 0.]),
+                           ng_dissim(centroids, X[1], X=X, membship=membship))
 
         # Unit test for initialization with NaN(i.e., same as matching_dissim)
         membship = np.array([[0, 0], [0, 0]])
@@ -66,16 +72,21 @@ class TestDissimilarityMeasures(unittest.TestCase):
         mdiss_01 = matching_dissim(np.array([X[0]]), np.array([X[1]]))[0]
         mdiss_11 = matching_dissim(np.array([X[1]]), np.array([X[1]]))[0]
 
-        assert_array_equal(np.array([mdiss_00, mdiss_01]), ng_dissim(centroids, X[0], X=X, membship=membship))
-        assert_array_equal(np.array([mdiss_01, mdiss_11]), ng_dissim(centroids, X[1], X=X, membship=membship))
+        assert_array_equal(np.array([mdiss_00, mdiss_01]),
+                           ng_dissim(centroids, X[0], X=X, membship=membship))
+        assert_array_equal(np.array([mdiss_01, mdiss_11]),
+                           ng_dissim(centroids, X[1], X=X, membship=membship))
 
         X = np.array([['a', 'b', 'c', 'd'], ['a', 'b', 'e', 'd'], ['d', 'c', 'b', 'a']])
         centroids =  np.array([['a', 'b', 'c', 'd'], ['d', 'c', 'b', 'a']])
         membship = np.array([[1, 1, 0], [0, 0, 1]])
 
-        assert_array_equal(np.array([0.5, 4.]), ng_dissim(centroids, X[0], X=X, membship=membship))
-        assert_array_equal(np.array([1., 4.]), ng_dissim(centroids, X[1], X=X, membship=membship))
-        assert_array_equal(np.array([4., 0.]), ng_dissim(centroids, X[2], X=X, membship=membship))
+        assert_array_equal(np.array([0.5, 4.]),
+                           ng_dissim(centroids, X[0], X=X, membship=membship))
+        assert_array_equal(np.array([1., 4.]),
+                           ng_dissim(centroids, X[1], X=X, membship=membship))
+        assert_array_equal(np.array([4., 0.]),
+                           ng_dissim(centroids, X[2], X=X, membship=membship))
 
         # Unit test for initialization (i.e., same as matching_dissim)
         membship = np.array([[0, 0, 0], [0, 0, 0]])
@@ -86,6 +97,9 @@ class TestDissimilarityMeasures(unittest.TestCase):
         mdiss_12 = matching_dissim(np.array([X[0]]), np.array([X[2]]))[0]
         mdiss_22 = matching_dissim(np.array([X[2]]), np.array([X[2]]))[0]
 
-        assert_array_equal(np.array([mdiss_00, mdiss_02]), ng_dissim(centroids, X[0], X=X, membship=membship))
-        assert_array_equal(np.array([mdiss_01, mdiss_12]), ng_dissim(centroids, X[1], X=X, membship=membship))
-        assert_array_equal(np.array([mdiss_12, mdiss_22]), ng_dissim(centroids, X[2], X=X, membship=membship))
+        assert_array_equal(np.array([mdiss_00, mdiss_02]),
+                           ng_dissim(centroids, X[0], X=X, membship=membship))
+        assert_array_equal(np.array([mdiss_01, mdiss_12]),
+                           ng_dissim(centroids, X[1], X=X, membship=membship))
+        assert_array_equal(np.array([mdiss_12, mdiss_22]),
+                           ng_dissim(centroids, X[2], X=X, membship=membship))
