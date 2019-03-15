@@ -126,7 +126,7 @@ Parallel execution
 
 The k-modes and k-prototypes implementations both offer support for
 multiprocessing via the
-`joblib library<https://pythonhosted.org/joblib/generated/joblib.Parallel.html>`\_,
+`joblib library<https://pythonhosted.org/joblib/generated/joblib.Parallel.html>`_,
 similar to e.g. scikit-learn's implementation of k-means, using the
 :code:`n_jobs` parameter. It generally does not make sense to set more jobs
 than there are processor cores available on your system.
