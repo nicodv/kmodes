@@ -7,9 +7,9 @@
 .. image:: https://coveralls.io/repos/nicodv/kmodes/badge.svg
     :target: https://coveralls.io/r/nicodv/kmodes
     :alt: Test Coverage
-.. image:: https://landscape.io/github/nicodv/kmodes/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/nicodv/kmodes/master
-    :alt: Code Health
+.. image:: https://api.codacy.com/project/badge/Grade/cb19f1f1093a44fa845ebfdaf76975f6
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/app/nicodv/kmodes?utm_source=github.com&utm_medium=referral&utm_content=nicodv/kmodes&utm_campaign=Badge_Grade_Dashboard
 .. image:: https://requires.io/github/nicodv/kmodes/requirements.svg
      :target: https://requires.io/github/nicodv/kmodes/requirements/
      :alt: Requirements Status
