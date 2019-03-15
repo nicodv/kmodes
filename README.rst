@@ -140,8 +140,9 @@ examples for some benchmarks.
 FAQ
 ---
 
-Q: I'm seeing errors such as `TypeError: '<' not supported between instances of 'str' and 'float'`
-when using the `kprototypes` algorithm.
+Q: I'm seeing errors such as :code:`TypeError: '<' not supported between instances of 'str' and 'float'`
+when using the :code:`kprototypes` algorithm.
+
 A: One or more of your numerical feature columns have string values in them. Make sure that all 
 columns have consistent data types.
 
