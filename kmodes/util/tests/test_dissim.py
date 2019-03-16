@@ -78,7 +78,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
                            ng_dissim(centroids, X[1], X=X, membship=membship))
 
         X = np.array([['a', 'b', 'c', 'd'], ['a', 'b', 'e', 'd'], ['d', 'c', 'b', 'a']])
-        centroids =  np.array([['a', 'b', 'c', 'd'], ['d', 'c', 'b', 'a']])
+        centroids = np.array([['a', 'b', 'c', 'd'], ['d', 'c', 'b', 'a']])
         membship = np.array([[1, 1, 0], [0, 0, 1]])
 
         assert_array_equal(np.array([0.5, 4.]),
