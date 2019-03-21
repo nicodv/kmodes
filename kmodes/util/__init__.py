@@ -61,4 +61,4 @@ def decode_centroids(encoded, mapping):
 
 def get_unique_rows(a):
     """Gets the unique rows in a numpy array."""
-    return np.vstack({tuple(row) for row in a})
+    return np.vstack(list({tuple(row) for row in a}))
