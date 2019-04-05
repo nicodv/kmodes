@@ -390,16 +390,18 @@ class KModes(BaseEstimator, ClusterMixin):
         """
 
         random_state = check_random_state(self.random_state)
-        self._enc_cluster_centroids, self._enc_map, self.labels_,\
-        self.cost_, self.n_iter_, self.epoch_costs_ = k_modes(X,
-                                                          self.n_clusters,
-                                                          self.max_iter,
-                                                          self.cat_dissim,
-                                                          self.init,
-                                                          self.n_init,
-                                                          self.verbose,
-                                                          random_state,
-                                                          self.n_jobs)
+        self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
+        self.n_iter_, self.epoch_costs_ = k_modes(
+                X,
+                self.n_clusters,
+                self.max_iter,
+                self.cat_dissim,
+                self.init,
+                self.n_init,
+                self.verbose,
+                random_state,
+                self.n_jobs,
+        )
         return self
 
     def fit_predict(self, X, y=None, **kwargs):
