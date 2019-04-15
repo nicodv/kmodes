@@ -423,6 +423,11 @@ class KModes(BaseEstimator, ClusterMixin):
         labels : array, shape [n_samples,]
             Index of the cluster each sample belongs to.
         """
+
+        # Convert pandas objects to numpy arrays.
+        if 'pandas' in str(X.__class__):
+            X = X.values
+
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
 
         if self.verbose and self.cat_dissim == ng_dissim:
