@@ -1,7 +1,7 @@
 import inspect
 
 
-class _named_check(object):
+class _named_check(object):  # noqa
     """Wraps a check to show a useful description
     Parameters
     ----------
