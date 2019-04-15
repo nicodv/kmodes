@@ -13,7 +13,8 @@ from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, pandas_to_numpy
+from .util import get_max_value_key, encode_features, get_unique_rows, \
+    decode_centroids, pandas_to_numpy
 from .util.dissim import matching_dissim, euclidean_dissim
 
 # Number of tries we give the initialization methods to find non-empty
