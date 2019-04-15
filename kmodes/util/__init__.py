@@ -5,6 +5,10 @@ Generic utilities for clustering
 import numpy as np
 
 
+def pandas_to_numpy(x):
+    return x.values if 'pandas' in str(x.__class__) else x
+
+
 def get_max_value_key(dic):
     """Gets the key for the maximum value in a dict."""
     v = np.array(list(dic.values()))

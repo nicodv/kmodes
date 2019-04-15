@@ -13,7 +13,8 @@ from sklearn.externals.joblib import Parallel, delayed
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_array
 
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
+from .util import get_max_value_key, encode_features, get_unique_rows, \
+    decode_centroids, pandas_to_numpy
 from .util.dissim import matching_dissim, ng_dissim
 
 
@@ -245,10 +246,6 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
     if sparse.issparse(X):
         raise TypeError("k-modes does not support sparse data.")
 
-    # Convert pandas objects to numpy arrays.
-    if 'pandas' in str(X.__class__):
-        X = X.values
-
     X = check_array(X, dtype=None)
 
     # Convert the categorical values in X to integers for speed.
@@ -388,6 +385,7 @@ class KModes(BaseEstimator, ClusterMixin):
         ----------
         X : array-like, shape=[n_samples, n_features]
         """
+        X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
         self._enc_cluster_centroids, self._enc_map, self.labels_,\
@@ -424,10 +422,6 @@ class KModes(BaseEstimator, ClusterMixin):
             Index of the cluster each sample belongs to.
         """
 
-        # Convert pandas objects to numpy arrays.
-        if 'pandas' in str(X.__class__):
-            X = X.values
-
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
 
         if self.verbose and self.cat_dissim == ng_dissim:
@@ -435,6 +429,7 @@ class KModes(BaseEstimator, ClusterMixin):
                   "but now that it is predicting the model will fall back to "
                   "using simple matching dissimilarity.")
 
+        X = pandas_to_numpy(X)
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
         return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim)[0]

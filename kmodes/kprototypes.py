@@ -13,7 +13,7 @@ from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_array
 
 from . import kmodes
-from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids
+from .util import get_max_value_key, encode_features, get_unique_rows, decode_centroids, pandas_to_numpy
 from .util.dissim import matching_dissim, euclidean_dissim
 
 # Number of tries we give the initialization methods to find non-empty
@@ -258,10 +258,6 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     if sparse.issparse(X):
         raise TypeError("k-prototypes does not support sparse data.")
 
-    # Convert pandas objects to numpy arrays.
-    if 'pandas' in str(X.__class__):
-        X = X.values
-
     if categorical is None or not categorical:
         raise NotImplementedError(
             "No categorical data selected, effectively doing k-means. "
@@ -445,6 +441,8 @@ class KPrototypes(kmodes.KModes):
                 column in your data, or a list or tuple of several of them, \
                 but it is a {}.".format(type(categorical))
 
+        X = pandas_to_numpy(X)
+
         random_state = check_random_state(self.random_state)
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
@@ -478,15 +476,14 @@ class KPrototypes(kmodes.KModes):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
-        # Convert pandas objects to numpy arrays.
-        if 'pandas' in str(X.__class__):
-            X = X.values
+
         if categorical is not None:
             assert isinstance(categorical, (int, list, tuple)), "The 'categorical' \
                 argument needs to be an integer with the index of the categorical \
                 column in your data, or a list or tuple of several of them, \
                 but it is a {}.".format(type(categorical))
 
+        X = pandas_to_numpy(X)
         Xnum, Xcat = _split_num_cat(X, categorical)
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
