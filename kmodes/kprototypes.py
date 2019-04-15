@@ -478,11 +478,9 @@ class KPrototypes(kmodes.KModes):
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
-        
         # Convert pandas objects to numpy arrays.
         if 'pandas' in str(X.__class__):
             X = X.values
-            
         if categorical is not None:
             assert isinstance(categorical, (int, list, tuple)), "The 'categorical' \
                 argument needs to be an integer with the index of the categorical \
