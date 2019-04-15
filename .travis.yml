@@ -11,9 +11,7 @@ matrix:
     - python: 3.7
       dist: xenial
       sudo: true
-cache:
-  apt
-  pip
+cache: pip
 addons:
   apt:
     packages:
