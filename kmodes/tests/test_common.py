@@ -1,17 +1,15 @@
 """
 General sklearn tests for the estimators in kmodes.
 """
-
-from kmodes.kmodes import KModes
-from kmodes.kprototypes import KPrototypes
-
 from sklearn.utils.testing import assert_false
 from sklearn.utils.testing import assert_greater
-from sklearn.utils.testing import _named_check
-
 from sklearn.utils.estimator_checks import (
     _yield_all_checks,
     check_parameters_default_constructible)
+
+from kmodes.kmodes import KModes
+from kmodes.kprototypes import KPrototypes
+from kmodes.util.testing import _named_check
 
 all_estimators = lambda: (('kmodes', KModes), ('kprototypes', KPrototypes))
 
@@ -25,8 +23,6 @@ def test_all_estimator_no_base_class():
 
 
 def test_all_estimators():
-    # Test that estimators are default-constructible, cloneable
-    # and have working repr.
     estimators = all_estimators()
 
     # Meta sanity-check to make sure that the estimator introspection runs
@@ -40,20 +36,23 @@ def test_all_estimators():
 
 
 def test_non_meta_estimators():
-    # input validation etc for non-meta estimators
-    estimators = all_estimators()
-    for name, Estimator in estimators:
+    for name, Estimator in all_estimators():
         estimator = Estimator()
         if name == 'kmodes':
             for check in _yield_all_checks(name, Estimator):
                 # Skip these
-                if check.__name__ not in ('check_clustering',
-                                          'check_dtype_object'):
-                    yield _named_check(check, name), name, estimator
+                if hasattr(check, '__name__'):
+                    if check.__name__ not in ('check_clustering',
+                                              'check_dtype_object'):
+                        yield _named_check(check, name), name, estimator
+                else:
+                    yield check, name, estimator
         elif name == 'kprototypes':
             for check in _yield_all_checks(name, Estimator):
                 # Only do these
-                if check.__name__ in ('check_estimator_sparse_data',
-                                      'check_clusterer_compute_labels_predict',
-                                      'check_estimators_partial_fit_n_features'):
+                if hasattr(check, '__name__') and check.__name__ in (
+                        'check_estimator_sparse_data',
+                        'check_clusterer_compute_labels_predict',
+                        'check_estimators_partial_fit_n_features'
+                ):
                     yield _named_check(check, name), name, estimator
