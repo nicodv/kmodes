@@ -7,9 +7,9 @@ K-modes clustering for categorical data
 from collections import defaultdict
 
 import numpy as np
+from joblib import Parallel, delayed
 from scipy import sparse
 from sklearn.base import BaseEstimator, ClusterMixin
-from sklearn.externals.joblib import Parallel, delayed
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_array
 
