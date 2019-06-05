@@ -457,18 +457,18 @@ class KPrototypes(kmodes.KModes):
         # the data. The function below returns its value.
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
         self.n_iter_, self.epoch_costs_, self.gamma = k_prototypes(
-                X,
-                categorical,
-                self.n_clusters,
-                self.max_iter,
-                self.num_dissim,
-                self.cat_dissim,
-                self.gamma,
-                self.init,
-                self.n_init,
-                self.verbose,
-                random_state,
-                self.n_jobs
+            X,
+            categorical,
+            self.n_clusters,
+            self.max_iter,
+            self.num_dissim,
+            self.cat_dissim,
+            self.gamma,
+            self.init,
+            self.n_init,
+            self.verbose,
+            random_state,
+            self.n_jobs
         )
 
         return self

@@ -341,3 +341,8 @@ class TestKModes(unittest.TestCase):
         self.assertEqual(kmodes.n_init, 1)
         kmodes = KModes(n_init=10, init=np.array([1, 1]))
         self.assertEqual(kmodes.n_init, 1)
+
+    def test_kmodes_epoch_costs(self):
+        kmodes = KModes(n_clusters=4, init='Cao', random_state=42)
+        kmodes.fit(SOYBEAN)
+        self.assertEqual(kmodes.epoch_costs_, [206.0, 204.0, 199.0, 199.0])
