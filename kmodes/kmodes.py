@@ -218,7 +218,10 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
     itr = 0
     labels = None
     converged = False
-    cost = np.Inf
+
+    _, cost = _labels_cost(X, centroids, dissim, membship)
+
+    epoch_costs = [cost]
     while itr <= max_iter and not converged:
         itr += 1
         centroids, moves = _k_modes_iter(
@@ -232,12 +235,13 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
         # All points seen in this iteration
         labels, ncost = _labels_cost(X, centroids, dissim, membship)
         converged = (moves == 0) or (ncost >= cost)
+        epoch_costs.append(ncost)
         cost = ncost
         if verbose:
             print("Run {}, iteration: {}/{}, moves: {}, cost: {}"
                   .format(init_no + 1, itr, max_iter, moves, cost))
 
-    return centroids, labels, cost, itr
+    return centroids, labels, cost, itr, epoch_costs
 
 
 def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs):
@@ -277,14 +281,14 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
             delayed(k_modes_single)(X, n_clusters, n_points, n_attrs, max_iter,
                                     dissim, init, init_no, verbose, seed)
             for init_no, seed in enumerate(seeds))
-    all_centroids, all_labels, all_costs, all_n_iters = zip(*results)
+    all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
     return all_centroids[best], enc_map, all_labels[best], \
-        all_costs[best], all_n_iters[best]
+        all_costs[best], all_n_iters[best], all_epoch_costs[best]
 
 
 class KModes(BaseEstimator, ClusterMixin):
@@ -351,6 +355,9 @@ class KModes(BaseEstimator, ClusterMixin):
     n_iter_ : int
         The number of iterations the algorithm ran for.
 
+    epoch_costs_ :
+        The cost of the algorithm at each epoch from start to completion.
+
     Notes
     -----
     See:
@@ -388,16 +395,18 @@ class KModes(BaseEstimator, ClusterMixin):
         X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
-        self._enc_cluster_centroids, self._enc_map, self.labels_,\
-            self.cost_, self.n_iter_ = k_modes(X,
-                                               self.n_clusters,
-                                               self.max_iter,
-                                               self.cat_dissim,
-                                               self.init,
-                                               self.n_init,
-                                               self.verbose,
-                                               random_state,
-                                               self.n_jobs)
+        self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
+        self.n_iter_, self.epoch_costs_ = k_modes(
+                X,
+                self.n_clusters,
+                self.max_iter,
+                self.cat_dissim,
+                self.init,
+                self.n_init,
+                self.verbose,
+                random_state,
+                self.n_jobs,
+        )
         return self
 
     def fit_predict(self, X, y=None, **kwargs):

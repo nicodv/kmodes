@@ -232,7 +232,11 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
     itr = 0
     labels = None
     converged = False
-    cost = np.Inf
+
+    _, cost = _labels_cost(Xnum, Xcat, centroids,
+                           num_dissim, cat_dissim, gamma, membship)
+
+    epoch_costs = [cost]
     while itr <= max_iter and not converged:
         itr += 1
         centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
@@ -244,12 +248,13 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
         labels, ncost = _labels_cost(Xnum, Xcat, centroids,
                                      num_dissim, cat_dissim, gamma, membship)
         converged = (moves == 0) or (ncost >= cost)
+        epoch_costs.append(ncost)
         cost = ncost
         if verbose:
             print("Run: {}, iteration: {}/{}, moves: {}, ncost: {}"
                   .format(init_no + 1, itr, max_iter, moves, ncost))
 
-    return centroids, labels, cost, itr
+    return centroids, labels, cost, itr, epoch_costs
 
 
 def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
@@ -316,15 +321,15 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                                          num_dissim, cat_dissim, gamma,
                                          init, init_no, verbose, seed)
             for init_no, seed in enumerate(seeds))
-    all_centroids, all_labels, all_costs, all_n_iters = zip(*results)
+    all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
         print("Best run was number {}".format(best + 1))
 
     # Note: return gamma in case it was automatically determined.
-    return all_centroids[best], enc_map, all_labels[best], \
-        all_costs[best], all_n_iters[best], gamma
+    return all_centroids[best], enc_map, all_labels[best], all_costs[best], \
+        all_n_iters[best], all_epoch_costs[best], gamma
 
 
 class KPrototypes(kmodes.KModes):
@@ -400,6 +405,9 @@ class KPrototypes(kmodes.KModes):
     n_iter_ : int
         The number of iterations the algorithm ran for.
 
+    epoch_costs_ :
+        The cost of the algorithm at each epoch from start to completion.
+
     gamma : float
         The (potentially calculated) weighing factor.
 
@@ -447,19 +455,22 @@ class KPrototypes(kmodes.KModes):
         random_state = check_random_state(self.random_state)
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
-        self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_,\
-            self.n_iter_, self.gamma = k_prototypes(X,
-                                                    categorical,
-                                                    self.n_clusters,
-                                                    self.max_iter,
-                                                    self.num_dissim,
-                                                    self.cat_dissim,
-                                                    self.gamma,
-                                                    self.init,
-                                                    self.n_init,
-                                                    self.verbose,
-                                                    random_state,
-                                                    self.n_jobs)
+        self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
+        self.n_iter_, self.epoch_costs_, self.gamma = k_prototypes(
+                X,
+                categorical,
+                self.n_clusters,
+                self.max_iter,
+                self.num_dissim,
+                self.cat_dissim,
+                self.gamma,
+                self.init,
+                self.n_init,
+                self.verbose,
+                random_state,
+                self.n_jobs
+        )
+
         return self
 
     def predict(self, X, categorical=None):
