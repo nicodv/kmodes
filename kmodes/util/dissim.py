@@ -56,3 +56,13 @@ def ng_dissim(a, b, X=None, membship=None):
                                if b[idr] == t else 1.0
                                for idr, t in enumerate(val_a)]).sum(0)
                      for idj, val_a in enumerate(a)])
+
+
+def jaccard_dissim(a, b, **_):
+    """Jaccard distance function"""
+    i = np.sum((a == 1) & (b == 1), axis=1)  
+    j = np.sum((a == 1) | (b == 1), axis=1)
+    if j.any != 0:
+        return ((j - i) /j)
+    else:
+        return 1
