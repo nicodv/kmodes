@@ -60,9 +60,9 @@ def ng_dissim(a, b, X=None, membship=None):
 
 def jaccard_dissim(a, b, **_):
     """Jaccard distance function"""
-    i = np.sum((a == 1) & (b == 1), axis=1)  
+    i = np.sum((a == 1) & (b == 1), axis=1)
     j = np.sum((a == 1) | (b == 1), axis=1)
     if j.any != 0:
-        return ((j - i) /j)
+        return (( j - i ) / j )
     else:
         return 1
