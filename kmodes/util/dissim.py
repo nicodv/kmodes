@@ -68,7 +68,7 @@ def jaccard_binary_dissim(a, b, **_):
     i = np.sum((a == 1) & (b == 1), axis=1)  
     j = np.sum((a == 1) | (b == 1), axis=1)
     
-    if j.any != 0:
+    if j != 0:
         return ((j - i) /j)
     else:
         return 1
