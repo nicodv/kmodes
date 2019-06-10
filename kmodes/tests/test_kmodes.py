@@ -345,11 +345,8 @@ class TestKModes(unittest.TestCase):
     def test_kmodes_epoch_costs(self):
         kmodes = KModes(n_clusters=4, init='Cao', random_state=42)
         kmodes.fit(SOYBEAN)
-        self.assertEqual(kmodes.epoch_costs_, [206.0, 204.0, 199.0, 199.0])
-
-        
-                """Begin Jaccard's testing"""
-
+        self.assertEqual(kmodes.epoch_costs_, [206.0, 204.0, 199.0, 199.0]
+                         
     def test_kmodes_huang_soybean_jaccard_bin(self):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
                               cat_dissim=jaccard_binary_dissim, random_state=42)
@@ -396,6 +393,3 @@ class TestKModes(unittest.TestCase):
         np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
                                       np.array([[0, 2],
                                                 [0, 1]]))
-
-
-        """End Jaccard's testing"""
