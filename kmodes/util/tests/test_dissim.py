@@ -108,7 +108,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
     def test_jaccard__binary_dissim(self):
         a = np.array([[1, 0, 0, 1, 1, 0]])
         b = np.array([[1, 1, 1, 0, 1, 1]])
-        assert_equal(2/3, jaccard_binary_dissim(a, b))
+        assert_equal(2 / 3, jaccard_binary_dissim(a, b))
         
         a = np.array([[0, 0, 1, 1, 0, 0]])
         b = np.array([[0, 1, 1, 0, 0, 1]])
