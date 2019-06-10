@@ -7,7 +7,8 @@ import unittest
 import numpy as np
 from sklearn.utils.testing import assert_equal, assert_array_equal
 
-from kmodes.util.dissim import matching_dissim, euclidean_dissim, ng_dissim, jaccard_binary_dissim
+from kmodes.util.dissim import matching_dissim, euclidean_dissim, ng_dissim,
+jaccard_binary_dissim
 
 
 class TestDissimilarityMeasures(unittest.TestCase):
@@ -108,7 +109,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
         a = np.array([[1, 0, 0, 1, 1, 0]])
         b = np.array([[1, 1, 1, 0, 1, 1]])
         assert_equal(2/3, jaccard_binary_dissim(a, b))
-
+        
         a = np.array([[0, 0, 1, 1, 0, 0]])
         b = np.array([[0, 1, 1, 0, 0, 1]])
         assert_equal(0.75, jaccard_binary_dissim(a, b))
@@ -116,7 +117,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
         a = np.array([[0, 0, 0, 0, 0, 0]])
         b = np.array([[0, 0, 0, 0, 0, 0]])
         assert_equal(1, jaccard_binary_dissim(a, b))
-            
+        
         a = np.array([[np.NaN, 0, 0, 1, 1, 0]])
         b = np.array([[1, 1, 1, 0, 1, 1]])
         with self.assertRaises(ValueError):
