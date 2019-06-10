@@ -104,7 +104,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
         assert_array_equal(np.array([mdiss_12, mdiss_22]),
                            ng_dissim(centroids, X[2], X=X, membship=membship))
 
-    def test_jaccard_dissim(self):
+    def test_jaccard__binary_dissim(self):
         a = np.array([[1, 0, 0, 1, 1, 0]])
         b = np.array([[1, 1, 1, 0, 1, 1]])
         assert_equal(2/3, jaccard_binary_dissim(a, b))
@@ -119,10 +119,5 @@ class TestDissimilarityMeasures(unittest.TestCase):
             
         a = np.array([[np.NaN, 0, 0, 1, 1, 0]])
         b = np.array([[1, 1, 1, 0, 1, 1]])
-        with self.assertRaises(ValueError):
-            jaccard_binary_dissim(a, b)
-            
-        a = np.array([[0, 1, 2, 0, 1, 2]])
-        b = np.array([[0, 1, 2, 0, 1, 0]])
         with self.assertRaises(ValueError):
             jaccard_binary_dissim(a, b)
