@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.utils.testing import assert_equal, assert_array_equal
 
 from kmodes.util.dissim import matching_dissim, euclidean_dissim, ng_dissim,
-jaccard_binary_dissim
+from kmodes.util.dissim import jaccard_binary_dissim
 
 
 class TestDissimilarityMeasures(unittest.TestCase):
