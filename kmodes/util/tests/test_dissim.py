@@ -122,7 +122,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
         b = np.array([[1, 1, 1, 0, -1, 1]])
         with self.assertRaises(ValueError):
             jaccard_binary_dissim(a, b)
-        
+
         a = np.array([[np.NaN, 0, 0, 1, 1, 0]])
         b = np.array([[1, 1, 1, 0, 1, 1]])
         with self.assertRaises(ValueError):
