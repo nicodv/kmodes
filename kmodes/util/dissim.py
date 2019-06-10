@@ -59,7 +59,7 @@ def ng_dissim(a, b, X=None, membship=None):
 
 
 def jaccard_binary_dissim(a, b, **_):
-    """Jaccard distance function""
+    """Jaccard distance function"""
     
     if np.isnan(a).any() or np.isnan(b).any():
         raise ValueError("Missing values detected in numerical columns.")
