@@ -62,16 +62,14 @@ def jaccard_binary_dissim(a, b, **_):
     """Jaccard distance function"""
     
     if np.isnan(a).any() or np.isnan(b).any():
-        raise ValueError("Missing values detected in numerical columns. If appropriate for data set, please force these to 0s")    
-    elif (a < 0).any() or (a > 1).any():
-        raise ValueError("Non-binary values detected in numerical columns.")
-    elif (b < 0).any() or (b > 1).any():
-        raise ValueError("Non-binary values detected in numerical columns.")
+        raise ValueError("Missing values detected in numerical columns.")  
+
 
     i = np.sum((a == 1) & (b == 1), axis=1)  
     j = np.sum((a == 1) | (b == 1), axis=1)
     
-    if np.sum((a == 1) | (b == 1), axis=1) != 0:
+    if j.any != 0:
         return ((j - i) /j)
     else:
         return 1
+    
