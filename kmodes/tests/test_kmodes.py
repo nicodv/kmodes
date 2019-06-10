@@ -346,3 +346,56 @@ class TestKModes(unittest.TestCase):
         kmodes = KModes(n_clusters=4, init='Cao', random_state=42)
         kmodes.fit(SOYBEAN)
         self.assertEqual(kmodes.epoch_costs_, [206.0, 204.0, 199.0, 199.0])
+
+        
+                """Begin Jaccard's testing"""
+
+    def test_kmodes_huang_soybean_jaccard_bin(self):
+        kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
+                              cat_dissim=jaccard_binary_dissim, random_state=42)
+        result = kmodes_huang.fit_predict(SOYBEAN)
+        expected = np.array([3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+                             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
+
+    def test_kmodes_cao_soybean_jaccard_bin(self):
+        kmodes_cao = KModes(n_clusters=4, init='Cao', verbose=2,
+                            cat_dissim=jaccard_binary_dissim)
+        result = kmodes_cao.fit_predict(SOYBEAN)
+        expected = np.array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1,
+                             1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0,
+                             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
+
+    def test_kmodes_predict_soybean_jaccard_bin(self):
+        kmodes_cao = KModes(n_clusters=4, init='Cao', verbose=2,
+                            cat_dissim=jaccard_binary_dissim)
+        kmodes_cao = kmodes_cao.fit(SOYBEAN)
+        result = kmodes_cao.predict(SOYBEAN2)
+        expected = np.array([2, 1, 3, 0])
+        assert_cluster_splits_equal(result, expected)
+        self.assertTrue(result.dtype == np.dtype(np.uint16))
+
+    def test_kmodes_nunique_nclusters_jaccard_bin(self):
+        data = np.array([
+            [0, 1],
+            [0, 1],
+            [0, 1],
+            [0, 2],
+            [0, 2],
+            [0, 2]
+        ])
+        kmodes_cao = KModes(n_clusters=6, init='Cao', verbose=2,
+                            cat_dissim=jaccard_binary_dissim, random_state=42)
+        result = kmodes_cao.fit_predict(data, categorical=[1])
+        expected = np.array([0, 0, 0, 1, 1, 1])
+        assert_cluster_splits_equal(result, expected)
+        np.testing.assert_array_equal(kmodes_cao.cluster_centroids_,
+                                      np.array([[0, 2],
+                                                [0, 1]]))
+
+
+        """End Jaccard's testing"""
