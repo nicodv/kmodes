@@ -61,7 +61,7 @@ def ng_dissim(a, b, X=None, membship=None):
 def jaccard_binary_dissim(a, b, **_):
     """Jaccard distance function"""
 
-    if np.isnan(a).any() or np.isnan(b).any():
+    if (a == 0).any() or (b == 0).any():
         raise ValueError("Missing values detected in numerical columns.")
     elif (a < 0).any() or (a > 1).any():
         raise ValueError("Non-binary values detected in numerical columns.")
@@ -71,7 +71,7 @@ def jaccard_binary_dissim(a, b, **_):
     i = np.sum((a == 1) & (b == 1), axis=1)
     j = np.sum((a == 1) | (b == 1), axis=1)
 
-    if j != 0:
+    if j.any != 0:
         return ((j - i) / j)
     else:
         return 1
