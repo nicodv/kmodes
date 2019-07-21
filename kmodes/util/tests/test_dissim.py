@@ -39,7 +39,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
     def test_jaccard_dissim_label(self):
         a = np.array([[0, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 1, 0]])
-        assert_equal(1, jaccard_dissim_label(a, b))
+        assert_equal(0.75, jaccard_dissim_label(a, b))
 
         a = np.array([[np.NaN, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 1, 0]])

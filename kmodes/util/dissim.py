@@ -26,7 +26,8 @@ def jaccard_dissim_label(a, b, **__):
     i = 0
     for row in a:
         intersect_len[i] = len(np.intersect1d(row, b))
-        union_len[i] = len(np.union1d(row, b))
+        union_len[i] = len(row) + len(b) - intersect_len[i]
+        # union_len[i] = np.unique(np.concatenate((row, b)))
         i = i + 1
     return intersect_len / union_len
 
