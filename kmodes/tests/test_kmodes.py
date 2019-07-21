@@ -326,10 +326,10 @@ SOYBEAN5 = np.array([
 SOYBEAN5 = SOYBEAN5[:, :35]
 
 SOYBEAN6 = np.array([
-       [ 2, 22, 14, 45,  2,  0,  1,  2,  5],
-       [ 7, 13, 13, 19,  2,  0,  1,  2,  5],
-       [ 5, 18, 19, 33,  0,  2,  1,  2,  2],
-       [ 1, 11, 10,  0,  0,  2,  1,  0,  2]
+       [2, 22, 14, 45,  2,  0,  1,  2,  5],
+       [7, 13, 13, 19,  2,  0,  1,  2,  5],
+       [5, 18, 19, 33,  0,  2,  1,  2,  2],
+       [1, 11, 10,  0,  0,  2,  1,  0,  2]
 ])
 
 
@@ -554,7 +554,7 @@ class TestKModes(unittest.TestCase):
 
     def test_kmodes_cao_soybean_jaccard_dissim_binary(self):
         kmodes_Cao = KModes(n_clusters=4, n_init=2, init='Cao', verbose=2,
-                              cat_dissim=jaccard_dissim_binary, random_state=42)
+                            cat_dissim=jaccard_dissim_binary, random_state=42)
         result = kmodes_Cao.fit_predict(SOYBEAN3)
         expected = np.array([3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 1, 2, 1, 2,
                              2, 1, 1, 0, 0, 0, 0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 0,
@@ -566,12 +566,11 @@ class TestKModes(unittest.TestCase):
     def test_kmodes_predict_soybean_jaccard_dissim_binary(self):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
                               cat_dissim=jaccard_dissim_binary, random_state=42)
-        kmodes_huang =kmodes_huang.fit(SOYBEAN3)
+        kmodes_huang = kmodes_huang.fit(SOYBEAN3)
         result = kmodes_huang.fit_predict(SOYBEAN5)
         expected = np.array([1, 0, 1, 1])
         assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint16))
-
 
     def test_kmodes_huang_soybean_jaccard_dissim_label(self):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
