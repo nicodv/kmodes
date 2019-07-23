@@ -36,6 +36,12 @@ class TestDissimilarityMeasures(unittest.TestCase):
         with self.assertRaises(ValueError):
             jaccard_dissim_binary(a, b)
 
+        # test where values are non binary but also not having np.NaN
+        a = np.array([[0, 1, 2, 0, 1, 2]])
+        b = np.array([[0, 1, 2, 0, 1, 0]])
+        with self.assertRaises(ValueError):
+            jaccard_dissim_binary(a, b)
+
     def test_jaccard_dissim_label(self):
         a = np.array([[0, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 1, 0]])

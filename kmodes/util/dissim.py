@@ -11,15 +11,15 @@ def matching_dissim(a, b, **_):
 
 
 def jaccard_dissim_binary(a, b, **__):
-    """Jaccard dissimilarity function for biinary encoded variables"""
-    if len(np.unique(a.astype(int))) > 2 or len(np.unique(b.astype(int))) > 2:
-        raise ValueError("Missing or non Binary values detected in Binary columns.")
-    return np.sum(np.bitwise_and(a, b), axis=1) / np.sum(np.bitwise_or(a, b), axis=1)
+    """Jaccard dissimilarity function for binary encoded variables"""
+    if ((a == 0) | (a == 1)).all() and ((b == 0) | (b == 1)).all():
+        return np.sum(np.bitwise_and(a, b), axis=1) / np.sum(np.bitwise_or(a, b), axis=1)
+    raise ValueError("Missing or non Binary values detected in Binary columns.")
 
 
 def jaccard_dissim_label(a, b, **__):
     """Jaccard dissimilarity function for label encoded variables"""
-    if (a.astype(int) < 0).any() or (b.astype(int) < 0).any():
+    if np.isnan(np.array(a, dtype=np.float64)).any() or np.isnan(np.array(b, dtype=np.float64)).any():
         raise ValueError("Missing values detected in Numeric columns.")
     intersect_len = np.empty(len(a), dtype=int)
     union_len = np.empty(len(a), dtype=int)
@@ -27,8 +27,7 @@ def jaccard_dissim_label(a, b, **__):
     for row in a:
         intersect_len[i] = len(np.intersect1d(row, b))
         union_len[i] = len(row) + len(b) - intersect_len[i]
-        # union_len[i] = np.unique(np.concatenate((row, b)))
-        i = i + 1
+        i += 1
     return intersect_len / union_len
 
 
