@@ -19,7 +19,7 @@ def jaccard_dissim_binary(a, b, **__):
 
 def jaccard_dissim_label(a, b, **__):
     """Jaccard dissimilarity function for label encoded variables"""
-    if np.isnan(np.array(a, dtype=np.float64)).any() or np.isnan(np.array(b, dtype=np.float64)).any():
+    if np.isnan(a.astype('float64')).any() or np.isnan(b.astype('float64')).any():
         raise ValueError("Missing values detected in Numeric columns.")
     intersect_len = np.empty(len(a), dtype=int)
     union_len = np.empty(len(a), dtype=int)
