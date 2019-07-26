@@ -26,8 +26,10 @@ def jaccard_dissim_label(a, b, **__):
     i = 0
     for row in a:
         intersect_len[i] = len(np.intersect1d(row, b))
-        union_len[i] = len(row) + len(b) - intersect_len[i]
+        union_len[i] = len(np.unique(row)) + len(np.unique(b)) - intersect_len[i]
         i += 1
+    if (union_len == 0).any():
+        raise ValueError("Insufficient Number of data since union is 0")
     return intersect_len / union_len
 
 
