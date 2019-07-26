@@ -484,10 +484,11 @@ class TestKModes(unittest.TestCase):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Cao', verbose=2,
                               cat_dissim=jaccard_dissim_label, random_state=42)
         result = kmodes_huang.fit_predict(TEST_DATA)
-        expected = np.array([3, 3, 1, 0, 0, 1, 1, 3, 2, 3, 0, 3, 2, 0, 0, 3, 3, 0, 0, 0, 1, 1,
-                             0, 2, 1, 1, 2, 1, 0, 0, 0, 0, 0, 2, 0, 1, 3, 1, 1, 2, 2, 0, 0, 2,
-                             0, 0, 0, 0, 3, 2, 2, 2, 0, 1, 1, 0, 1, 1, 1, 3, 0, 3, 2, 0, 0, 0,
-                             1, 1, 0, 1, 1, 0, 0, 2, 2, 1, 3, 1, 1, 3, 1, 1, 3, 3, 1])
+        expected = np.array([3, 3, 1, 0, 0, 1, 1, 3, 2, 3, 0, 3, 2, 0, 0, 3, 3, 0,
+                             0, 0, 1, 1, 0, 2, 1, 1, 2, 1, 0, 0, 0, 0, 0, 2, 0, 1,
+                             3, 1, 1, 2, 2, 0, 0, 2, 0, 0, 0, 0, 3, 2, 2, 2, 0, 1,
+                             1, 0, 1, 1, 1, 3, 0, 3, 2, 0, 0, 0, 1, 1, 0, 1, 1, 0,
+                             0, 2, 2, 1, 3, 1, 1, 3, 1, 1, 3, 3, 1])
 
         assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint16))
