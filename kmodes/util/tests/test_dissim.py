@@ -29,7 +29,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
     def test_jaccard_dissim_binary(self):
         a = np.array([[0, 1, 1, 0, 1, 1]])
         b = np.array([[0, 1, 1, 0, 1, 0]])
-        assert_equal(0.75, jaccard_dissim_binary(a, b))
+        assert_equal(0.25, jaccard_dissim_binary(a, b))
 
         a = np.array([[0, 1, 1, 0, 1, 1]])
         b = np.array([[0, np.NaN, 1, 0, 1, 0]])
@@ -42,35 +42,35 @@ class TestDissimilarityMeasures(unittest.TestCase):
         with self.assertRaises(ValueError):
             jaccard_dissim_binary(a, b)
 
-        # test for dissimilarity = 1
+        # test for dissimilarity = 0 both sets are same
         a = np.array([[1, 1, 0, 1, 1, 0]])
         b = np.array([[1, 1, 0, 1, 1, 0]])
-        assert_equal(1, jaccard_dissim_binary(a, b))
+        assert_equal(0, jaccard_dissim_binary(a, b))
 
-        # test for dissimilarity = 0
+        # test for dissimilarity = 0 sets are different
         a = np.array([[0, 0, 1, 0, 0, 1]])
         b = np.array([[1, 1, 0, 1, 1, 0]])
-        assert_equal(0, jaccard_dissim_binary(a, b))
+        assert_equal(1, jaccard_dissim_binary(a, b))
 
     def test_jaccard_dissim_label(self):
         a = np.array([[0, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 3, 0]])
-        assert_equal(0.75, jaccard_dissim_label(a, b))
+        assert_equal(0.25, jaccard_dissim_label(a, b))
 
         a = np.array([[np.NaN, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 1, 0]])
         with self.assertRaises(ValueError):
             jaccard_dissim_label(a, b)
 
-        # test for dissimilarity = 1
+        # test for dissimilarity = 0 Both sets are same
         a = np.array([[1, 2, 0, 3, 1, 0]])
         b = np.array([[1, 2, 0, 3, 1, 0]])
-        assert_equal(1, jaccard_dissim_label(a, b))
+        assert_equal(0, jaccard_dissim_label(a, b))
 
-        # test for dissimilarity = 0
+        # test for dissimilarity = 1 Both sets are different
         a = np.array([[1, 2, 0, 3, 1, 0]])
         b = np.array([[5, 4, 6, 7, 8, 9]])
-        assert_equal(0, jaccard_dissim_label(a, b))
+        assert_equal(1, jaccard_dissim_label(a, b))
 
 
     def test_euclidian_dissim(self):

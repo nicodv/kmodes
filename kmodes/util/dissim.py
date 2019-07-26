@@ -13,7 +13,7 @@ def matching_dissim(a, b, **_):
 def jaccard_dissim_binary(a, b, **__):
     """Jaccard dissimilarity function for binary encoded variables"""
     if ((a == 0) | (a == 1)).all() and ((b == 0) | (b == 1)).all():
-        return np.sum(np.bitwise_and(a, b), axis=1) / np.sum(np.bitwise_or(a, b), axis=1)
+        return 1 - np.sum(np.bitwise_and(a, b), axis=1) / np.sum(np.bitwise_or(a, b), axis=1)
     raise ValueError("Missing or non Binary values detected in Binary columns.")
 
 
@@ -30,7 +30,7 @@ def jaccard_dissim_label(a, b, **__):
         i += 1
     if (union_len == 0).any():
         raise ValueError("Insufficient Number of data since union is 0")
-    return intersect_len / union_len
+    return 1 - intersect_len / union_len
 
 
 def euclidean_dissim(a, b, **_):
