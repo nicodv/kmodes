@@ -42,12 +42,12 @@ class TestDissimilarityMeasures(unittest.TestCase):
         with self.assertRaises(ValueError):
             jaccard_dissim_binary(a, b)
 
-        # test for dissimilarity = 0 both sets are same
+        # test for dissimilarity = 0: sets are the same
         a = np.array([[1, 1, 0, 1, 1, 0]])
         b = np.array([[1, 1, 0, 1, 1, 0]])
         assert_equal(0, jaccard_dissim_binary(a, b))
 
-        # test for dissimilarity = 0 sets are different
+        # test for dissimilarity = 1: sets are completely different
         a = np.array([[0, 0, 1, 0, 0, 1]])
         b = np.array([[1, 1, 0, 1, 1, 0]])
         assert_equal(1, jaccard_dissim_binary(a, b))
@@ -62,12 +62,12 @@ class TestDissimilarityMeasures(unittest.TestCase):
         with self.assertRaises(ValueError):
             jaccard_dissim_label(a, b)
 
-        # test for dissimilarity = 0 Both sets are same
+        # test for dissimilarity = 0: sets are the same
         a = np.array([[1, 2, 0, 3, 1, 0]])
         b = np.array([[1, 2, 0, 3, 1, 0]])
         assert_equal(0, jaccard_dissim_label(a, b))
 
-        # test for dissimilarity = 1 Both sets are different
+        # test for dissimilarity = 1: sets are completely different
         a = np.array([[1, 2, 0, 3, 1, 0]])
         b = np.array([[5, 4, 6, 7, 8, 9]])
         assert_equal(1, jaccard_dissim_label(a, b))
