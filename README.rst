@@ -146,6 +146,12 @@ when using the :code:`kprototypes` algorithm.
 A: One or more of your numerical feature columns have string values in them. Make sure that all 
 columns have consistent data types.
 
+Q: How does k-protypes know which of my features are numerical and which are categorical?
+
+A: You tell it which column indices are categorical using the `categorical` argument. All others are assumed numerical.
+```kproto = KPrototypes()
+clusters = kproto.fit_predict(X, categorical=[1, 2])```
+
 References
 ----------
 
