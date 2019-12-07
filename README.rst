@@ -148,8 +148,8 @@ columns have consistent data types.
 
 Q: How does k-protypes know which of my features are numerical and which are categorical?
 
-A: You tell it which column indices are categorical using the `categorical` argument. All others are assumed numerical.
-`clusters = KPrototypes().fit_predict(X, categorical=[1, 2])`
+A: You tell it which column indices are categorical using the :code:`categorical` argument. All others are assumed numerical.
+:code:`clusters = KPrototypes().fit_predict(X, categorical=[1, 2])`
 
 References
 ----------
