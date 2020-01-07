@@ -341,7 +341,7 @@ class KPrototypes(kmodes.KModes):
         The number of clusters to form as well as the number of
         centroids to generate.
 
-    max_iter : int, default: 300
+    max_iter : int, default: 100
         Maximum number of iterations of the k-modes algorithm for a
         single run.
 
