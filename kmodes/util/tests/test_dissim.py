@@ -72,7 +72,6 @@ class TestDissimilarityMeasures(unittest.TestCase):
         b = np.array([[5, 4, 6, 7, 8, 9]])
         assert_equal(1, jaccard_dissim_label(a, b))
 
-
     def test_euclidian_dissim(self):
         a = np.array([[0., 1., 2., 0., 1., 2.]])
         b = np.array([[3., 1., 3., 0., 1., 0.]])

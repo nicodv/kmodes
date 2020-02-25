@@ -502,7 +502,6 @@ class TestKModes(unittest.TestCase):
         assert_cluster_splits_equal(result, expected)
         self.assertTrue(result.dtype == np.dtype(np.uint16))
 
-
     def test_kmodes_ninit(self):
         kmodes = KModes(n_init=10, init='Huang')
         self.assertEqual(kmodes.n_init, 10)
