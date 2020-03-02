@@ -150,6 +150,10 @@ Q: How does k-protypes know which of my features are numerical and which are cat
 
 A: You tell it which column indices are categorical using the :code:`categorical` argument. All others are assumed numerical. E.g., :code:`clusters = KPrototypes().fit_predict(X, categorical=[1, 2])`
 
+Q: I'm getting the following error, what gives? :code:`ModuleNotFoundError: No module named 'kmodes.kmodes'; 'kmodes' is not a package`.
+
+A: Make sure your working file is not called `kmodes.py`, because it might overrule the `kmodes` package.
+
 References
 ----------
 
