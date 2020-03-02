@@ -152,7 +152,7 @@ A: You tell it which column indices are categorical using the :code:`categorical
 
 Q: I'm getting the following error, what gives? :code:`ModuleNotFoundError: No module named 'kmodes.kmodes'; 'kmodes' is not a package`.
 
-A: Make sure your working file is not called :code:`kmodes.py`, because it might overrule the :code:`kmodes` package.
+A: Make sure your working file is not called 'kmodes.py', because it might overrule the :code:`kmodes` package.
 
 References
 ----------
