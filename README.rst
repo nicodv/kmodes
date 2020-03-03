@@ -154,6 +154,15 @@ Q: I'm getting the following error, what gives? :code:`ModuleNotFoundError: No m
 
 A: Make sure your working file is not called 'kmodes.py', because it might overrule the :code:`kmodes` package.
 
+Q: I'm getting the following error: :code:`Clustering algorithm could not initialize. Consider assigning the initial clusters manually.`
+
+A: This is a feature, not a bug. :code:`kmodes` is telling you that it can't make sense of the data you are presenting it. At least, not with the parameters you are setting the algorithm with. It is up to you, the data scientist, to figure out why. Some hints to possible solutions:
+
+- Run with fewer clusters as the data might not support a large number of clusters
+- Explore and visualize your data, checking for weird distributions, outliers, etc.
+- Clean and normalize the data
+- Increase the ratio of rows to columns
+
 References
 ----------
 
