@@ -24,16 +24,13 @@ def init_huang(X, n_clusters, dissim, random_state):
     centroids = np.empty((n_clusters, n_attrs), dtype='object')
     # determine frequencies of attributes
     for iattr in range(n_attrs):
-        freq = defaultdict(int)
-        for curattr in X[:, iattr]:
-            freq[curattr] += 1
         # Sample centroids using the probabilities of attributes.
         # (I assume that's what's meant in the Huang [1998] paper; it works,
         # at least)
         # Note: sampling using population in static list with as many choices
         # as frequency counts. Since the counts are small integers,
         # memory consumption is low.
-        choices = [chc for chc, wght in freq.items() for _ in range(wght)]
+        choices = X[:, iattr]
         # So that we are consistent between Python versions,
         # each with different dict ordering.
         choices = sorted(choices)
