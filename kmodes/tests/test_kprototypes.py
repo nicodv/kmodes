@@ -247,8 +247,7 @@ class TestKProtoTypes(unittest.TestCase):
                                              verbose=2, random_state=42)
         kproto_cao.fit_predict(data, categorical=[1])
         # Check if there are only 2 clusters.
-        self.assertEqual(kproto_cao.cluster_centroids_[0].shape, (2, 1))
-        self.assertEqual(kproto_cao.cluster_centroids_[1].shape, (2, 1))
+        self.assertEqual(kproto_cao.cluster_centroids_.shape[1], 2)
 
     def test_kprotoypes_impossible_init(self):
         data = np.array([

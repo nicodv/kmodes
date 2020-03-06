@@ -505,10 +505,10 @@ class KPrototypes(kmodes.KModes):
     @property
     def cluster_centroids_(self):
         if hasattr(self, '_enc_cluster_centroids'):
-            return [
+            return np.hstack((
                 self._enc_cluster_centroids[0],
                 decode_centroids(self._enc_cluster_centroids[1], self._enc_map)
-            ]
+            ))
         else:
             raise AttributeError("'{}' object has no attribute 'cluster_centroids_' "
                                  "because the model is not yet fitted.")
