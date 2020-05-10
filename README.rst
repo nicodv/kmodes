@@ -140,21 +140,27 @@ examples for some benchmarks.
 FAQ
 ---
 
-Q: I'm seeing errors such as :code:`TypeError: '<' not supported between instances of 'str' and 'float'`
-when using the :code:`kprototypes` algorithm.
+**Q: I'm seeing errors such as :code:`TypeError: '<' not supported between instances of 'str' and 'float'`
+when using the :code:`kprototypes` algorithm.**
 
 A: One or more of your numerical feature columns have string values in them. Make sure that all 
 columns have consistent data types.
 
-Q: How does k-protypes know which of my features are numerical and which are categorical?
+----
+
+**Q: How does k-protypes know which of my features are numerical and which are categorical?**
 
 A: You tell it which column indices are categorical using the :code:`categorical` argument. All others are assumed numerical. E.g., :code:`clusters = KPrototypes().fit_predict(X, categorical=[1, 2])`
 
-Q: I'm getting the following error, what gives? :code:`ModuleNotFoundError: No module named 'kmodes.kmodes'; 'kmodes' is not a package`.
+----
+
+**Q: I'm getting the following error, what gives? :code:`ModuleNotFoundError: No module named 'kmodes.kmodes'; 'kmodes' is not a package`.**
 
 A: Make sure your working file is not called 'kmodes.py', because it might overrule the :code:`kmodes` package.
 
-Q: I'm getting the following error: :code:`ValueError: Clustering algorithm could not initialize. Consider assigning the initial clusters manually.`
+----
+
+**Q: I'm getting the following error: :code:`ValueError: Clustering algorithm could not initialize. Consider assigning the initial clusters manually.`**
 
 A: This is a feature, not a bug. :code:`kmodes` is telling you that it can't make sense of the data you are presenting it. At least, not with the parameters you are setting the algorithm with. It is up to you, the data scientist, to figure out why. Some hints to possible solutions:
 
