@@ -12,7 +12,7 @@ setup(
     ]),
     version=VERSION,
     url='https://github.com/nicodv/kmodes',
-    author='Nico de Vos',
+    author='Nelis J de Vos',
     author_email='njdevos@gmail.com',
     license='MIT',
     description='Python implementations of the k-modes and k-prototypes '
