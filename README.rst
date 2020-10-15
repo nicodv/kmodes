@@ -169,6 +169,22 @@ A: This is a feature, not a bug. :code:`kmodes` is telling you that it can't mak
 - Clean and normalize the data
 - Increase the ratio of rows to columns
 
+----
+
+**Q: How would like your library to be cited?**
+
+A: Something along these lines would do nicely:
+
+.. code-block::
+
+  @Misc{devos2015,
+    author = {Nelis J. de Vos},
+    title = {kmodes categorical clustering library},
+    howpublished = {\url{https://github.com/nicodv/kmodes}},
+    year = {2015--2020}
+  }
+
+
 References
 ----------
 
