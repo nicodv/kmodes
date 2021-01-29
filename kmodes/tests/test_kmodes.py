@@ -6,7 +6,7 @@ import pickle
 import unittest
 
 import numpy as np
-from sklearn.utils.testing import assert_equal
+from nose.tools import assert_equal
 
 from kmodes.kmodes import KModes
 from kmodes.util.dissim import ng_dissim, jaccard_dissim_binary, jaccard_dissim_label

@@ -1,7 +1,6 @@
 """
 General sklearn tests for the estimators in kmodes.
 """
-from sklearn.utils.testing import assert_greater
 from sklearn.utils.estimator_checks import (
     _yield_all_checks,
     check_parameters_default_constructible
@@ -64,16 +63,9 @@ def test_all_estimator_no_base_class():
 
 
 def test_all_estimators():
-    estimators = all_estimators()
-
-    # Meta sanity-check to make sure that the estimator introspection runs
-    # properly
-    assert_greater(len(estimators), 0)
-
-    for name, Estimator in estimators:
-        # some can just not be sensibly default constructed
+    for name, Estimator in all_estimators():
         yield (_named_check(check_parameters_default_constructible, name),
-               name, Estimator)
+               name, Estimator())
 
 
 def test_non_meta_estimators():
@@ -85,6 +77,6 @@ def test_non_meta_estimators():
         else:
             raise NotImplementedError
         estimator = Estimator()
-        for check in _yield_all_checks(name, estimator):
+        for check in _yield_all_checks(estimator):
             if hasattr(check, '__name__') and check.__name__ in relevant_checks:
                 yield _named_check(check, name), name, estimator

@@ -6,7 +6,7 @@ import pickle
 import unittest
 
 import numpy as np
-from sklearn.utils.testing import assert_equal
+from nose.tools import assert_equal
 
 from kmodes import kprototypes
 from kmodes.tests.test_kmodes import assert_cluster_splits_equal

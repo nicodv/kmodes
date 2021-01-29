@@ -23,7 +23,7 @@ setup(
         # as what scikit-learn uses, but versions of numpy<1.10.4
         # give import problems.
         'numpy>=1.10.4',
-        'scikit-learn>=0.19.0',
+        'scikit-learn>=0.22.0',
         'scipy>=0.13.3',
         'joblib>=0.11'
     ],
@@ -38,5 +38,6 @@ setup(
                  'Programming Language :: Python :: 3.6',
                  'Programming Language :: Python :: 3.7',
                  'Programming Language :: Python :: 3.8',
+                 'Programming Language :: Python :: 3.9',
                  'Topic :: Scientific/Engineering'],
 )
