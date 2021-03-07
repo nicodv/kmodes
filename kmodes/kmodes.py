@@ -124,7 +124,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
         random_state = check_random_state(self.random_state)
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
-        self.n_iter_, self.epoch_costs_ = _k_modes(
+        self.n_iter_, self.epoch_costs_ = k_modes(
             X,
             self.n_clusters,
             self.max_iter,
@@ -199,7 +199,7 @@ def labels_cost(X, centroids, dissim, membship=None):
     return labels, cost
 
 
-def _k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs):
+def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs):
     """k-modes algorithm"""
     random_state = check_random_state(random_state)
     if sparse.issparse(X):

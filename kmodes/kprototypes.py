@@ -150,7 +150,7 @@ class KPrototypes(kmodes.KModes):
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
-        self.n_iter_, self.epoch_costs_, self.gamma = _k_prototypes(
+        self.n_iter_, self.epoch_costs_, self.gamma = k_prototypes(
             X,
             categorical,
             self.n_clusters,
@@ -231,8 +231,8 @@ def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=N
     return labels, cost
 
 
-def _k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
-                  gamma, init, n_init, verbose, random_state, n_jobs):
+def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
+                 gamma, init, n_init, verbose, random_state, n_jobs):
     """k-prototypes algorithm"""
     random_state = check_random_state(random_state)
     if sparse.issparse(X):
