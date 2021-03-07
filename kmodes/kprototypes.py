@@ -50,7 +50,7 @@ def _split_num_cat(X, categorical):
     return Xnum, Xcat
 
 
-def _labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=None):
+def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-prototypes algorithm.
     """
@@ -233,8 +233,8 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
     labels = None
     converged = False
 
-    _, cost = _labels_cost(Xnum, Xcat, centroids,
-                           num_dissim, cat_dissim, gamma, membship)
+    _, cost = labels_cost(Xnum, Xcat, centroids,
+                          num_dissim, cat_dissim, gamma, membship)
 
     epoch_costs = [cost]
     while itr <= max_iter and not converged:
@@ -245,8 +245,8 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
                                               random_state)
 
         # All points seen in this iteration
-        labels, ncost = _labels_cost(Xnum, Xcat, centroids,
-                                     num_dissim, cat_dissim, gamma, membship)
+        labels, ncost = labels_cost(Xnum, Xcat, centroids,
+                                    num_dissim, cat_dissim, gamma, membship)
         converged = (moves == 0) or (ncost >= cost)
         epoch_costs.append(ncost)
         cost = ncost
@@ -499,8 +499,8 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = _split_num_cat(X, categorical)
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
-        return _labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                            self.num_dissim, self.cat_dissim, self.gamma)[0]
+        return labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
+                           self.num_dissim, self.cat_dissim, self.gamma)[0]
 
     @property
     def cluster_centroids_(self):

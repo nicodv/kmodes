@@ -109,7 +109,7 @@ def move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
     return cl_attr_freq, membship, centroids
 
 
-def _labels_cost(X, centroids, dissim, membship=None):
+def labels_cost(X, centroids, dissim, membship=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-modes algorithm.
     """
@@ -216,7 +216,7 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
     labels = None
     converged = False
 
-    _, cost = _labels_cost(X, centroids, dissim, membship)
+    _, cost = labels_cost(X, centroids, dissim, membship)
 
     epoch_costs = [cost]
     while itr <= max_iter and not converged:
@@ -230,7 +230,7 @@ def k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, ini
             random_state
         )
         # All points seen in this iteration
-        labels, ncost = _labels_cost(X, centroids, dissim, membship)
+        labels, ncost = labels_cost(X, centroids, dissim, membship)
         converged = (moves == 0) or (ncost >= cost)
         epoch_costs.append(ncost)
         cost = ncost
@@ -438,7 +438,7 @@ class KModes(BaseEstimator, ClusterMixin):
         X = pandas_to_numpy(X)
         X = check_array(X, dtype=None)
         X, _ = encode_features(X, enc_map=self._enc_map)
-        return _labels_cost(X, self._enc_cluster_centroids, self.cat_dissim)[0]
+        return labels_cost(X, self._enc_cluster_centroids, self.cat_dissim)[0]
 
     @property
     def cluster_centroids_(self):
