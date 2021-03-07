@@ -124,7 +124,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
         random_state = check_random_state(self.random_state)
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
-        self.n_iter_, self.epoch_costs_ = k_modes(
+        self.n_iter_, self.epoch_costs_ = _k_modes(
             X,
             self.n_clusters,
             self.max_iter,
@@ -180,7 +180,26 @@ class KModes(BaseEstimator, ClusterMixin):
                                  "because the model is not yet fitted.")
 
 
-def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs):
+def labels_cost(X, centroids, dissim, membship=None):
+    """Calculate labels and cost function given a matrix of points and
+    a list of centroids for the k-modes algorithm.
+    """
+
+    X = check_array(X)
+
+    n_points = X.shape[0]
+    cost = 0.
+    labels = np.empty(n_points, dtype=np.uint16)
+    for ipoint, curpoint in enumerate(X):
+        diss = dissim(centroids, curpoint, X=X, membship=membship)
+        clust = np.argmin(diss)
+        labels[ipoint] = clust
+        cost += diss[clust]
+
+    return labels, cost
+
+
+def _k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs):
     """k-modes algorithm"""
     random_state = check_random_state(random_state)
     if sparse.issparse(X):
@@ -322,7 +341,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state):
         moves += 1
         old_clust = np.argwhere(membship[:, ipoint])[0][0]
 
-        cl_attr_freq, membship, centroids = move_point_cat(
+        cl_attr_freq, membship, centroids = _move_point_cat(
             curpoint, ipoint, clust, old_clust, cl_attr_freq, membship, centroids
         )
 
@@ -370,22 +389,3 @@ def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
             centroids[from_clust][iattr] = get_max_value_key(from_attr_counts)
 
     return cl_attr_freq, membship, centroids
-
-
-def labels_cost(X, centroids, dissim, membship=None):
-    """Calculate labels and cost function given a matrix of points and
-    a list of centroids for the k-modes algorithm.
-    """
-
-    X = check_array(X)
-
-    n_points = X.shape[0]
-    cost = 0.
-    labels = np.empty(n_points, dtype=np.uint16)
-    for ipoint, curpoint in enumerate(X):
-        diss = dissim(centroids, curpoint, X=X, membship=membship)
-        clust = np.argmin(diss)
-        labels[ipoint] = clust
-        cost += diss[clust]
-
-    return labels, cost

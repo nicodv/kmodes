@@ -150,7 +150,7 @@ class KPrototypes(kmodes.KModes):
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
-        self.n_iter_, self.epoch_costs_, self.gamma = k_prototypes(
+        self.n_iter_, self.epoch_costs_, self.gamma = _k_prototypes(
             X,
             categorical,
             self.n_clusters,
@@ -208,8 +208,31 @@ class KPrototypes(kmodes.KModes):
                                  "because the model is not yet fitted.")
 
 
-def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
-                 gamma, init, n_init, verbose, random_state, n_jobs):
+def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=None):
+    """Calculate labels and cost function given a matrix of points and
+    a list of centroids for the k-prototypes algorithm.
+    """
+
+    n_points = Xnum.shape[0]
+    Xnum = check_array(Xnum)
+
+    cost = 0.
+    labels = np.empty(n_points, dtype=np.uint16)
+    for ipoint in range(n_points):
+        # Numerical cost = sum of Euclidean distances
+        num_costs = num_dissim(centroids[0], Xnum[ipoint])
+        cat_costs = cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
+        # Gamma relates the categorical cost to the numerical cost.
+        tot_costs = num_costs + gamma * cat_costs
+        clust = np.argmin(tot_costs)
+        labels[ipoint] = clust
+        cost += tot_costs[clust]
+
+    return labels, cost
+
+
+def _k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
+                  gamma, init, n_init, verbose, random_state, n_jobs):
     """k-prototypes algorithm"""
     random_state = check_random_state(random_state)
     if sparse.issparse(X):
@@ -261,16 +284,16 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     seeds = random_state.randint(np.iinfo(np.int32).max, size=n_init)
     if n_jobs == 1:
         for init_no in range(n_init):
-            results.append(k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs,
-                                               n_clusters, n_points, max_iter,
-                                               num_dissim, cat_dissim, gamma,
-                                               init, init_no, verbose, seeds[init_no]))
+            results.append(_k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs,
+                                                n_clusters, n_points, max_iter,
+                                                num_dissim, cat_dissim, gamma,
+                                                init, init_no, verbose, seeds[init_no]))
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
-            delayed(k_prototypes_single)(Xnum, Xcat, nnumattrs, ncatattrs,
-                                         n_clusters, n_points, max_iter,
-                                         num_dissim, cat_dissim, gamma,
-                                         init, init_no, verbose, seed)
+            delayed(_k_prototypes_single)(Xnum, Xcat, nnumattrs, ncatattrs,
+                                          n_clusters, n_points, max_iter,
+                                          num_dissim, cat_dissim, gamma,
+                                          init, init_no, verbose, seed)
             for init_no, seed in enumerate(seeds))
     all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
 
@@ -283,9 +306,9 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
         all_n_iters[best], all_epoch_costs[best], gamma
 
 
-def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
-                        max_iter, num_dissim, cat_dissim, gamma, init, init_no,
-                        verbose, random_state):
+def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
+                         max_iter, num_dissim, cat_dissim, gamma, init, init_no,
+                         verbose, random_state):
     # For numerical part of initialization, we don't have a guarantee
     # that there is not an empty cluster, so we need to retry until
     # there is none.
@@ -435,7 +458,8 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
         cl_attr_sum, cl_memb_sum = _move_point_num(
             Xnum[ipoint], clust, old_clust, cl_attr_sum, cl_memb_sum
         )
-        cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
+        # noinspection PyProtectedMember
+        cl_attr_freq, membship, centroids[1] = kmodes._move_point_cat(
             Xcat[ipoint], ipoint, clust, old_clust,
             cl_attr_freq, membship, centroids[1]
         )
@@ -459,7 +483,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
             cl_attr_sum, cl_memb_sum = _move_point_num(
                 Xnum[rindx], old_clust, from_clust, cl_attr_sum, cl_memb_sum
             )
-            cl_attr_freq, membship, centroids[1] = kmodes.move_point_cat(
+            cl_attr_freq, membship, centroids[1] = kmodes._move_point_cat(
                 Xcat[rindx], rindx, old_clust, from_clust,
                 cl_attr_freq, membship, centroids[1]
             )
@@ -490,26 +514,3 @@ def _split_num_cat(X, categorical):
                                if ii not in categorical]]).astype(np.float64)
     Xcat = np.asanyarray(X[:, categorical])
     return Xnum, Xcat
-
-
-def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=None):
-    """Calculate labels and cost function given a matrix of points and
-    a list of centroids for the k-prototypes algorithm.
-    """
-
-    n_points = Xnum.shape[0]
-    Xnum = check_array(Xnum)
-
-    cost = 0.
-    labels = np.empty(n_points, dtype=np.uint16)
-    for ipoint in range(n_points):
-        # Numerical cost = sum of Euclidean distances
-        num_costs = num_dissim(centroids[0], Xnum[ipoint])
-        cat_costs = cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
-        # Gamma relates the categorical cost to the numerical cost.
-        tot_costs = num_costs + gamma * cat_costs
-        clust = np.argmin(tot_costs)
-        labels[ipoint] = clust
-        cost += tot_costs[clust]
-
-    return labels, cost
