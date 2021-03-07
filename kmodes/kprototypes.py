@@ -16,6 +16,7 @@ from . import kmodes
 from .util import get_max_value_key, encode_features, get_unique_rows, \
     decode_centroids, pandas_to_numpy
 from .util.dissim import matching_dissim, euclidean_dissim
+from .util.init_methods import init_cao, init_huang
 
 # Number of tries we give the initialization methods to find non-empty
 # clusters before we switch to random initialization.
@@ -296,9 +297,9 @@ def k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
         if verbose:
             print("Init: initializing centroids")
         if isinstance(init, str) and init.lower() == 'huang':
-            centroids = kmodes.init_huang(Xcat, n_clusters, cat_dissim, random_state)
+            centroids = init_huang(Xcat, n_clusters, cat_dissim, random_state)
         elif isinstance(init, str) and init.lower() == 'cao':
-            centroids = kmodes.init_cao(Xcat, n_clusters, cat_dissim)
+            centroids = init_cao(Xcat, n_clusters, cat_dissim)
         elif isinstance(init, str) and init.lower() == 'random':
             seeds = random_state.choice(range(n_points), n_clusters)
             centroids = Xcat[seeds]
