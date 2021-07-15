@@ -416,7 +416,7 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
                           num_dissim, cat_dissim, gamma, membship)
 
     epoch_costs = [cost]
-    while itr <= max_iter and not converged:
+    while itr < max_iter and not converged:
         itr += 1
         centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
                                               cl_attr_sum, cl_memb_sum, cl_attr_freq,
