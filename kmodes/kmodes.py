@@ -44,7 +44,7 @@ class KModes(BaseEstimator, ClusterMixin):
         'random': choose 'n_clusters' observations (rows) at random from
         data for the initial centroids.
         If an ndarray is passed, it should be of shape (n_clusters, n_features)
-        and gives the initial centroids.
+        for the initial encoded centroids.
 
     n_init : int, default: 10
         Number of time the k-modes algorithm will be run with different
