@@ -60,7 +60,7 @@ class KPrototypes(kmodes.KModes):
         data for the initial centroids.
         If a list of ndarrays is passed, it should be of length 2, with
         shapes (n_clusters, n_features) for numerical and categorical
-        data respectively. These are the initial centroids.
+        data respectively. These are the initial encoded centroids.
 
     gamma : float, default: None
         Weighing factor that determines relative importance of numerical vs.
