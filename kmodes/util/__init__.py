@@ -39,7 +39,7 @@ def encode_features(X, enc_map=None):
     else:
         fit = False
 
-    Xenc = np.zeros(X.shape).astype('int')
+    Xenc = np.zeros(X.shape, dtype='uint32')
     for ii in range(X.shape[1]):
         if fit:
             col_enc = {val: jj for jj, val in enumerate(np.unique(X[:, ii]))
