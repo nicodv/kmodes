@@ -96,7 +96,7 @@ class KModes(BaseEstimator, ClusterMixin):
     """
 
     def __init__(self, n_clusters=8, max_iter=100, cat_dissim=matching_dissim,
-                 init='Cao', n_init=1, verbose=0, random_state=None, n_jobs=1):
+                 init='Cao', n_init=10, verbose=0, random_state=None, n_jobs=1):
 
         self.n_clusters = n_clusters
         self.max_iter = max_iter
