@@ -64,8 +64,8 @@ def test_all_estimator_no_base_class():
 
 def test_all_estimators():
     for name, Estimator in all_estimators():
-        yield (_named_check(check_parameters_default_constructible, name),
-               name, Estimator())
+        return (_named_check(check_parameters_default_constructible, name),
+                name, Estimator())
 
 
 def test_non_meta_estimators():
@@ -79,4 +79,4 @@ def test_non_meta_estimators():
         estimator = Estimator()
         for check in _yield_all_checks(estimator):
             if hasattr(check, '__name__') and check.__name__ in relevant_checks:
-                yield _named_check(check, name), name, estimator
+                return _named_check(check, name), name, estimator

@@ -6,7 +6,6 @@ import pickle
 import unittest
 
 import numpy as np
-from nose.tools import assert_equal
 
 from kmodes import kprototypes
 from kmodes.tests.test_kmodes import assert_cluster_splits_equal
@@ -39,7 +38,13 @@ class TestKProtoTypes(unittest.TestCase):
     def test_pickle(self):
         obj = kprototypes.KPrototypes()
         s = pickle.dumps(obj)
-        assert_equal(type(pickle.loads(s)), obj.__class__)
+        assert type(pickle.loads(s)) == obj.__class__
+
+    def test_pickle_fitted(self):
+        kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        model = kproto.fit(STOCKS[:, :2], categorical=1)
+        s = pickle.dumps(model)
+        assert type(pickle.loads(s)) == model.__class__
 
     def test_kprotoypes_categoricals_stocks(self):
         # Number/index of categoricals does not make sense

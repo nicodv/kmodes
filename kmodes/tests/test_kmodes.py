@@ -6,7 +6,6 @@ import pickle
 import unittest
 
 import numpy as np
-from nose.tools import assert_equal
 
 from kmodes.kmodes import KModes
 from kmodes.util.dissim import ng_dissim, jaccard_dissim_binary, jaccard_dissim_label
@@ -234,7 +233,14 @@ class TestKModes(unittest.TestCase):
     def test_pickle(self):
         obj = KModes()
         s = pickle.dumps(obj)
-        assert_equal(type(pickle.loads(s)), obj.__class__)
+        assert type(pickle.loads(s)) == obj.__class__
+
+    def test_pickle_fitted(self):
+        kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
+                              random_state=42)
+        model = kmodes_huang.fit(SOYBEAN)
+        s = pickle.dumps(model)
+        assert type(pickle.loads(s)) == model.__class__
 
     def test_kmodes_huang_soybean(self):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
