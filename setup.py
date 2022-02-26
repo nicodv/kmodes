@@ -4,6 +4,9 @@ import kmodes
 
 VERSION = kmodes.__version__
 
+with open('README.rst', 'r') as readme_file:
+    README = readme_file.read()
+
 setup(
     name='kmodes',
     packages=find_packages(exclude=[
@@ -17,7 +20,7 @@ setup(
     license='MIT',
     description='Python implementations of the k-modes and k-prototypes '
                 'clustering algorithms for clustering categorical data.',
-    long_description=open('README.rst', 'r').read(),
+    long_description=README,
     install_requires=[
         # Note: minimum numpy and scipy versions should ideally be the same
         # as what scikit-learn uses, but versions of numpy<1.10.4

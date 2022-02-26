@@ -42,50 +42,51 @@ SPOTTY_CAT = np.array([
 ])
 
 
+# pylint: disable=R0201,W0105
 class TestUtils(unittest.TestCase):
 
     def test_get_max_value_key(self):
         max_key = get_max_value_key({'a': 3, 'b': 10, 'c': -1, 'd': 9.9})
-        assert 'b' == max_key
+        self.assertEqual('b', max_key)
 
         # Make sure minimum key is consistently selected for equal values.
         max_key = get_max_value_key({'d': 10, 'c': 10, 'b': 10, 'a': 10})
-        assert 'a' == max_key
+        self.assertEqual('a', max_key)
 
     def test_encode_features(self):
-        X_enc, enc_map = encode_features(STOCKS_CAT)
-        expected_X = np.array([[3, 2],
-                               [2, 2],
-                               [3, 2],
-                               [3, 2],
-                               [1, 2],
-                               [1, 2],
-                               [4, 0],
-                               [0, 2],
-                               [0, 2],
-                               [4, 2],
-                               [3, 2],
-                               [2, 1]])
-        assert_array_equal(X_enc, expected_X)
+        Xenc, enc_map = encode_features(STOCKS_CAT)
+        expected = np.array([[3, 2],
+                             [2, 2],
+                             [3, 2],
+                             [3, 2],
+                             [1, 2],
+                             [1, 2],
+                             [4, 0],
+                             [0, 2],
+                             [0, 2],
+                             [4, 2],
+                             [3, 2],
+                             [2, 1]])
+        assert_array_equal(Xenc, expected)
         self.assertEqual(enc_map,
                          [{'cons': 0, 'fin': 1, 'nrg': 2, 'tech': 3, 'tel': 4},
                           {'CN': 0, 'NL': 1, 'USA': 2}])
 
     def test_missing_encode_features(self):
-        X_enc, enc_map = encode_features(SPOTTY_CAT)
-        expected_X = np.array([[0, 0],
-                               [0, 0],
-                               [0, 0],
-                               [1, 0],
-                               [-1, 0],
-                               [3, 0],
-                               [3, 1],
-                               [-1, 0],
-                               [2, 0],
-                               [2, 0],
-                               [0, 0],
-                               [0, 2]])
-        assert_array_equal(X_enc, expected_X)
+        Xenc, enc_map = encode_features(SPOTTY_CAT)
+        expected = np.array([[0, 0],
+                             [0, 0],
+                             [0, 0],
+                             [1, 0],
+                             [-1, 0],
+                             [3, 0],
+                             [3, 1],
+                             [-1, 0],
+                             [2, 0],
+                             [2, 0],
+                             [0, 0],
+                             [0, 2]])
+        assert_array_equal(Xenc, expected)
         self.assertEqual(enc_map,
                          [{0.: 0, 1.: 1, 8.: 2, 9.: 3},
                           {0.: 0, 1.: 1, 2.: 2}])

@@ -42,17 +42,18 @@ def run(task, stop):
     baseline = 0
 
     for n_jobs in range(1, stop + 1):
-        print('Starting runs on {} core(s)'.format(n_jobs))
+        print(f'Starting runs on {n_jobs} core(s)')
         t_start = time.time()
         task(K, stop, n_jobs, seed)
         runtime = time.time() - t_start
 
         if n_jobs == 1:
             baseline = runtime
-            print('Finished {} runs on 1 core in {:.2f} seconds'.format(stop, runtime))
+            print(f'Finished {stop} runs on 1 core in {runtime:.2f} seconds')
         else:
-            print('Finished {} runs on {} cores in {:.2f} seconds, a {:.1f}x '
-                  'speed-up'.format(stop, n_jobs, runtime, baseline / runtime))
+            print(
+                f'Finished {stop} runs on {n_jobs} cores in {runtime:.2f} seconds, '
+                f'a {baseline / runtime:.1f}x speed-up')
 
 
 if __name__ == '__main__':

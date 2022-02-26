@@ -11,16 +11,17 @@ from kmodes.util.dissim import matching_dissim, euclidean_dissim, ng_dissim
 from kmodes.util.dissim import jaccard_dissim_binary, jaccard_dissim_label
 
 
+# pylint: disable=R0201,W0105
 class TestDissimilarityMeasures(unittest.TestCase):
 
     def test_matching_dissim(self):
         a = np.array([[0, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 1, 0]])
-        assert 1 == matching_dissim(a, b)
+        self.assertEqual(1, matching_dissim(a, b))
 
         a = np.array([[np.NaN, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 1, 0]])
-        assert 2 == matching_dissim(a, b)
+        self.assertEqual(2, matching_dissim(a, b))
 
         a = np.array([['a', 'b', 'c', 'd']])
         b = np.array([['a', 'b', 'c', 'd'], ['d', 'c', 'b', 'a']])
@@ -29,7 +30,7 @@ class TestDissimilarityMeasures(unittest.TestCase):
     def test_jaccard_dissim_binary(self):
         a = np.array([[0, 1, 1, 0, 1, 1]])
         b = np.array([[0, 1, 1, 0, 1, 0]])
-        assert 0.25 == jaccard_dissim_binary(a, b)
+        self.assertEqual(0.25, jaccard_dissim_binary(a, b))
 
         a = np.array([[0, 1, 1, 0, 1, 1]])
         b = np.array([[0, np.NaN, 1, 0, 1, 0]])
@@ -45,17 +46,17 @@ class TestDissimilarityMeasures(unittest.TestCase):
         # test for dissimilarity = 0: sets are the same
         a = np.array([[1, 1, 0, 1, 1, 0]])
         b = np.array([[1, 1, 0, 1, 1, 0]])
-        assert 0 == jaccard_dissim_binary(a, b)
+        self.assertEqual(0, jaccard_dissim_binary(a, b))
 
         # test for dissimilarity = 1: sets are completely different
         a = np.array([[0, 0, 1, 0, 0, 1]])
         b = np.array([[1, 1, 0, 1, 1, 0]])
-        assert 1 == jaccard_dissim_binary(a, b)
+        self.assertEqual(1, jaccard_dissim_binary(a, b))
 
     def test_jaccard_dissim_label(self):
         a = np.array([[0, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 3, 0]])
-        assert 0.25 == jaccard_dissim_label(a, b)
+        self.assertEqual(0.25, jaccard_dissim_label(a, b))
 
         a = np.array([[np.NaN, 1, 2, 0, 1, 2]])
         b = np.array([[0, 1, 2, 0, 1, 0]])
@@ -65,17 +66,17 @@ class TestDissimilarityMeasures(unittest.TestCase):
         # test for dissimilarity = 0: sets are the same
         a = np.array([[1, 2, 0, 3, 1, 0]])
         b = np.array([[1, 2, 0, 3, 1, 0]])
-        assert 0 == jaccard_dissim_label(a, b)
+        self.assertEqual(0, jaccard_dissim_label(a, b))
 
         # test for dissimilarity = 1: sets are completely different
         a = np.array([[1, 2, 0, 3, 1, 0]])
         b = np.array([[5, 4, 6, 7, 8, 9]])
-        assert 1 == jaccard_dissim_label(a, b)
+        self.assertEqual(1, jaccard_dissim_label(a, b))
 
     def test_euclidian_dissim(self):
         a = np.array([[0., 1., 2., 0., 1., 2.]])
         b = np.array([[3., 1., 3., 0., 1., 0.]])
-        assert 14. == euclidean_dissim(a, b)
+        self.assertEqual(14., euclidean_dissim(a, b))
 
         a = np.array([[np.NaN, 1., 2., 0., 1., 2.]])
         b = np.array([[3., 1., 3., 0., 1., 0.]])

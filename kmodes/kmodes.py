@@ -212,8 +212,8 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
     X, enc_map = encode_features(X)
 
     n_points, n_attrs = X.shape
-    assert n_clusters <= n_points, "Cannot have more clusters ({}) " \
-                                   "than data points ({}).".format(n_clusters, n_points)
+    assert n_clusters <= n_points, f"Cannot have more clusters ({n_clusters}) " \
+                                   f"than data points ({n_points})."
 
     # Are there more n_clusters than unique rows? Then set the unique
     # rows as initial values and skip iteration.
@@ -229,8 +229,10 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
     seeds = random_state.randint(np.iinfo(np.int32).max, size=n_init)
     if n_jobs == 1:
         for init_no in range(n_init):
-            results.append(_k_modes_single(X, n_clusters, n_points, n_attrs, max_iter,
-                                           dissim, init, init_no, verbose, seeds[init_no]))
+            results.append(_k_modes_single(
+                X, n_clusters, n_points, n_attrs, max_iter,
+                dissim, init, init_no, verbose, seeds[init_no]
+            ))
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
             delayed(_k_modes_single)(X, n_clusters, n_points, n_attrs, max_iter,
@@ -240,7 +242,7 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
-        print("Best run was number {}".format(best + 1))
+        print(f"Best run was number {best + 1}")
 
     return all_centroids[best], enc_map, all_labels[best], \
         all_costs[best], all_n_iters[best], all_epoch_costs[best]
@@ -264,11 +266,11 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
         if len(init.shape) == 1:
             init = np.atleast_2d(init).T
         assert init.shape[0] == n_clusters, \
-            "Wrong number of initial centroids in init ({}, should be {})." \
-            .format(init.shape[0], n_clusters)
+            f"Wrong number of initial centroids in init ({init.shape[0]}, " \
+            f"should be {n_clusters})."
         assert init.shape[1] == n_attrs, \
-            "Wrong number of attributes in init ({}, should be {})." \
-            .format(init.shape[1], n_attrs)
+            f"Wrong number of attributes in init ({init.shape[1]}, " \
+            f"should be {n_attrs})."
         centroids = np.asarray(init, dtype=np.uint16)
     else:
         raise NotImplementedError
@@ -322,8 +324,8 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
         epoch_costs.append(ncost)
         cost = ncost
         if verbose:
-            print("Run {}, iteration: {}/{}, moves: {}, cost: {}"
-                  .format(init_no + 1, itr, max_iter, moves, cost))
+            print(f"Run {init_no + 1}, iteration: {itr}/{max_iter}, "
+                  f"moves: {moves}, cost: {cost}")
 
     return centroids, labels, cost, itr, epoch_costs
 

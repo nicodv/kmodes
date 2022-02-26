@@ -33,18 +33,19 @@ STOCKS2 = np.array([
 ])
 
 
+# pylint: disable=R0201,W0105
 class TestKProtoTypes(unittest.TestCase):
 
     def test_pickle(self):
         obj = kprototypes.KPrototypes()
-        s = pickle.dumps(obj)
-        assert type(pickle.loads(s)) == obj.__class__
+        serialized = pickle.dumps(obj)
+        self.assertTrue(isinstance(pickle.loads(serialized), obj.__class__))
 
     def test_pickle_fitted(self):
         kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
         model = kproto.fit(STOCKS[:, :2], categorical=1)
-        s = pickle.dumps(model)
-        assert type(pickle.loads(s)) == model.__class__
+        serialized = pickle.dumps(model)
+        self.assertTrue(isinstance(pickle.loads(serialized), model.__class__))
 
     def test_kprotoypes_categoricals_stocks(self):
         # Number/index of categoricals does not make sense

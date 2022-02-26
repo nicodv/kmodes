@@ -139,10 +139,10 @@ class KPrototypes(kmodes.KModes):
         categorical : Index of columns that contain categorical data
         """
         if categorical is not None:
-            assert isinstance(categorical, (int, list, tuple)), "The 'categorical' \
+            assert isinstance(categorical, (int, list, tuple)), f"The 'categorical' \
                 argument needs to be an integer with the index of the categorical \
                 column in your data, or a list or tuple of several of them, \
-                but it is a {}.".format(type(categorical))
+                but it is a {type(categorical)}."
 
         X = pandas_to_numpy(X)
 
@@ -184,10 +184,10 @@ class KPrototypes(kmodes.KModes):
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."
 
         if categorical is not None:
-            assert isinstance(categorical, (int, list, tuple)), "The 'categorical' \
+            assert isinstance(categorical, (int, list, tuple)), f"The 'categorical' \
                 argument needs to be an integer with the index of the categorical \
                 column in your data, or a list or tuple of several of them, \
-                but it is a {}.".format(type(categorical))
+                but it is a {type(categorical)}."
 
         X = pandas_to_numpy(X)
         Xnum, Xcat = _split_num_cat(X, categorical)
@@ -254,8 +254,8 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     ncatattrs = len(categorical)
     nnumattrs = X.shape[1] - ncatattrs
     n_points = X.shape[0]
-    assert n_clusters <= n_points, "Cannot have more clusters ({}) " \
-                                   "than data points ({}).".format(n_clusters, n_points)
+    assert n_clusters <= n_points, f"Cannot have more clusters ({n_clusters}) " \
+                                   f"than data points ({n_points})."
 
     Xnum, Xcat = _split_num_cat(X, categorical)
     Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
@@ -299,7 +299,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
-        print("Best run was number {}".format(best + 1))
+        print(f"Best run was number {best + 1}")
 
     # Note: return gamma in case it was automatically determined.
     return all_centroids[best], enc_map, all_labels[best], all_costs[best], \
@@ -333,16 +333,16 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
                     for cur_init in init]
             assert init[0].shape[0] == n_clusters, \
                 "Wrong number of initial numerical centroids in init " \
-                "({}, should be {}).".format(init[0].shape[0], n_clusters)
+                f"({init[0].shape[0]}, should be {n_clusters})."
             assert init[0].shape[1] == nnumattrs, \
-                "Wrong number of numerical attributes in init ({}, should be {})." \
-                .format(init[0].shape[1], nnumattrs)
+                "Wrong number of numerical attributes in init " \
+                f"({init[0].shape[1]}, should be {nnumattrs})."
             assert init[1].shape[0] == n_clusters, \
-                "Wrong number of initial categorical centroids in init ({}, " \
-                "should be {}).".format(init[1].shape[0], n_clusters)
+                "Wrong number of initial categorical centroids in init " \
+                f"({init[1].shape[0]}, should be {n_clusters})."
             assert init[1].shape[1] == ncatattrs, \
-                "Wrong number of categorical attributes in init ({}, should be {})." \
-                .format(init[1].shape[1], ncatattrs)
+                "Wrong number of categorical attributes in init " \
+                f"({init[1].shape[1]}, should be {ncatattrs})."
             centroids = [np.asarray(init[0], dtype=np.float64),
                          np.asarray(init[1], dtype=np.uint16)]
         else:
@@ -430,8 +430,8 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
         epoch_costs.append(ncost)
         cost = ncost
         if verbose:
-            print("Run: {}, iteration: {}/{}, moves: {}, ncost: {}"
-                  .format(init_no + 1, itr, max_iter, moves, ncost))
+            print(f"Run: {init_no + 1}, iteration: {itr}/{max_iter}, "
+                  f"moves: {moves}, ncost: {ncost}")
 
     return centroids, labels, cost, itr, epoch_costs
 

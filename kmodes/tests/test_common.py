@@ -57,8 +57,8 @@ KPROTOTYPES_INCLUDE_CHECKS = (
 def test_all_estimator_no_base_class():
     # test that all_estimators doesn't find abstract classes.
     for name, Estimator in all_estimators():
-        msg = ("Base estimators such as {0} should not be included"
-               " in all_estimators").format(name)
+        msg = (f"Base estimators such as {name} should not be included "
+               "in all_estimators")
         assert not name.lower().startswith('base'), msg
 
 

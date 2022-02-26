@@ -18,4 +18,4 @@ print(kproto.cost_)
 print(kproto.n_iter_)
 
 for s, c in zip(syms, clusters):
-    print("Symbol: {}, cluster:{}".format(s, c))
+    print(f"Symbol: {s}, cluster:{c}")

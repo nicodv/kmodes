@@ -33,7 +33,9 @@ def cao():
 if __name__ == '__main__':
 
     for cm in ('huang', 'cao'):
-        print(cm.capitalize() + ': {:.2} seconds'.format(
-            timeit.timeit(cm + '()',
-                          setup='from __main__ import ' + cm,
-                          number=T)))
+        duration = timeit.timeit(
+            cm + '()',
+            setup='from __main__ import ' + cm,
+            number=T
+        )
+        print(cm.capitalize() + f': {duration:.2} seconds')

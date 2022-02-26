@@ -228,19 +228,20 @@ def assert_cluster_splits_equal(array1, array2):
     np.testing.assert_array_equal(find_splits(array1), find_splits(array2))
 
 
+# pylint: disable=R0201,W0105
 class TestKModes(unittest.TestCase):
 
     def test_pickle(self):
         obj = KModes()
-        s = pickle.dumps(obj)
-        assert type(pickle.loads(s)) == obj.__class__
+        serialized = pickle.dumps(obj)
+        self.assertTrue(isinstance(pickle.loads(serialized), obj.__class__))
 
     def test_pickle_fitted(self):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
                               random_state=42)
         model = kmodes_huang.fit(SOYBEAN)
-        s = pickle.dumps(model)
-        assert type(pickle.loads(s)) == model.__class__
+        serialized = pickle.dumps(model)
+        self.assertTrue(isinstance(pickle.loads(serialized), model.__class__))
 
     def test_kmodes_huang_soybean(self):
         kmodes_huang = KModes(n_clusters=4, n_init=2, init='Huang', verbose=2,
@@ -449,11 +450,11 @@ class TestKModes(unittest.TestCase):
         self.assertTrue(result.dtype == np.dtype(np.uint16))
 
     def test_kmodes_cao_soybean_jaccard_dissim_binary(self):
-        kmodes_Cao = KModes(n_clusters=4, n_init=2, init='Cao', verbose=2,
+        kmodes_cao = KModes(n_clusters=4, n_init=2, init='Cao', verbose=2,
                             cat_dissim=jaccard_dissim_binary, random_state=42)
         # binary encoded variables are required
         bin_variables = SOYBEAN.astype(bool).astype(int)
-        result = kmodes_Cao.fit_predict(bin_variables)
+        result = kmodes_cao.fit_predict(bin_variables)
         expected = np.array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                              1, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0, 0])

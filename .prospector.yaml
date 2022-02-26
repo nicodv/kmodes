@@ -1,4 +1,4 @@
-strictness: veryhigh
+strictness: high
 max-line-length: 90
 ignore-paths:
   - setup.py
@@ -21,3 +21,7 @@ pylint:
     max-locals: 20
     # Minimum number of public methods for a class (see R0903).
     min-public-methods: 1
+bandit:
+  options:
+    skips:
+      - B301
