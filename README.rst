@@ -1,14 +1,14 @@
 .. image:: https://img.shields.io/pypi/v/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
     :alt: Version
-.. image:: https://travis-ci.org/nicodv/kmodes.svg?branch=master
-    :target: https://travis-ci.org/nicodv/kmodes
-    :alt: Test Status
+.. image:: https://github.com/nicodv/kmodes/actions/workflows/python-package.yml/badge.svg?branch=master
+    :target: https://github.com/nicodv/kmodes/actions/workflows/python-package.yml
+    :alt: Build status
 .. image:: https://coveralls.io/repos/nicodv/kmodes/badge.svg
     :target: https://coveralls.io/r/nicodv/kmodes
-    :alt: Test Coverage
+    :alt: Test coverage
 .. image:: https://api.codacy.com/project/badge/Grade/cb19f1f1093a44fa845ebfdaf76975f6
-   :alt: Codacy Badge
+   :alt: Codacy badge
    :target: https://app.codacy.com/app/nicodv/kmodes?utm_source=github.com&utm_medium=referral&utm_content=nicodv/kmodes&utm_campaign=Badge_Grade_Dashboard
 .. image:: https://img.shields.io/pypi/dm/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
