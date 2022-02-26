@@ -10,12 +10,12 @@
 .. image:: https://api.codacy.com/project/badge/Grade/cb19f1f1093a44fa845ebfdaf76975f6
    :alt: Codacy Badge
    :target: https://app.codacy.com/app/nicodv/kmodes?utm_source=github.com&utm_medium=referral&utm_content=nicodv/kmodes&utm_campaign=Badge_Grade_Dashboard
+.. image:: https://img.shields.io/pypi/dm/kmodes.svg
+    :target: https://pypi.python.org/pypi/kmodes/
+    :alt: Monthly downloads
 .. image:: https://img.shields.io/pypi/pyversions/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
     :alt: Supported Python versions
-.. image:: https://img.shields.io/github/stars/nicodv/kmodes.svg
-    :target: https://github.com/nicodv/kmodes/
-    :alt: Github stars
 .. image:: https://img.shields.io/pypi/l/kmodes.svg
     :target: https://github.com/nicodv/kmodes/blob/master/LICENSE
     :alt: License
