@@ -29,6 +29,8 @@ jobs:
     - name: Test with pytest
       run: |
         pytest --cov
-    - name: Calculate coverage
+    - name: Coverage
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         coveralls
