@@ -27,10 +27,12 @@ setup(
         'scipy>=0.13.3',
         'joblib>=0.11'
     ],
-    extras_requires=[
-        'pytest',
-        'pytest-cov',
-    ],
+    extras_require={
+        'dev': [
+            'pytest',
+            'pytest-cov',
+        ]
+    },
     classifiers=['Development Status :: 3 - Alpha',
                  'Intended Audience :: Science/Research',
                  'License :: OSI Approved :: MIT License',
