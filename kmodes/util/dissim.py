@@ -17,8 +17,7 @@ def jaccard_dissim_binary(a, b, **__):
         denominator = np.sum(np.bitwise_or(a, b), axis=1)
         if (denominator == 0).any(0):
             raise ValueError("Insufficient Number of data since union is 0")
-        else:
-            return 1 - numerator / denominator
+        return 1 - numerator / denominator
     raise ValueError("Missing or non Binary values detected in Binary columns.")
 
 
@@ -28,11 +27,11 @@ def jaccard_dissim_label(a, b, **__):
         raise ValueError("Missing values detected in Numeric columns.")
     intersect_len = np.empty(len(a), dtype=int)
     union_len = np.empty(len(a), dtype=int)
-    i = 0
+    ii = 0
     for row in a:
-        intersect_len[i] = len(np.intersect1d(row, b))
-        union_len[i] = len(np.unique(row)) + len(np.unique(b)) - intersect_len[i]
-        i += 1
+        intersect_len[ii] = len(np.intersect1d(row, b))
+        union_len[ii] = len(np.unique(row)) + len(np.unique(b)) - intersect_len[ii]
+        ii += 1
     if (union_len == 0).any():
         raise ValueError("Insufficient Number of data since union is 0")
     return 1 - intersect_len / union_len

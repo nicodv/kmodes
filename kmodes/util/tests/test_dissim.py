@@ -11,7 +11,7 @@ from kmodes.util.dissim import matching_dissim, euclidean_dissim, ng_dissim
 from kmodes.util.dissim import jaccard_dissim_binary, jaccard_dissim_label
 
 
-# pylint: disable=R0201,W0105
+# pylint: disable=no-self-use,pointless-statement
 class TestDissimilarityMeasures(unittest.TestCase):
 
     def test_matching_dissim(self):

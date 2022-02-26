@@ -33,7 +33,7 @@ STOCKS2 = np.array([
 ])
 
 
-# pylint: disable=R0201,W0105
+# pylint: disable=no-self-use,pointless-statement
 class TestKProtoTypes(unittest.TestCase):
 
     def test_pickle(self):

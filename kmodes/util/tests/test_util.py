@@ -42,7 +42,7 @@ SPOTTY_CAT = np.array([
 ])
 
 
-# pylint: disable=R0201,W0105
+# pylint: disable=no-self-use,pointless-statement
 class TestUtils(unittest.TestCase):
 
     def test_get_max_value_key(self):

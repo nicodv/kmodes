@@ -175,9 +175,8 @@ class KModes(BaseEstimator, ClusterMixin):
     def cluster_centroids_(self):
         if hasattr(self, '_enc_cluster_centroids'):
             return decode_centroids(self._enc_cluster_centroids, self._enc_map)
-        else:
-            raise AttributeError("'{}' object has no attribute 'cluster_centroids_' "
-                                 "because the model is not yet fitted.")
+        raise AttributeError("'{}' object has no attribute 'cluster_centroids_' "
+                             "because the model is not yet fitted.")
 
 
 def labels_cost(X, centroids, dissim, membship=None):

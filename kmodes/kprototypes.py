@@ -2,7 +2,7 @@
 K-prototypes clustering for mixed categorical and numerical data
 """
 
-# pylint: disable=super-on-old-class,unused-argument,attribute-defined-outside-init
+# pylint: disable=unused-argument,attribute-defined-outside-init
 
 from collections import defaultdict
 
@@ -203,9 +203,8 @@ class KPrototypes(kmodes.KModes):
                 self._enc_cluster_centroids[0],
                 decode_centroids(self._enc_cluster_centroids[1], self._enc_map)
             ))
-        else:
-            raise AttributeError("'{}' object has no attribute 'cluster_centroids_' "
-                                 "because the model is not yet fitted.")
+        raise AttributeError("'{}' object has no attribute 'cluster_centroids_' "
+                             "because the model is not yet fitted.")
 
 
 def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=None):

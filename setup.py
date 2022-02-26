@@ -4,7 +4,7 @@ import kmodes
 
 VERSION = kmodes.__version__
 
-with open('README.rst', 'r') as readme_file:
+with open('README.rst', encoding='utf8') as readme_file:
     README = readme_file.read()
 
 setup(

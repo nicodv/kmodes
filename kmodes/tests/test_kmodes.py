@@ -228,7 +228,7 @@ def assert_cluster_splits_equal(array1, array2):
     np.testing.assert_array_equal(find_splits(array1), find_splits(array2))
 
 
-# pylint: disable=R0201,W0105
+# pylint: disable=no-self-use,pointless-statement
 class TestKModes(unittest.TestCase):
 
     def test_pickle(self):

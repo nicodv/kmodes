@@ -2,8 +2,8 @@ strictness: high
 max-line-length: 90
 ignore-paths:
   - setup.py
-  - examples/
-  - .github/
+  - examples
+  - .github
 python-targets:
   - 3
 pep8:
@@ -23,5 +23,4 @@ pylint:
     min-public-methods: 1
 bandit:
   options:
-    skips:
-      - B301
+    skips: ['B301']
