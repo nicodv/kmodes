@@ -24,7 +24,7 @@ install:
 
 # Run tests
 script:
-  - nosetests --with-coverage
+  - pytest --cov
 
 # Calculate coverage
 after_success:

@@ -28,7 +28,8 @@ setup(
         'joblib>=0.11'
     ],
     extras_requires=[
-        'nose',
+        'pytest',
+        'pytest-cov',
     ],
     classifiers=['Development Status :: 3 - Alpha',
                  'Intended Audience :: Science/Research',

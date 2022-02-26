@@ -5,7 +5,6 @@ Tests for utils
 import unittest
 
 import numpy as np
-from nose.tools import assert_equal
 from sklearn.utils._testing import assert_array_equal
 
 from kmodes.util import get_max_value_key, encode_features, get_unique_rows, \
@@ -47,11 +46,11 @@ class TestUtils(unittest.TestCase):
 
     def test_get_max_value_key(self):
         max_key = get_max_value_key({'a': 3, 'b': 10, 'c': -1, 'd': 9.9})
-        assert_equal('b', max_key)
+        assert 'b' == max_key
 
         # Make sure minimum key is consistently selected for equal values.
         max_key = get_max_value_key({'d': 10, 'c': 10, 'b': 10, 'a': 10})
-        assert_equal('a', max_key)
+        assert 'a' == max_key
 
     def test_encode_features(self):
         X_enc, enc_map = encode_features(STOCKS_CAT)
