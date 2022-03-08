@@ -361,7 +361,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state):
 
 
 def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
-                    membship, centroids):
+                    membship, centroids, sample_weight=1):
     """Move point between clusters, categorical attributes."""
     membship[to_clust, ipoint] = 1
     membship[from_clust, ipoint] = 0
@@ -371,7 +371,7 @@ def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
         from_attr_counts = cl_attr_freq[from_clust][iattr]
 
         # Increment the attribute count for the new "to" cluster
-        to_attr_counts[curattr] += 1
+        to_attr_counts[curattr] += sample_weight
 
         current_attribute_value_freq = to_attr_counts[curattr]
         current_centroid_value = centroids[to_clust][iattr]
@@ -381,7 +381,7 @@ def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
             centroids[to_clust][iattr] = curattr
 
         # Decrement the attribute count for the old "from" cluster
-        from_attr_counts[curattr] -= 1
+        from_attr_counts[curattr] -= sample_weight
 
         old_centroid_value = centroids[from_clust][iattr]
         if old_centroid_value == curattr:
