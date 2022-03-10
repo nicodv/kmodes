@@ -227,7 +227,7 @@ def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=N
         tot_costs = num_costs + gamma * cat_costs
         clust = np.argmin(tot_costs)
         labels[ipoint] = clust
-        if sample_weights:
+        if sample_weights is not None:
             cost += tot_costs[clust] * sample_weights[ipoint]
         else:
             cost += tot_costs[clust]
