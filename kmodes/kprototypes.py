@@ -417,10 +417,10 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
     epoch_costs = [cost]
     while itr < max_iter and not converged:
         itr += 1
-        centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
-                                              cl_attr_sum, cl_memb_sum, cl_attr_freq,
-                                              membship, num_dissim, cat_dissim, gamma,
-                                              random_state)
+        centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq, membship, moves = \
+            _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum,
+                               cl_attr_freq, membship, num_dissim, cat_dissim,
+                               gamma, random_state)
 
         # All points seen in this iteration
         labels, ncost = labels_cost(Xnum, Xcat, centroids,
@@ -487,7 +487,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
                 cl_attr_freq, membship, centroids[1]
             )
 
-    return centroids, moves
+    return centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq, membship, moves
 
 
 def _move_point_num(point, to_clust, from_clust, cl_attr_sum, cl_memb_sum):

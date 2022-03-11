@@ -309,7 +309,7 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
     epoch_costs = [cost]
     while itr < max_iter and not converged:
         itr += 1
-        centroids, moves = _k_modes_iter(
+        centroids, cl_attr_freq, membship, moves = _k_modes_iter(
             X,
             centroids,
             cl_attr_freq,
@@ -357,7 +357,7 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state):
                 X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship, centroids
             )
 
-    return centroids, moves
+    return centroids, cl_attr_freq, membship, moves
 
 
 def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
