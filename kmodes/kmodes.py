@@ -276,7 +276,7 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
 
     if verbose:
         print("Init: initializing clusters")
-    membship = np.zeros((n_clusters, n_points), dtype=np.uint8)
+    membship = np.zeros((n_clusters, n_points), dtype=np.bool_)
     # cl_attr_freq is a list of lists with dictionaries that contain the
     # frequencies of values per cluster and attribute.
     cl_attr_freq = [[defaultdict(int) for _ in range(n_attrs)]

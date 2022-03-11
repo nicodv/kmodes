@@ -359,7 +359,7 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
 
         if verbose:
             print("Init: initializing clusters")
-        membship = np.zeros((n_clusters, n_points), dtype=np.uint8)
+        membship = np.zeros((n_clusters, n_points), dtype=np.bool_)
         # Keep track of the sum of attribute values per cluster so that we
         # can do k-means on the numerical attributes.
         cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
