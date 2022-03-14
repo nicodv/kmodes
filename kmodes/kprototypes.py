@@ -116,13 +116,12 @@ class KPrototypes(kmodes.KModes):
 
     def __init__(self, n_clusters=8, max_iter=100, num_dissim=euclidean_dissim,
                  cat_dissim=matching_dissim, init='Cao', n_init=10, gamma=None,
-                 verbose=0, random_state=None, n_jobs=1, sample_weights=None):
+                 verbose=0, random_state=None, n_jobs=1):
 
         super(KPrototypes, self).__init__(n_clusters, max_iter, cat_dissim, init,
                                           verbose=verbose, random_state=random_state,
                                           n_jobs=n_jobs)
         self.num_dissim = num_dissim
-        self.sample_weights = sample_weights
         self.gamma = gamma
         self.n_init = n_init
         if isinstance(self.init, list) and self.n_init > 1:
@@ -131,13 +130,17 @@ class KPrototypes(kmodes.KModes):
                       "Setting n_init to 1.")
             self.n_init = 1
 
-    def fit(self, X, y=None, categorical=None):
+    def fit(self, X, y=None, categorical=None, sample_weights=None):
         """Compute k-prototypes clustering.
 
         Parameters
         ----------
         X : array-like, shape=[n_samples, n_features]
         categorical : Index of columns that contain categorical data
+        sample_weights : sequence, default: None
+        The weight that is assigned to each individual data point when
+        updating the centroids.
+
         """
         if categorical is not None:
             assert isinstance(categorical, (int, list, tuple)), f"The 'categorical' \
@@ -148,6 +151,8 @@ class KPrototypes(kmodes.KModes):
         X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
+        _validate_sample_weights(sample_weights, n_samples=X.shape[0])
+
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
@@ -164,12 +169,12 @@ class KPrototypes(kmodes.KModes):
             self.verbose,
             random_state,
             self.n_jobs,
-            self.sample_weights,
+            sample_weights,
         )
 
         return self
 
-    def predict(self, X, categorical=None):
+    def predict(self, X, categorical=None, sample_weights=None):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
@@ -196,7 +201,7 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
         return labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                           self.num_dissim, self.cat_dissim, self.gamma, self.sample_weights)[0]
+                           self.num_dissim, self.cat_dissim, self.gamma, sample_weights)[0]
 
     @property
     def cluster_centroids_(self):
@@ -209,7 +214,8 @@ class KPrototypes(kmodes.KModes):
                              "because the model is not yet fitted.")
 
 
-def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma, membship=None, sample_weights=None):
+def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma,
+                membship=None, sample_weights=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-prototypes algorithm.
     """
@@ -291,7 +297,8 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
             results.append(_k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs,
                                                 n_clusters, n_points, max_iter,
                                                 num_dissim, cat_dissim, gamma,
-                                                init, init_no, verbose, seeds[init_no], sample_weights))
+                                                init, init_no, verbose, seeds[init_no],
+                                                sample_weights))
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
             delayed(_k_prototypes_single)(Xnum, Xcat, nnumattrs, ncatattrs,
@@ -369,10 +376,10 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
         # can do k-means on the numerical attributes.
         cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
         # Same for the membership sum per cluster
-        cl_memb_sum = np.zeros(n_clusters, dtype=int)
+        cl_memb_sum = np.zeros(n_clusters, dtype=np.float64)
         # cl_attr_freq is a list of lists with dictionaries that contain
         # the frequencies of values per cluster and attribute.
-        cl_attr_freq = [[defaultdict(int) for _ in range(ncatattrs)]
+        cl_attr_freq = [[defaultdict(float) for _ in range(ncatattrs)]
                         for _ in range(n_clusters)]
         for ipoint in range(n_points):
             sample_weight = sample_weights[ipoint] if sample_weights is not None else 1
@@ -520,3 +527,16 @@ def _split_num_cat(X, categorical):
                                if ii not in categorical]]).astype(np.float64)
     Xcat = np.asanyarray(X[:, categorical])
     return Xnum, Xcat
+
+
+def _validate_sample_weights(sample_weights, n_samples):
+    if sample_weights is not None:
+        if len(sample_weights) != n_samples:
+            raise ValueError("Should have as many sample_weights as samples.")
+        if any(
+                not isinstance(weight, int) and not isinstance(weight, float)
+                for weight in sample_weights
+        ):
+            raise ValueError("sample_weights should either be int or floats.")
+        if any(sample < 0 for sample in sample_weights):
+            raise ValueError("sample_weights should be positive.")
