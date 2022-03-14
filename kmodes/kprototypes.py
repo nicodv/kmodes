@@ -371,7 +371,7 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
 
         if verbose:
             print("Init: initializing clusters")
-        membship = np.zeros((n_clusters, n_points), dtype=np.uint8)
+        membship = np.zeros((n_clusters, n_points), dtype=np.bool_)
         # Keep track of the sum of attribute values per cluster so that we
         # can do k-means on the numerical attributes.
         cl_attr_sum = np.zeros((n_clusters, nnumattrs), dtype=np.float64)
@@ -430,10 +430,10 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
     epoch_costs = [cost]
     while itr < max_iter and not converged:
         itr += 1
-        centroids, moves = _k_prototypes_iter(Xnum, Xcat, centroids,
-                                              cl_attr_sum, cl_memb_sum, cl_attr_freq,
-                                              membship, num_dissim, cat_dissim, gamma,
-                                              random_state, sample_weights)
+        centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq, membship, moves = \
+            _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum,
+                               cl_attr_freq, membship, num_dissim, cat_dissim,
+                               gamma, random_state, sample_weights)
 
         # All points seen in this iteration
         labels, ncost = labels_cost(Xnum, Xcat, centroids,
@@ -501,7 +501,7 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
                 cl_attr_freq, membship, centroids[1]
             )
 
-    return centroids, moves
+    return centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq, membship, moves
 
 
 def _move_point_num(point, to_clust, from_clust, cl_attr_sum, cl_memb_sum, sample_weight=1):
