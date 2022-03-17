@@ -174,7 +174,7 @@ class KPrototypes(kmodes.KModes):
 
         return self
 
-    def predict(self, X, categorical=None, sample_weights=None):
+    def predict(self, X, categorical=None):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
@@ -201,7 +201,7 @@ class KPrototypes(kmodes.KModes):
         Xnum, Xcat = check_array(Xnum), check_array(Xcat, dtype=None)
         Xcat, _ = encode_features(Xcat, enc_map=self._enc_map)
         return labels_cost(Xnum, Xcat, self._enc_cluster_centroids,
-                           self.num_dissim, self.cat_dissim, self.gamma, sample_weights)[0]
+                           self.num_dissim, self.cat_dissim, self.gamma)[0]
 
     @property
     def cluster_centroids_(self):
