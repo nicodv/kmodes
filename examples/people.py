@@ -12,8 +12,8 @@ weights = [1] * 4
 weights[2] = 100
 weights[3] = 100
 
-kproto = KPrototypes(n_clusters=3, init='Cao', verbose=2, sample_weights=weights)
-clusters = kproto.fit_predict(X, categorical=[2])
+kproto = KPrototypes(n_clusters=3, init='Cao', verbose=2)
+clusters = kproto.fit_predict(X, categorical=[2], sample_weight=weights)
 
 # Print cluster centroids of the trained model.
 print(kproto.cluster_centroids_)
