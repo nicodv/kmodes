@@ -333,3 +333,58 @@ class TestKProtoTypes(unittest.TestCase):
         self.assertEqual(kmodes.n_init, 10)
         kmodes = kprototypes.KPrototypes(n_init=10, init=[np.array([]), np.array([])])
         self.assertEqual(kmodes.n_init, 1)
+
+    def test_kprototypes_sample_weights_validation(self):
+        kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
+        sample_weight_too_few = [1] * 11
+        with self.assertRaisesRegex(ValueError, "sample_weight should be of equal size as samples."):
+            kproto.fit_predict(
+                STOCKS, categorical=[1, 2], sample_weight=sample_weight_too_few
+            )
+        sample_weight_negative = [-1] + [1] * 11
+        with self.assertRaisesRegex(ValueError, "sample_weight elements should be positive."):
+            kproto.fit_predict(
+                STOCKS, categorical=[1, 2], sample_weight=sample_weight_negative
+            )
+        sample_weight_non_numerical = [None] + [1] * 11
+        with self.assertRaisesRegex(ValueError, "sample_weight elements should either be int or floats."):
+            kproto.fit_predict(
+                STOCKS, categorical=[1, 2], sample_weight=sample_weight_non_numerical
+            )
+
+    def test_k_prototypes_sample_weight_all_but_one_zero(self):
+        """Test whether centroid collapses to single datapoint with non-zero weight."""
+        kproto = kprototypes.KPrototypes(n_clusters=1, init='Cao', verbose=2)
+        n_samples = 2
+        for indicator in range(n_samples):
+            sample_weight = np.zeros(n_samples)
+            sample_weight[indicator] = 1
+            model = kproto.fit(
+                STOCKS[:n_samples, :], categorical=[1, 2], sample_weight=sample_weight
+            )
+            self.assertTrue((model.cluster_centroids_[0, :] == STOCKS[indicator, :]).all())
+
+    def test_k_prototypes_sample_weight_unchanged(self):
+        """Test whether centroid definition remains unchanged when scaling uniformly."""
+        categorical = [1, 2]
+        kproto_baseline = kprototypes.KPrototypes(n_clusters=3, init='Cao')
+        model_baseline = kproto_baseline.fit(STOCKS, categorical=categorical)
+        expected = set(tuple(row) for row in model_baseline.cluster_centroids_)
+        # The exact value of a weight shouldn't matter if equal for all samples.
+        for weight in [.5, .1, 1, 1., 2]:
+            sample_weight = [weight] * STOCKS.shape[0]
+            kproto_weighted = kprototypes.KPrototypes(n_clusters=3, init='Cao')
+            model_weighted = kproto_weighted.fit(
+                STOCKS, categorical=categorical, sample_weight=sample_weight
+            )
+            factual = set(tuple(row) for row in model_weighted.cluster_centroids_)
+            # Centroids might be ordered differently. To compare the centroids, we first
+            # sort them.
+            tuple_pairs = zip(sorted(expected), sorted(factual))
+            for tuple_expected, tuple_factual in tuple_pairs:
+                # Test numerical features for almost equality, categorical features for
+                # actual equality.
+                self.assertAlmostEqual(float(tuple_expected[0]), float(tuple_factual[0]))
+                for index in categorical:
+                    self.assertTrue(tuple_expected[index] == tuple_factual[index])
+
