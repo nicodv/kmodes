@@ -512,8 +512,8 @@ def _move_point_num(point, to_clust, from_clust, cl_attr_sum, cl_memb_sum, sampl
         cl_attr_sum[to_clust][iattr] += curattr * sample_weight
         cl_attr_sum[from_clust][iattr] -= curattr * sample_weight
     # Update sums of memberships in cluster
-    cl_memb_sum[to_clust] += sample_weight
-    cl_memb_sum[from_clust] -= sample_weight
+    cl_memb_sum[to_clust] += 1
+    cl_memb_sum[from_clust] -= 1
     return cl_attr_sum, cl_memb_sum
 
 
