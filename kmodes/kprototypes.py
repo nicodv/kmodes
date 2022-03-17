@@ -533,11 +533,11 @@ def _split_num_cat(X, categorical):
 def _validate_sample_weight(sample_weight, n_samples):
     if sample_weight is not None:
         if len(sample_weight) != n_samples:
-            raise ValueError("Should have as many sample_weight as samples.")
+            raise ValueError("sample_weight should be of equal size as samples.")
         if any(
                 not isinstance(weight, int) and not isinstance(weight, float)
                 for weight in sample_weight
         ):
-            raise ValueError("sample_weight should either be int or floats.")
+            raise ValueError("sample_weight elements should either be int or floats.")
         if any(sample < 0 for sample in sample_weight):
-            raise ValueError("sample_weight should be positive.")
+            raise ValueError("sample_weight elements should be positive.")

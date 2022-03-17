@@ -337,17 +337,17 @@ class TestKProtoTypes(unittest.TestCase):
     def test_kprototypes_sample_weights_validation(self):
         kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
         sample_weight_too_few = [1] * 11
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "sample_weight should be of equal size as samples."):
             kproto.fit_predict(
                 STOCKS, categorical=[1, 2], sample_weight=sample_weight_too_few
             )
         sample_weight_negative = [-1] + [1] * 11
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "sample_weight elements should be positive."):
             kproto.fit_predict(
                 STOCKS, categorical=[1, 2], sample_weight=sample_weight_negative
             )
         sample_weight_non_numerical = [None] + [1] * 11
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "sample_weight elements should either be int or floats."):
             kproto.fit_predict(
                 STOCKS, categorical=[1, 2], sample_weight=sample_weight_non_numerical
             )
