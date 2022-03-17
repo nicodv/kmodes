@@ -130,14 +130,15 @@ class KPrototypes(kmodes.KModes):
                       "Setting n_init to 1.")
             self.n_init = 1
 
-    def fit(self, X, y=None, categorical=None, sample_weights=None):
+    def fit(self, X, y=None, categorical=None, sample_weight=None):
         """Compute k-prototypes clustering.
 
         Parameters
         ----------
         X : array-like, shape=[n_samples, n_features]
         categorical : Index of columns that contain categorical data
-        sample_weights : sequence, default: None
+
+        sample_weight : sequence, default: None
         The weight that is assigned to each individual data point when
         updating the centroids.
 
@@ -151,7 +152,7 @@ class KPrototypes(kmodes.KModes):
         X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
-        _validate_sample_weights(sample_weights, n_samples=X.shape[0])
+        _validate_sample_weight(sample_weight, n_samples=X.shape[0])
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
@@ -169,7 +170,7 @@ class KPrototypes(kmodes.KModes):
             self.verbose,
             random_state,
             self.n_jobs,
-            sample_weights,
+            sample_weight,
         )
 
         return self
@@ -215,7 +216,7 @@ class KPrototypes(kmodes.KModes):
 
 
 def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma,
-                membship=None, sample_weights=None):
+                membship=None, sample_weight=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-prototypes algorithm.
     """
@@ -233,8 +234,8 @@ def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma,
         tot_costs = num_costs + gamma * cat_costs
         clust = np.argmin(tot_costs)
         labels[ipoint] = clust
-        if sample_weights is not None:
-            cost += tot_costs[clust] * sample_weights[ipoint]
+        if sample_weight is not None:
+            cost += tot_costs[clust] * sample_weight[ipoint]
         else:
             cost += tot_costs[clust]
 
@@ -242,7 +243,7 @@ def labels_cost(Xnum, Xcat, centroids, num_dissim, cat_dissim, gamma,
 
 
 def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
-                 gamma, init, n_init, verbose, random_state, n_jobs, sample_weights=None):
+                 gamma, init, n_init, verbose, random_state, n_jobs, sample_weight=None):
     """k-prototypes algorithm"""
     random_state = check_random_state(random_state)
     if sparse.issparse(X):
@@ -298,13 +299,13 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
                                                 n_clusters, n_points, max_iter,
                                                 num_dissim, cat_dissim, gamma,
                                                 init, init_no, verbose, seeds[init_no],
-                                                sample_weights))
+                                                sample_weight))
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
             delayed(_k_prototypes_single)(Xnum, Xcat, nnumattrs, ncatattrs,
                                           n_clusters, n_points, max_iter,
                                           num_dissim, cat_dissim, gamma,
-                                          init, init_no, verbose, seed, sample_weights)
+                                          init, init_no, verbose, seed, sample_weight)
             for init_no, seed in enumerate(seeds))
     all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
 
@@ -319,7 +320,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
 
 def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
                          max_iter, num_dissim, cat_dissim, gamma, init, init_no,
-                         verbose, random_state, sample_weights=None):
+                         verbose, random_state, sample_weight=None):
     # For numerical part of initialization, we don't have a guarantee
     # that there is not an empty cluster, so we need to retry until
     # there is none.
@@ -382,19 +383,19 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
         cl_attr_freq = [[defaultdict(float) for _ in range(ncatattrs)]
                         for _ in range(n_clusters)]
         for ipoint in range(n_points):
-            sample_weight = sample_weights[ipoint] if sample_weights is not None else 1
+            weight = sample_weight[ipoint] if sample_weight is not None else 1
             # Initial assignment to clusters
             clust = np.argmin(
                 num_dissim(centroids[0], Xnum[ipoint]) + gamma *
                 cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
             )
             membship[clust, ipoint] = 1
-            cl_memb_sum[clust] += sample_weight
+            cl_memb_sum[clust] += weight
             # Count attribute values per cluster.
             for iattr, curattr in enumerate(Xnum[ipoint]):
-                cl_attr_sum[clust, iattr] += curattr * sample_weight
+                cl_attr_sum[clust, iattr] += curattr * weight
             for iattr, curattr in enumerate(Xcat[ipoint]):
-                cl_attr_freq[clust][iattr][curattr] += sample_weight
+                cl_attr_freq[clust][iattr][curattr] += weight
 
         # If no empty clusters, then consider initialization finalized.
         if membship.sum(axis=1).min() > 0:
@@ -425,7 +426,7 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
     converged = False
 
     _, cost = labels_cost(Xnum, Xcat, centroids,
-                          num_dissim, cat_dissim, gamma, membship, sample_weights)
+                          num_dissim, cat_dissim, gamma, membship, sample_weight)
 
     epoch_costs = [cost]
     while itr < max_iter and not converged:
@@ -433,11 +434,11 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
         centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq, membship, moves = \
             _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum,
                                cl_attr_freq, membship, num_dissim, cat_dissim,
-                               gamma, random_state, sample_weights)
+                               gamma, random_state, sample_weight)
 
         # All points seen in this iteration
         labels, ncost = labels_cost(Xnum, Xcat, centroids,
-                                    num_dissim, cat_dissim, gamma, membship, sample_weights)
+                                    num_dissim, cat_dissim, gamma, membship, sample_weight)
         converged = (moves == 0) or (ncost >= cost)
         epoch_costs.append(ncost)
         cost = ncost
@@ -449,11 +450,11 @@ def _k_prototypes_single(Xnum, Xcat, nnumattrs, ncatattrs, n_clusters, n_points,
 
 
 def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq,
-                       membship, num_dissim, cat_dissim, gamma, random_state, sample_weights):
+                       membship, num_dissim, cat_dissim, gamma, random_state, sample_weight):
     """Single iteration of the k-prototypes algorithm"""
     moves = 0
     for ipoint in range(Xnum.shape[0]):
-        sample_weight = sample_weights[ipoint] if sample_weights is not None else 1
+        weight = sample_weight[ipoint] if sample_weight is not None else 1
         clust = np.argmin(
             num_dissim(centroids[0], Xnum[ipoint]) +
             gamma * cat_dissim(centroids[1], Xcat[ipoint], X=Xcat, membship=membship)
@@ -469,12 +470,12 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
         # Note that membship gets updated by kmodes.move_point_cat.
         # move_point_num only updates things specific to the k-means part.
         cl_attr_sum, cl_memb_sum = _move_point_num(
-            Xnum[ipoint], clust, old_clust, cl_attr_sum, cl_memb_sum, sample_weight
+            Xnum[ipoint], clust, old_clust, cl_attr_sum, cl_memb_sum, weight
         )
         # noinspection PyProtectedMember
         cl_attr_freq, membship, centroids[1] = kmodes._move_point_cat(
             Xcat[ipoint], ipoint, clust, old_clust,
-            cl_attr_freq, membship, centroids[1], sample_weight
+            cl_attr_freq, membship, centroids[1], weight
         )
 
         # Update old and new centroids for numerical attributes using
@@ -529,14 +530,14 @@ def _split_num_cat(X, categorical):
     return Xnum, Xcat
 
 
-def _validate_sample_weights(sample_weights, n_samples):
-    if sample_weights is not None:
-        if len(sample_weights) != n_samples:
-            raise ValueError("Should have as many sample_weights as samples.")
+def _validate_sample_weight(sample_weight, n_samples):
+    if sample_weight is not None:
+        if len(sample_weight) != n_samples:
+            raise ValueError("Should have as many sample_weight as samples.")
         if any(
                 not isinstance(weight, int) and not isinstance(weight, float)
-                for weight in sample_weights
+                for weight in sample_weight
         ):
-            raise ValueError("sample_weights should either be int or floats.")
-        if any(sample < 0 for sample in sample_weights):
-            raise ValueError("sample_weights should be positive.")
+            raise ValueError("sample_weight should either be int or floats.")
+        if any(sample < 0 for sample in sample_weight):
+            raise ValueError("sample_weight should be positive.")

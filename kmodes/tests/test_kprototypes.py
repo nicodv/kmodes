@@ -336,35 +336,35 @@ class TestKProtoTypes(unittest.TestCase):
 
     def test_kprototypes_sample_weights_validation(self):
         kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
-        sample_weights_too_few = [1] * 11
+        sample_weight_too_few = [1] * 11
         with self.assertRaises(ValueError):
             kproto.fit_predict(
-                STOCKS, categorical=[1, 2], sample_weights=sample_weights_too_few
+                STOCKS, categorical=[1, 2], sample_weight=sample_weight_too_few
             )
-        sample_weights_negative = [-1] + [1] * 11
+        sample_weight_negative = [-1] + [1] * 11
         with self.assertRaises(ValueError):
             kproto.fit_predict(
-                STOCKS, categorical=[1, 2], sample_weights=sample_weights_negative
+                STOCKS, categorical=[1, 2], sample_weight=sample_weight_negative
             )
-        sample_weights_non_numerical = [None] + [1] * 11
+        sample_weight_non_numerical = [None] + [1] * 11
         with self.assertRaises(ValueError):
             kproto.fit_predict(
-                STOCKS, categorical=[1, 2], sample_weights=sample_weights_non_numerical
+                STOCKS, categorical=[1, 2], sample_weight=sample_weight_non_numerical
             )
 
-    def test_k_prototypes_sample_weights_all_but_one_zero(self):
+    def test_k_prototypes_sample_weight_all_but_one_zero(self):
         """Test whether centroid collapses to single datapoint with non-zero weight."""
         kproto = kprototypes.KPrototypes(n_clusters=1, init='Cao', verbose=2)
         n_samples = 2
         for indicator in range(n_samples):
-            sample_weights = np.zeros(n_samples)
-            sample_weights[indicator] = 1
+            sample_weight = np.zeros(n_samples)
+            sample_weight[indicator] = 1
             model = kproto.fit(
-                STOCKS[:n_samples, :], categorical=[1, 2], sample_weights=sample_weights
+                STOCKS[:n_samples, :], categorical=[1, 2], sample_weight=sample_weight
             )
             self.assertTrue((model.cluster_centroids_[0, :] == STOCKS[indicator, :]).all())
 
-    def test_k_prototypes_sample_weights_unchanged(self):
+    def test_k_prototypes_sample_weight_unchanged(self):
         """Test whether centroid definition remains unchanged when scaling uniformly."""
         categorical = [1, 2]
         kproto_baseline = kprototypes.KPrototypes(n_clusters=3, init='Cao')
@@ -372,10 +372,10 @@ class TestKProtoTypes(unittest.TestCase):
         expected = set(tuple(row) for row in model_baseline.cluster_centroids_)
         # The exact value of a weight shouldn't matter if equal for all samples.
         for weight in [.5, .1, 1, 1., 2]:
-            sample_weights = [weight] * STOCKS.shape[0]
+            sample_weight = [weight] * STOCKS.shape[0]
             kproto_weighted = kprototypes.KPrototypes(n_clusters=3, init='Cao')
             model_weighted = kproto_weighted.fit(
-                STOCKS, categorical=categorical, sample_weights=sample_weights
+                STOCKS, categorical=categorical, sample_weight=sample_weight
             )
             factual = set(tuple(row) for row in model_weighted.cluster_centroids_)
             # Centroids might be ordered differently. To compare the centroids, we first
