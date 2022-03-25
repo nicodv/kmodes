@@ -521,3 +521,49 @@ class TestKModes(unittest.TestCase):
         kmodes = KModes(n_clusters=4, init='Cao', random_state=42)
         kmodes.fit(SOYBEAN)
         self.assertEqual(kmodes.epoch_costs_, [206.0, 204.0, 199.0, 199.0])
+
+    def test_kmodes_sample_weights_validation(self):
+        kmodes = KModes(n_clusters=4, init='Cao', random_state=42)
+        sample_weight_too_few = [1] * (SOYBEAN.shape[0] - 1)
+        with self.assertRaisesRegex(
+                ValueError, "sample_weight should be of equal size as samples."
+        ):
+            kmodes.fit_predict(SOYBEAN, sample_weight=sample_weight_too_few)
+        sample_weight_negative = [-1] + [1] * (SOYBEAN.shape[0] - 1)
+        with self.assertRaisesRegex(
+                ValueError, "sample_weight elements should be positive."
+        ):
+            kmodes.fit_predict(SOYBEAN, sample_weight=sample_weight_negative)
+        sample_weight_non_numerical = [None] + [1] * (SOYBEAN.shape[0] - 1)
+        with self.assertRaisesRegex(
+                ValueError, "sample_weight elements should either be int or floats."
+        ):
+            kmodes.fit_predict(SOYBEAN, sample_weight=sample_weight_non_numerical)
+
+    def test_kmodes_sample_weights_all_but_one_zero(self):
+        """Test whether centroid collapses to single datapoint with non-zero weight."""
+        kmodes = KModes(n_clusters=1, init='Cao')
+        n_samples = 10
+        for indicator in range(n_samples):
+            sample_weight = np.zeros(n_samples)
+            sample_weight[indicator] = 1
+            model = kmodes.fit(
+                TEST_DATA[:n_samples, :], sample_weight=sample_weight
+            )
+            self.assertTrue((model.cluster_centroids_[0, :] == TEST_DATA[indicator, :]).all())
+
+    def test_k_prototypes_sample_weight_unchanged(self):
+        """Test whether centroid definition remains unchanged when scaling uniformly."""
+        kmodes_baseline = KModes(n_clusters=4, init='Cao', random_state=42)
+        model_baseline = kmodes_baseline.fit(SOYBEAN)
+        expected = set(tuple(row) for row in model_baseline.cluster_centroids_)
+        for weight in [.5, 1, 1., 2]:
+            sample_weight = [weight] * SOYBEAN.shape[0]
+            kmodes_weighted = KModes(n_clusters=4, init='Cao', random_state=42)
+            model_weighted = kmodes_weighted.fit(SOYBEAN, sample_weight=sample_weight)
+            factual = set(tuple(row) for row in model_weighted.cluster_centroids_)
+            # Centroids might be ordered differently. To compare the centroids, we first
+            # sort them.
+            tuple_pairs = zip(sorted(expected), sorted(factual))
+            for tuple_expected, tuple_factual in tuple_pairs:
+                self.assertAlmostEqual(tuple_expected, tuple_factual)

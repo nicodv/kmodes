@@ -113,16 +113,22 @@ class KModes(BaseEstimator, ClusterMixin):
                       "Setting n_init to 1.")
             self.n_init = 1
 
-    def fit(self, X, y=None, **kwargs):
+    def fit(self, X, y=None, sample_weight=None, **kwargs):
         """Compute k-modes clustering.
 
         Parameters
         ----------
         X : array-like, shape=[n_samples, n_features]
+
+        sample_weight : sequence, default: None
+        The weight that is assigned to each individual data point when
+        updating the centroids.
         """
         X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
+        _validate_sample_weight(sample_weight, n_samples=X.shape[0])
+
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
         self.n_iter_, self.epoch_costs_ = k_modes(
             X,
@@ -134,6 +140,7 @@ class KModes(BaseEstimator, ClusterMixin):
             self.verbose,
             random_state,
             self.n_jobs,
+            sample_weight
         )
         return self
 
@@ -179,7 +186,7 @@ class KModes(BaseEstimator, ClusterMixin):
                              "because the model is not yet fitted.")
 
 
-def labels_cost(X, centroids, dissim, membship=None):
+def labels_cost(X, centroids, dissim, membship=None, sample_weight=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-modes algorithm.
     """
@@ -190,15 +197,17 @@ def labels_cost(X, centroids, dissim, membship=None):
     cost = 0.
     labels = np.empty(n_points, dtype=np.uint16)
     for ipoint, curpoint in enumerate(X):
+        weight = sample_weight[ipoint] if sample_weight is not None else 1
         diss = dissim(centroids, curpoint, X=X, membship=membship)
         clust = np.argmin(diss)
         labels[ipoint] = clust
-        cost += diss[clust]
+        cost += diss[clust] * weight
 
     return labels, cost
 
 
-def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs):
+def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs,
+            sample_weight=None):
     """k-modes algorithm"""
     random_state = check_random_state(random_state)
     if sparse.issparse(X):
@@ -229,13 +238,13 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
     if n_jobs == 1:
         for init_no in range(n_init):
             results.append(_k_modes_single(
-                X, n_clusters, n_points, n_attrs, max_iter,
-                dissim, init, init_no, verbose, seeds[init_no]
+                X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
+                verbose, seeds[init_no], sample_weight
             ))
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
             delayed(_k_modes_single)(X, n_clusters, n_points, n_attrs, max_iter,
-                                     dissim, init, init_no, verbose, seed)
+                                     dissim, init, init_no, verbose, seed, sample_weight)
             for init_no, seed in enumerate(seeds))
     all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
 
@@ -248,7 +257,7 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
 
 
 def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
-                    verbose, random_state):
+                    verbose, random_state, sample_weight=None):
     random_state = check_random_state(random_state)
     # _____ INIT _____
     if verbose:
@@ -282,12 +291,13 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
     cl_attr_freq = [[defaultdict(int) for _ in range(n_attrs)]
                     for _ in range(n_clusters)]
     for ipoint, curpoint in enumerate(X):
+        weight = sample_weight[ipoint] if sample_weight is not None else 1
         # Initial assignment to clusters
         clust = np.argmin(dissim(centroids, curpoint, X=X, membship=membship))
         membship[clust, ipoint] = 1
         # Count attribute values per cluster.
         for iattr, curattr in enumerate(curpoint):
-            cl_attr_freq[clust][iattr][curattr] += 1
+            cl_attr_freq[clust][iattr][curattr] += weight
     # Perform an initial centroid update.
     for ik in range(n_clusters):
         for iattr in range(n_attrs):
@@ -304,7 +314,7 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
     labels = None
     converged = False
 
-    _, cost = labels_cost(X, centroids, dissim, membship)
+    _, cost = labels_cost(X, centroids, dissim, membship, sample_weight)
 
     epoch_costs = [cost]
     while itr < max_iter and not converged:
@@ -315,10 +325,11 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
             cl_attr_freq,
             membship,
             dissim,
-            random_state
+            random_state,
+            sample_weight
         )
         # All points seen in this iteration
-        labels, ncost = labels_cost(X, centroids, dissim, membship)
+        labels, ncost = labels_cost(X, centroids, dissim, membship, sample_weight)
         converged = (moves == 0) or (ncost >= cost)
         epoch_costs.append(ncost)
         cost = ncost
@@ -329,10 +340,12 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
     return centroids, labels, cost, itr, epoch_costs
 
 
-def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state):
+def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state,
+                  sample_weight):
     """Single iteration of k-modes clustering algorithm"""
     moves = 0
     for ipoint, curpoint in enumerate(X):
+        weight = sample_weight[ipoint] if sample_weight is not None else 1
         clust = np.argmin(dissim(centroids, curpoint, X=X, membship=membship))
         if membship[clust, ipoint]:
             # Point is already in its right place.
@@ -343,7 +356,8 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state):
         old_clust = np.argwhere(membship[:, ipoint])[0][0]
 
         cl_attr_freq, membship, centroids = _move_point_cat(
-            curpoint, ipoint, clust, old_clust, cl_attr_freq, membship, centroids
+            curpoint, ipoint, clust, old_clust, cl_attr_freq, membship, centroids,
+            weight
         )
 
         # In case of an empty cluster, reinitialize with a random point
@@ -354,14 +368,15 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state):
             rindx = random_state.choice(choices)
 
             cl_attr_freq, membship, centroids = _move_point_cat(
-                X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship, centroids
+                X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship,
+                centroids, weight
             )
 
     return centroids, cl_attr_freq, membship, moves
 
 
 def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
-                    membship, centroids, sample_weight=1):
+                    membship, centroids, sample_weight):
     """Move point between clusters, categorical attributes."""
     membship[to_clust, ipoint] = 1
     membship[from_clust, ipoint] = 0
@@ -390,3 +405,16 @@ def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
             centroids[from_clust][iattr] = get_max_value_key(from_attr_counts)
 
     return cl_attr_freq, membship, centroids
+
+
+def _validate_sample_weight(sample_weight, n_samples):
+    if sample_weight is not None:
+        if len(sample_weight) != n_samples:
+            raise ValueError("sample_weight should be of equal size as samples.")
+        if any(
+                not isinstance(weight, int) and not isinstance(weight, float)
+                for weight in sample_weight
+        ):
+            raise ValueError("sample_weight elements should either be int or floats.")
+        if any(sample < 0 for sample in sample_weight):
+            raise ValueError("sample_weight elements should be positive.")

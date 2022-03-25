@@ -152,7 +152,7 @@ class KPrototypes(kmodes.KModes):
         X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
-        _validate_sample_weight(sample_weight, n_samples=X.shape[0])
+        kmodes._validate_sample_weight(sample_weight, n_samples=X.shape[0])
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
@@ -495,17 +495,18 @@ def _k_prototypes_iter(Xnum, Xcat, centroids, cl_attr_sum, cl_memb_sum, cl_attr_
             rindx = random_state.choice(choices)
 
             cl_attr_sum, cl_memb_sum = _move_point_num(
-                Xnum[rindx], old_clust, from_clust, cl_attr_sum, cl_memb_sum
+                Xnum[rindx], old_clust, from_clust, cl_attr_sum, cl_memb_sum,
+                weight
             )
             cl_attr_freq, membship, centroids[1] = kmodes._move_point_cat(
                 Xcat[rindx], rindx, old_clust, from_clust,
-                cl_attr_freq, membship, centroids[1]
+                cl_attr_freq, membship, centroids[1], weight
             )
 
     return centroids, cl_attr_sum, cl_memb_sum, cl_attr_freq, membship, moves
 
 
-def _move_point_num(point, to_clust, from_clust, cl_attr_sum, cl_memb_sum, sample_weight=1):
+def _move_point_num(point, to_clust, from_clust, cl_attr_sum, cl_memb_sum, sample_weight):
     """Move point between clusters, numerical attributes."""
     # Update sum of attributes in cluster.
     for iattr, curattr in enumerate(point):
@@ -528,16 +529,3 @@ def _split_num_cat(X, categorical):
                                if ii not in categorical]]).astype(np.float64)
     Xcat = np.asanyarray(X[:, categorical])
     return Xnum, Xcat
-
-
-def _validate_sample_weight(sample_weight, n_samples):
-    if sample_weight is not None:
-        if len(sample_weight) != n_samples:
-            raise ValueError("sample_weight should be of equal size as samples.")
-        if any(
-                not isinstance(weight, int) and not isinstance(weight, float)
-                for weight in sample_weight
-        ):
-            raise ValueError("sample_weight elements should either be int or floats.")
-        if any(sample < 0 for sample in sample_weight):
-            raise ValueError("sample_weight elements should be positive.")
