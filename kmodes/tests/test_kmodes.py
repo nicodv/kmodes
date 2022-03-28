@@ -542,7 +542,7 @@ class TestKModes(unittest.TestCase):
 
     def test_kmodes_sample_weights_all_but_one_zero(self):
         """Test whether centroid collapses to single datapoint with non-zero weight."""
-        kmodes = KModes(n_clusters=1, init='Cao')
+        kmodes = KModes(n_clusters=1, init='Cao', random_state=42)
         n_samples = 10
         for indicator in range(n_samples):
             sample_weight = np.zeros(n_samples)
