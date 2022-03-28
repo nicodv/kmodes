@@ -552,7 +552,7 @@ class TestKModes(unittest.TestCase):
             )
             self.assertTrue((model.cluster_centroids_[0, :] == TEST_DATA[indicator, :]).all())
 
-    def test_k_prototypes_sample_weight_unchanged(self):
+    def test_k_modes_sample_weight_unchanged(self):
         """Test whether centroid definition remains unchanged when scaling uniformly."""
         kmodes_baseline = KModes(n_clusters=4, init='Cao', random_state=42)
         model_baseline = kmodes_baseline.fit(SOYBEAN)
