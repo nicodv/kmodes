@@ -127,7 +127,8 @@ class KModes(BaseEstimator, ClusterMixin):
         X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
-        _validate_sample_weight(sample_weight, n_samples=X.shape[0])
+        _validate_sample_weight(sample_weight, n_samples=X.shape[0],
+                                n_clusters=self.n_clusters)
 
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
         self.n_iter_, self.epoch_costs_ = k_modes(
@@ -407,7 +408,7 @@ def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,
     return cl_attr_freq, membship, centroids
 
 
-def _validate_sample_weight(sample_weight, n_samples):
+def _validate_sample_weight(sample_weight, n_samples, n_clusters):
     if sample_weight is not None:
         if len(sample_weight) != n_samples:
             raise ValueError("sample_weight should be of equal size as samples.")
@@ -418,3 +419,6 @@ def _validate_sample_weight(sample_weight, n_samples):
             raise ValueError("sample_weight elements should either be int or floats.")
         if any(sample < 0 for sample in sample_weight):
             raise ValueError("sample_weight elements should be positive.")
+        if sum([x > 0 for x in sample_weight]) < n_clusters:
+            raise ValueError("Number of non-zero sample_weight elements should be "
+                             "larger than the number of clusters.")

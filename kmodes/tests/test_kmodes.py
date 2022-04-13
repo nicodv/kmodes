@@ -567,3 +567,11 @@ class TestKModes(unittest.TestCase):
             tuple_pairs = zip(sorted(expected), sorted(factual))
             for tuple_expected, tuple_factual in tuple_pairs:
                 self.assertAlmostEqual(tuple_expected, tuple_factual)
+
+    def test_kmodes_fit_predict(self):
+        """Test whether fit_predict interface works the same as fit and predict."""
+        kmodes = KModes(n_clusters=4, init='Cao', random_state=42)
+        sample_weight = [0.5] * TEST_DATA.shape[0]
+        data1 = kmodes.fit_predict(TEST_DATA, sample_weight=sample_weight)
+        data2 = kmodes.fit(TEST_DATA, sample_weight=sample_weight).predict(TEST_DATA)
+        assert_cluster_splits_equal(data1, data2)

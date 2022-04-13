@@ -152,7 +152,8 @@ class KPrototypes(kmodes.KModes):
         X = pandas_to_numpy(X)
 
         random_state = check_random_state(self.random_state)
-        kmodes._validate_sample_weight(sample_weight, n_samples=X.shape[0])
+        kmodes._validate_sample_weight(sample_weight, n_samples=X.shape[0],
+                                       n_clusters=self.n_clusters)
 
         # If self.gamma is None, gamma will be automatically determined from
         # the data. The function below returns its value.
@@ -175,7 +176,7 @@ class KPrototypes(kmodes.KModes):
 
         return self
 
-    def predict(self, X, categorical=None):
+    def predict(self, X, categorical=None, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
