@@ -390,3 +390,11 @@ class TestKProtoTypes(unittest.TestCase):
                 for index in categorical:
                     self.assertTrue(tuple_expected[index] == tuple_factual[index])
 
+    def test_kmodes_fit_predict_equality(self):
+        """Test whether fit_predict interface works the same as fit and predict."""
+        kproto = kprototypes.KPrototypes(n_clusters=3, init='Cao', random_state=42)
+        sample_weight = [0.5] * STOCKS.shape[0]
+        model1 = kproto.fit(STOCKS, categorical=[1, 2], sample_weight=sample_weight)
+        data1 = model1.predict(STOCKS, categorical=[1, 2])
+        data2 = kproto.fit_predict(STOCKS, categorical=[1, 2], sample_weight=sample_weight)
+        assert_cluster_splits_equal(data1, data2)

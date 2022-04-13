@@ -175,7 +175,7 @@ class KPrototypes(kmodes.KModes):
 
         return self
 
-    def predict(self, X, categorical=None):
+    def predict(self, X, categorical=None, **kwargs):
         """Predict the closest cluster each sample in X belongs to.
 
         Parameters
