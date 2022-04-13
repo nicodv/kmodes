@@ -419,6 +419,6 @@ def _validate_sample_weight(sample_weight, n_samples, n_clusters):
             raise ValueError("sample_weight elements should either be int or floats.")
         if any(sample < 0 for sample in sample_weight):
             raise ValueError("sample_weight elements should be positive.")
-        if sum([abs(x) > 0 for x in sample_weight]) < n_clusters:
+        if sum([x > 0 for x in sample_weight]) < n_clusters:
             raise ValueError("Number of non-zero sample_weight elements should be "
                              "larger than the number of clusters.")
