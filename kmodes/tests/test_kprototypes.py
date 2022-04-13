@@ -337,17 +337,26 @@ class TestKProtoTypes(unittest.TestCase):
     def test_kprototypes_sample_weights_validation(self):
         kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', verbose=2)
         sample_weight_too_few = [1] * 11
-        with self.assertRaisesRegex(ValueError, "sample_weight should be of equal size as samples."):
+        with self.assertRaisesRegex(
+                ValueError,
+                "sample_weight should be of equal size as samples."
+        ):
             kproto.fit_predict(
                 STOCKS, categorical=[1, 2], sample_weight=sample_weight_too_few
             )
         sample_weight_negative = [-1] + [1] * 11
-        with self.assertRaisesRegex(ValueError, "sample_weight elements should be positive."):
+        with self.assertRaisesRegex(
+                ValueError,
+                "sample_weight elements should be positive."
+        ):
             kproto.fit_predict(
                 STOCKS, categorical=[1, 2], sample_weight=sample_weight_negative
             )
         sample_weight_non_numerical = [None] + [1] * 11
-        with self.assertRaisesRegex(ValueError, "sample_weight elements should either be int or floats."):
+        with self.assertRaisesRegex(
+                ValueError,
+                "sample_weight elements should either be int or floats."
+        ):
             kproto.fit_predict(
                 STOCKS, categorical=[1, 2], sample_weight=sample_weight_non_numerical
             )
@@ -362,7 +371,21 @@ class TestKProtoTypes(unittest.TestCase):
             model = kproto.fit(
                 STOCKS[:n_samples, :], categorical=[1, 2], sample_weight=sample_weight
             )
-            self.assertTrue((model.cluster_centroids_[0, :] == STOCKS[indicator, :]).all())
+            np.testing.assert_array_equal(
+                model.cluster_centroids_[0, :],
+                STOCKS[indicator, :]
+            )
+
+    def test_k_prototypes_sample_weight_not_enough_non_zero(self):
+        kproto = kprototypes.KPrototypes(n_clusters=2, init='Cao', random_state=42)
+        sample_weight = np.zeros(STOCKS.shape[0])
+        sample_weight[0] = 1
+        with self.assertRaisesRegex(
+                ValueError,
+                "Number of non-zero sample_weight elements should be larger "
+                "than the number of clusters."
+        ):
+            kproto.fit(STOCKS, categorical=[1, 2], sample_weight=sample_weight)
 
     def test_k_prototypes_sample_weight_unchanged(self):
         """Test whether centroid definition remains unchanged when scaling uniformly."""
