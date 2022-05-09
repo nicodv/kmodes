@@ -26,21 +26,6 @@ STOCKS_CAT = np.array([
     ['nrg', 'NL']
 ])
 
-SPOTTY_CAT = np.array([
-    [0, 0],
-    [0, 0],
-    [0, 0],
-    [1, 0],
-    [np.NaN, 0],
-    [9, 0],
-    [9, 1],
-    [np.NaN, 0],
-    [8, 0],
-    [8, 0],
-    [0, 0],
-    [0, 2]
-])
-
 
 # pylint: disable=no-self-use,pointless-statement
 class TestUtils(unittest.TestCase):
@@ -71,25 +56,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(enc_map,
                          [{'cons': 0, 'fin': 1, 'nrg': 2, 'tech': 3, 'tel': 4},
                           {'CN': 0, 'NL': 1, 'USA': 2}])
-
-    def test_missing_encode_features(self):
-        Xenc, enc_map = encode_features(SPOTTY_CAT)
-        expected = np.array([[0, 0],
-                             [0, 0],
-                             [0, 0],
-                             [1, 0],
-                             [-1, 0],
-                             [3, 0],
-                             [3, 1],
-                             [-1, 0],
-                             [2, 0],
-                             [2, 0],
-                             [0, 0],
-                             [0, 2]])
-        assert_array_equal(Xenc, expected)
-        self.assertEqual(enc_map,
-                         [{0.: 0, 1.: 1, 8.: 2, 9.: 3},
-                          {0.: 0, 1.: 1, 2.: 2}])
 
     def test_get_unique_rows(self):
         result = get_unique_rows(STOCKS_CAT)

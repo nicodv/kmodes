@@ -25,12 +25,11 @@ def get_max_value_key(dic):
 
 def encode_features(X, enc_map=None):
     """Converts categorical values in each column of X to integers in the range
-    [0, n_unique_values_in_column - 1], if X is not already of integer type.
+    [0, n_unique_values_in_column - 1].
 
     If mapping is not provided, it is calculated based on the values in X.
 
-    Unknown values during prediction get a value of -1. np.NaNs are ignored
-    during encoding, and get treated as unknowns during prediction.
+    Unknown values during prediction get a value of -1.
     """
     if enc_map is None:
         fit = True
@@ -42,10 +41,9 @@ def encode_features(X, enc_map=None):
     Xenc = np.zeros(X.shape, dtype='int32')
     for ii in range(X.shape[1]):
         if fit:
-            col_enc = {val: jj for jj, val in enumerate(np.unique(X[:, ii]))
-                       if not (isinstance(val, float) and np.isnan(val))}
+            col_enc = {val: jj for jj, val in enumerate(np.unique(X[:, ii]))}
             enc_map.append(col_enc)
-        # Unknown categories (including np.NaNs) all get a value of -1.
+        # Unknown categories all get a value of -1.
         Xenc[:, ii] = np.array([enc_map[ii].get(x, -1) for x in X[:, ii]])
 
     return Xenc, enc_map
