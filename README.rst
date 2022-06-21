@@ -55,7 +55,7 @@ Enjoy!
 Installation
 ------------
 
-kmodes can be installed using pip:
+`kmodes` can be installed using `pip`:
 
 .. code:: bash
 
@@ -66,6 +66,12 @@ To upgrade to the latest version (recommended), run it like this:
 .. code:: bash
 
     pip install --upgrade kmodes
+
+`kmodes` can also conveniently be installed with `conda` from the `conda-forge` channel (https://anaconda.org/conda-forge/kmodes):
+
+.. code:: bash
+
+    conda install -c conda-forge kmodes
 
 Alternatively, you can build the latest development version from source:
 
