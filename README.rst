@@ -1,6 +1,9 @@
 .. image:: https://img.shields.io/pypi/v/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
     :alt: Version
+.. image:: https://anaconda.org/conda-forge/kmodes/badges/installer/conda.svg
+    :target: https://anaconda.org/conda-forge/kmodes
+    :alt: Conda forge page
 .. image:: https://github.com/nicodv/kmodes/actions/workflows/python-package.yml/badge.svg?branch=master
     :target: https://github.com/nicodv/kmodes/actions/workflows/python-package.yml
     :alt: Build status
@@ -8,7 +11,7 @@
     :target: https://coveralls.io/r/nicodv/kmodes
     :alt: Test coverage
 .. image:: https://api.codacy.com/project/badge/Grade/cb19f1f1093a44fa845ebfdaf76975f6
-   :alt: Codacy badge
+   :alt: Codacy
    :target: https://app.codacy.com/app/nicodv/kmodes?utm_source=github.com&utm_medium=referral&utm_content=nicodv/kmodes&utm_campaign=Badge_Grade_Dashboard
 .. image:: https://img.shields.io/pypi/dm/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
@@ -67,7 +70,7 @@ To upgrade to the latest version (recommended), run it like this:
 
     pip install --upgrade kmodes
 
-`kmodes` can also conveniently be installed with `conda` from the `conda-forge` channel (https://anaconda.org/conda-forge/kmodes):
+`kmodes` can also conveniently be installed with `conda` from the `conda-forge` channel:
 
 .. code:: bash
 
