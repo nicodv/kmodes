@@ -6,6 +6,7 @@ import pickle
 import unittest
 
 import numpy as np
+import pandas as pd
 
 from kmodes import kprototypes
 from kmodes.tests.test_kmodes import assert_cluster_splits_equal
@@ -421,3 +422,9 @@ class TestKProtoTypes(unittest.TestCase):
         data1 = model1.predict(STOCKS, categorical=[1, 2])
         data2 = kproto.fit_predict(STOCKS, categorical=[1, 2], sample_weight=sample_weight)
         assert_cluster_splits_equal(data1, data2)
+
+    def test_pandas_numpy_equality(self):
+        kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', random_state=42)
+        result_np = kproto.fit_predict(STOCKS, categorical=[1, 2])
+        result_pd = kproto.fit_predict(pd.DataFrame(STOCKS), categorical=[1, 2])
+        np.testing.assert_array_equal(result_np, result_pd)

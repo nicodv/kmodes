@@ -34,6 +34,7 @@ setup(
         'dev': [
             'pytest',
             'pytest-cov',
+            'pandas'
         ]
     },
     classifiers=['Development Status :: 3 - Alpha',

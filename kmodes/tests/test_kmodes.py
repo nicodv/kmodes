@@ -6,6 +6,7 @@ import pickle
 import unittest
 
 import numpy as np
+import pandas as pd
 
 from kmodes.kmodes import KModes
 from kmodes.util.dissim import ng_dissim, jaccard_dissim_binary, jaccard_dissim_label
@@ -575,3 +576,9 @@ class TestKModes(unittest.TestCase):
         data1 = kmodes.fit_predict(TEST_DATA, sample_weight=sample_weight)
         data2 = kmodes.fit(TEST_DATA, sample_weight=sample_weight).predict(TEST_DATA)
         assert_cluster_splits_equal(data1, data2)
+
+    def test_pandas_numpy_equality(self):
+        kmodes = KModes(n_clusters=4, init='Cao', random_state=42)
+        result_np = kmodes.fit_predict(SOYBEAN)
+        result_pd = kmodes.fit_predict(pd.DataFrame(SOYBEAN))
+        np.testing.assert_array_equal(result_np, result_pd)
