@@ -428,3 +428,23 @@ class TestKProtoTypes(unittest.TestCase):
         result_np = kproto.fit_predict(STOCKS, categorical=[1, 2])
         result_pd = kproto.fit_predict(pd.DataFrame(STOCKS), categorical=[1, 2])
         np.testing.assert_array_equal(result_np, result_pd)
+
+    def test_gamma_estimation(self):
+        data = np.hstack([
+            np.array([
+                [0.0],
+                [0.0],
+                [0.0],
+                [1.0],
+                [1.0],
+                [1.0],
+                [2.0],
+                [2.0],
+                [2.0],
+                [3.0],
+                [4.0],
+                [5.0],
+            ]), STOCKS])
+        kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', random_state=42)
+        kproto_fitted = kproto.fit(data, categorical=[2, 3])
+        self.assertEqual(kproto_fitted.gamma, 35.33525036439546)
