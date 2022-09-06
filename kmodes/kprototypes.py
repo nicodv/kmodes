@@ -290,7 +290,7 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     # Estimate a good value for gamma, which determines the weighing of
     # categorical values in clusters (see Huang [1997]).
     if gamma is None:
-        gamma = 0.5 * Xnum.std()
+        gamma = 0.5 * np.mean(Xnum.std(axis=0))
 
     results = []
     seeds = random_state.randint(np.iinfo(np.int32).max, size=n_init)
