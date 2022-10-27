@@ -5,6 +5,7 @@ Dissimilarity measures for clustering
 import numpy as np
 
 
+# 汉明距离
 def matching_dissim(a, b, **_):
     """Simple matching dissimilarity function"""
     return np.sum(a != b, axis=1)
@@ -37,6 +38,7 @@ def jaccard_dissim_label(a, b, **__):
     return 1 - intersect_len / union_len
 
 
+# 欧氏距离
 def euclidean_dissim(a, b, **_):
     """Euclidean distance dissimilarity function"""
     if np.isnan(a).any() or np.isnan(b).any():
@@ -83,3 +85,15 @@ def ng_dissim(a, b, X=None, membship=None):
                                if b[idr] == t else 1.0
                                for idr, t in enumerate(val_a)]).sum(0)
                      for idj, val_a in enumerate(a)])
+
+
+# 欧氏距离
+def NC_HM_dissim(a, b, w1, w2, **_):
+    """Euclidean distance dissimilarity function"""
+    D1 = np.sum((a - b) ** 2, axis=1)
+    # HM距离
+    D2 = np.sum(a != b, axis=1)
+    if np.isnan(a).any() or np.isnan(b).any():
+        raise ValueError("Missing values detected in numerical columns.")
+    D = w1 * np.sum((a - b) ** 2, axis=1) + w2 * np.sum(a != b, axis=1)
+    return D1, D2, D

@@ -20,10 +20,12 @@ def get_max_value_key(dic):
 
     # In order to be consistent, always selects the minimum key
     # (guaranteed to be unique) when there are multiple maximum values.
+    # 为了保持一致，总是选择最小的键，保证唯一性
     return k[maxima[np.argmin(k[maxima])]]
 
 
 def encode_features(X, enc_map=None):
+    # 将X的每一列中的分类值转换为整数，范围是[0, n_unique_values_in_column - 1]
     """Converts categorical values in each column of X to integers in the range
     [0, n_unique_values_in_column - 1].
 
@@ -37,7 +39,7 @@ def encode_features(X, enc_map=None):
         enc_map = []
     else:
         fit = False
-
+    # 编码
     Xenc = np.zeros(X.shape, dtype='int32')
     for ii in range(X.shape[1]):
         if fit:
@@ -63,4 +65,5 @@ def decode_centroids(encoded, mapping):
 
 def get_unique_rows(a):
     """Gets the unique rows in a numpy array."""
+    # 得到矩阵中独一无二的行
     return np.vstack(list({tuple(row) for row in a}))
