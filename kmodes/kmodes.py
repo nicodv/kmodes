@@ -17,7 +17,7 @@ from .util import get_max_value_key, encode_features, get_unique_rows, \
     decode_centroids, pandas_to_numpy
 from .util.dissim import matching_dissim, ng_dissim, euclidean_dissim, NC_HM_dissim
 from .util.init_methods import init_cao, init_huang
-
+import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 
@@ -110,7 +110,6 @@ class KModes(BaseEstimator, ClusterMixin):
         self.n_init = n_init
         # 初始化w
         # self.w1 = 1
-        # self.w2 = 1
         # Verbosity
         self.verbose = verbose
         # 如果是int，random state 就是随机数发生器使用的种子， RandomState实例，则random_state 就是随机数生成器；如果是none，随机数发生器是RandomState
@@ -141,9 +140,21 @@ class KModes(BaseEstimator, ClusterMixin):
         random_state = check_random_state(self.random_state)
         _validate_sample_weight(sample_weight, n_samples=X.shape[0],
                                 n_clusters=self.n_clusters)
-
+        # self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
+        # self.n_iter_, self.epoch_costs_ = k_modes(
+        #     X,
+        #     self.n_clusters,
+        #     self.max_iter,
+        #     self.cat_dissim,
+        #     self.init,
+        #     self.n_init,
+        #     self.verbose,
+        #     random_state,
+        #     self.n_jobs,
+        #     sample_weight
+        # )
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
-        self.n_iter_, self.epoch_costs_ = k_modes(
+        self.n_iter_, self.epoch_costs_, self.epoch_w = k_modes(
             X,
             self.n_clusters,
             self.max_iter,
@@ -155,22 +166,33 @@ class KModes(BaseEstimator, ClusterMixin):
             self.n_jobs,
             sample_weight
         )
-        print(f"epoch_costs: {self.epoch_costs_}")
-        self.plot(self.epoch_costs_)
+        print(f"epoch_costs: {self.epoch_costs_}, \nepoch_w = {self.epoch_w}")
+        self.plot(self.epoch_costs_, self.epoch_w)
         return self
 
     # 可视化紧密程度
-    def plot(self, array):
-        x = np.arange(len(array))
-        y = array
-        trace1 = go.Scatter(x=x, y=y, mode='lines+markers')  # 设置模式为折线图
-
-        layout = go.Layout(
-            title=' Compactness of Iteration ',
-            xaxis=dict(title='Iteration'),
-            yaxis=dict(title='Compactness'))
-        fig = go.Figure(data=trace1, layout=layout)
-        fig.show()
+    def plot(self, cost, w):
+        # x = np.arange(len(cost))
+        # y = cost
+        # trace1 = go.Scatter(x=x, y=y, mode='lines+markers', text=w)  # 设置模式为折线图
+        #
+        # layout = go.Layout(
+        #     title=' Compactness of Iteration ',
+        #     xaxis=dict(title='Iteration'),
+        #     yaxis=dict(title='Compactness'))
+        # fig = go.Figure(data=trace1, layout=layout)
+        # fig.show()
+        x = np.arange(1, len(cost)+1)
+        plt.figure(figsize=(20, 10), dpi=100)
+        plt.plot(x, cost, c='red')
+        plt.scatter(x, cost, c='red')
+        for i in range(len(w)):
+            plt.annotate(f"w={np.round(w[i],3)}\ncost={np.round(cost[i],3)}", xy=(x[i], cost[i]), xytext=(-20, 10), textcoords='offset points')
+        plt.grid(True, linestyle='--', alpha=0.5)
+        plt.xlabel("Iteration", fontdict={'size': 16})
+        plt.ylabel("Cost", fontdict={'size': 16})
+        plt.title("Cost and W", fontdict={'size': 20})
+        plt.show()
 
     def fit_predict(self, X, y=None, **kwargs):
         """Compute cluster centroids and predict cluster index for each sample.
@@ -217,18 +239,18 @@ class KModes(BaseEstimator, ClusterMixin):
                              "because the model is not yet fitted.")
 
 
-mu = 0.0001
-w1 = 1
-w2 = 1
+mu = 0.00001
 
 
 def updateW(d1, d2):
-    w1_ = 1 - mu * d1
-    w2_ = 1 - mu * d2
+    w1_ = np.sum(d1) / (np.sum(d1) + np.sum(d2))
+    w2_ = np.sum(d2) / (np.sum(d1) + np.sum(d2))
+    print(f"w1:{w1_}  w2:{w2_}")
     return w1_, w2_
 
 
-def labels_cost(X, centroids, dissim, membship=None, sample_weight=None):
+# def labels_cost(X, centroids, dissim, membship=None, sample_weight=None):
+def labels_cost(X, centroids, dissim, w1, w2, membship=None, sample_weight=None):
     """Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-modes algorithm.
     """
@@ -242,14 +264,14 @@ def labels_cost(X, centroids, dissim, membship=None, sample_weight=None):
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
         # 计算当前点与所有簇心之间的距离
-        diss = dissim(centroids, curpoint, X=X, membship=membship)
+        dd1, dd2, diss = dissim(centroids, curpoint, w1, w2, X=X, membship=membship)
+        # diss = dissim(centroids, curpoint, X=X, membship=membship)
         # 返回最小值的索引。也就是该点属于哪一个簇心
         clust = np.argmin(diss)
         # 给每个点贴上标签
         labels[ipoint] = clust
         # 计算每个簇中簇成员到簇心的和并相加 也就是紧密度 如果给每个权重人为赋值，则还需要乘以赋权
         cost += diss[clust] * weight
-    # 返回根据D1和D2的距离，为了更新那个w
     return labels, cost
 
 
@@ -295,12 +317,14 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
                 X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
                 verbose, seeds[init_no], sample_weight
             ))
+
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
             delayed(_k_modes_single)(X, n_clusters, n_points, n_attrs, max_iter,
                                      dissim, init, init_no, verbose, seed, sample_weight)
             for init_no, seed in enumerate(seeds))
-    all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
+    all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs, all_epoch_w = zip(*results)
+    # all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
 
     best = np.argmin(all_costs)
     if n_init > 1 and verbose:
@@ -308,7 +332,9 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
 
     # 迭代n_init次数，找最好的
     return all_centroids[best], enc_map, all_labels[best], \
-           all_costs[best], all_n_iters[best], all_epoch_costs[best]
+           all_costs[best], all_n_iters[best], all_epoch_costs[best], all_epoch_w[best]
+    # return all_centroids[best], enc_map, all_labels[best], \
+    #        all_costs[best], all_n_iters[best], all_epoch_costs[best]
 
 
 def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
@@ -354,13 +380,21 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
     cl_attr_freq = [[defaultdict(int) for _ in range(n_attrs)]
                     for _ in range(n_clusters)]
     # enumerate 同时遍历索引和遍历元素 ipoint这里相当于索引， curpoint相当于元素
+    # 初始化w
+    dissim = NC_HM_dissim
+    D1 = []
+    D2 = []
+    w1 = 0.5
+    w2 = 0.5
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
         # Initial assignment to clusters
         # 初始化分配到群组
         # 这样处理太高级了吧 求距离，找到相应最小的索引，然后根据memship矩阵一一填写数据点属于那一类
-        # clust = np.argmin(dissim(centroids, curpoint, X=X, membship=membship))
-        clust = np.argmin(dissim(centroids, curpoint, X=X, membship=membship))
+        d1, d2, clust = dissim(centroids, curpoint, w1, w2, X=X, membship=membship)
+        D1.append(d1)
+        D2.append(d2)
+        clust = np.argmin(clust)
         membship[clust, ipoint] = 1
         # Count attribute values per cluster.
         # 计算 每个data的属性值
@@ -385,24 +419,44 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
     labels = None
     converged = False
 
-    # 返回标签和损失函数（即紧密度）同时返回w1和w2
-    _, cost = labels_cost(X, centroids, dissim, membship, sample_weight)
+    # 返回标签和损失函数（即紧密度）
+    # print(D1)
+    w1, w2 = updateW(D1, D2)
+    _, cost = labels_cost(X, centroids, dissim, w1, w2, membship, sample_weight)
+    # _, cost = labels_cost(X, centroids, dissim, membship, sample_weight)
     # 记录 cost
     epoch_costs = [cost]
+    # 记录w
+    epoch_w = [[w1, w2]]
     # 在计算compactness中更新迭代w
     while itr < max_iter and not converged:
         itr += 1
-        centroids, cl_attr_freq, membship, moves = _k_modes_iter(
+        # 这里应该对w进行更新
+        centroids, cl_attr_freq, membship, moves, w1, w2 = _k_modes_iter(
             X,
             centroids,
             cl_attr_freq,
             membship,
             dissim,
+            w1,
+            w2,
             random_state,
             sample_weight
         )
+        epoch_w.append([w1, w2])
+        # centroids, cl_attr_freq, membship, moves = _k_modes_iter(
+        #     X,
+        #     centroids,
+        #     cl_attr_freq,
+        #     membship,
+        #     dissim,
+        #     random_state,
+        #     sample_weight
+        # )
         # All points seen in this iteration
-        labels, ncost = labels_cost(X, centroids, dissim, membship, sample_weight)
+        # _, cost = labels_cost(X, centroids, dissim,w1,w2, membship, sample_weight)
+        labels, ncost = labels_cost(X, centroids, dissim, w1, w2, membship, sample_weight)
+
         # 迭代停止条件，1. 点不再移动； 2. 损失函数变大
         converged = (moves == 0) or (ncost >= cost)
         epoch_costs.append(ncost)
@@ -410,11 +464,14 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
         if verbose:
             print(f"Run {init_no + 1}, iteration: {itr}/{max_iter}, "
                   f"moves: {moves}, cost: {cost}")
+    # return centroids, labels, cost, itr, epoch_costs, epoch_w
+    print(f"\ncentroids = {centroids}\nlabels={labels}\ncost = {cost}\nitr={itr}\nepoch_costs = {epoch_costs}\n")
+    return centroids, labels, cost, itr, epoch_costs, epoch_w
 
-    return centroids, labels, cost, itr, epoch_costs
 
-
-def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state,
+# def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state,
+#                   sample_weight):
+def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, w1, w2, random_state,
                   sample_weight):
     """
         :param X: 数据集
@@ -432,12 +489,17 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state,
     """
     # 单次迭代的 kmodes 聚类算法
     moves = 0
-
+    # 在单次迭代的时候需要传递w
+    D1 = []
+    D2 = []
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
 
-        # 计算该点与所有簇心的距离 # 开始计算不同w1和不同w2
-        clust = np.argmin(dissim(centroids, curpoint, X=X, membship=membship))
+        # 计算该点与所有簇心的距离 # 这里应该是传入w
+        d1, d2, clust = dissim(centroids, curpoint, w1, w2, X=X, membship=membship)
+        D1.append(d1)
+        D2.append(d2)
+        clust = np.argmin(clust)
 
         if membship[clust, ipoint]:
             # 成员本来就在应当的位置，则不用进行更新.
@@ -466,8 +528,9 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state,
                 X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship,
                 centroids, weight
             )
-
-    return centroids, cl_attr_freq, membship, moves
+    w1, w2 = updateW(D1, D2)
+    return centroids, cl_attr_freq, membship, moves, w1, w2
+    # return centroids, cl_attr_freq, membship, moves
 
 
 def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,

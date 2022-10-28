@@ -91,9 +91,15 @@ def ng_dissim(a, b, X=None, membship=None):
 def NC_HM_dissim(a, b, w1, w2, **_):
     """Euclidean distance dissimilarity function"""
     D1 = np.sum((a - b) ** 2, axis=1)
+    # print(D1)
     # HM距离
     D2 = np.sum(a != b, axis=1)
-    if np.isnan(a).any() or np.isnan(b).any():
-        raise ValueError("Missing values detected in numerical columns.")
-    D = w1 * np.sum((a - b) ** 2, axis=1) + w2 * np.sum(a != b, axis=1)
+    # print(D2)
+    # if np.isnan(a).any() or np.isnan(b).any():
+    #     raise ValueError("Missing values detected in numerical columns.")
+    D = w1 * D1 + w2 * D2
+    # print(D)
+    # arr = np.array(D1, D2, D)
+    # print(arr)
+    # D1, D2, D = arr
     return D1, D2, D
