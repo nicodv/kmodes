@@ -21,6 +21,9 @@ from .util.init_methods import init_cao, init_huang
 import matplotlib.pyplot as plt
 
 
+# import plotly.graph_objects as go
+
+
 class KModes(BaseEstimator, ClusterMixin):
     """k-modes clustering algorithm for categorical data.
 
@@ -238,12 +241,12 @@ class KModes(BaseEstimator, ClusterMixin):
 # mu = 0.0001 for small soybean
 # mu = 0.000001 for large soybean
 # mu = 0.0000001 for Mushroom
-mu = 5
+mu = 10
 
 
 def updateW(d1, d2, d3, w1, w2, w3):
     D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
-    print(f"D = {D}")
+    # print(f"D = {D}")
     # print(f"d1 = {D[0]}\nd2 = {D[1]} \nd3 = {D[2]}")
     # print(f"d2 = {D[0]}\nd3 = {D[1]}")
     # D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
@@ -506,7 +509,7 @@ def _k_modes_single(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, d
     # 记录 cost
     epoch_costs = {}
     # 记录 D
-    epoch_D = [[D1, D2, D3]]
+    epoch_D = [[d1, d2, d3]]
     itr2 = 0
     converged1 = False
     # 这里是当前w下完成了最后的聚类，那么需要根据此时的D进行计算，从而决定是否要停止。
@@ -669,7 +672,7 @@ def _k_modes_iter(Dict_Distance, X, centroids, cl_attr_freq, membship, dissim, w
         D1[i] = d1[i, :][clust[i]]
         D2[i] = d2[i, :][clust[i]]
         D3[i] = d3[i, :][clust[i]]
-    return centroids, cl_attr_freq, membship, moves, D1, D2, D3
+    return centroids, cl_attr_freq, membship, moves, d1, d2, d3
 
 
 def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,

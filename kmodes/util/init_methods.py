@@ -21,7 +21,7 @@ def init_huang(X, n_clusters, dissim, random_state):
         choices = sorted(choices)
         centroids[:, iattr] = random_state.choice(choices, n_clusters)
     # The previously chosen centroids could result in empty clusters,
-    # so set centroid to the closest point in X.
+    # so set centroid to closest point in X.
     for ik in range(n_clusters):
         ndx = np.argsort(dissim(X, centroids[ik]))
         # We want the centroid to be unique, if possible.

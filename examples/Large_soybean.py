@@ -9,9 +9,9 @@
 
 import numpy as np
 import pandas as pd
-from kmodes.Estimate import NMI_sklearn, purity, ARI
-from kmodes.kmodes import KModes
 
+from kmodes.kmodes import KModes
+from kmodes.Estimate import NMI_sklearn, purity, ARI
 # reproduce results on small soybean data set
 x = np.genfromtxt('Encode_soybean_large.csv', dtype=int, delimiter=',')[:, 1:]
 y = np.genfromtxt('Encode_soybean_large.csv', dtype=int, delimiter=',')[:, 0]
@@ -42,7 +42,6 @@ for pre in kmodes_huang.all_labels:
 print("Sum of all run:\n")
 print(f"ARI_std: {np.std(ARI_)}\nNMI_std: {np.std(NMI_)}\nPurity_std: {np.std(Purity_)}")
 print(f"ARI_mean: {np.mean(ARI_)}\nNMI_mean: {np.mean(NMI_)}\nPurity_mean: {np.mean(Purity_)}")
-
 # for i in range(k):
 #     print(sum(kmodes_huang.membship[i]))
 
@@ -69,5 +68,5 @@ for ii, _ in enumerate(y):
     classTable[_, kmodes_huang.labels_[ii]] += 1
 
 classTable = pd.DataFrame(classTable)
-print(classTable.astype(int))
+print(classTable)
 # classTable.to_csv('test2.csv')
