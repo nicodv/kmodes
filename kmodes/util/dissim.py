@@ -4,19 +4,28 @@ Dissimilarity measures for clustering
 
 import numpy as np
 import collections
+from sklearn.preprocessing import MinMaxScaler
+
+
+def normalize(D):
+    # 实例化
+    scaler = MinMaxScaler()
+    scaler = scaler.fit(D)
+    result = scaler.transform(D)
+    return result
 
 
 # 汉明距离
-def matching_dissim(a, b, **_):
+def matching_dissim_init(a, b, **_):
     """Simple matching dissimilarity function"""
     return np.sum(a != b, axis=1)
 
 
-# def matching_dissim(centroids, df, **_):
-#     tp = np.zeros((len(df), len(centroids)))
-#     for ipoint, curpoint in enumerate(df):
-#         tp[ipoint] = np.sum(centroids != curpoint, axis=1)
-#     return tp
+def matching_dissim(centroids, df, **_):
+    tp = np.zeros((len(df), len(centroids)))
+    for ipoint, curpoint in enumerate(df):
+        tp[ipoint] = np.sum(centroids != curpoint, axis=1)
+    return tp
 
 
 def jaccard_dissim_binary(a, b, **__):
@@ -47,18 +56,16 @@ def jaccard_dissim_label(a, b, **__):
 
 
 # 欧氏距离
-def euclidean_dissim(a, b, **_):
-    """Euclidean distance dissimilarity function"""
-    # if np.isnan(a).any() or np.isnan(b).any():
-    #     raise ValueError("Missing values detected in numerical columns.")
-    return np.sum((a - b) ** 2, axis=1)
-
-
-# def euclidean_dissim(centroids, df, **_):
-#     tp = np.zeros((len(df), len(centroids)))
-#     for ipoint, curpoint in enumerate(df):
-#         tp[ipoint] = np.sum((centroids - curpoint) ** 2, axis=1)
-#     return tp
+# def euclidean_dissim(a, b, **_):
+#     """Euclidean distance dissimilarity function"""
+#     # if np.isnan(a).any() or np.isnan(b).any():
+#     #     raise ValueError("Missing values detected in numerical columns.")
+#     return np.sum((a - b) ** 2, axis=1)
+def euclidean_dissim(centroids, df, **_):
+    tp = np.zeros((len(df), len(centroids)))
+    for ipoint, curpoint in enumerate(df):
+        tp[ipoint] = np.sum((centroids - curpoint) ** 2, axis=1)
+    return tp
 
 
 def ng_dissim(a, b, X=None, membship=None):
@@ -103,24 +110,22 @@ def ng_dissim(a, b, X=None, membship=None):
 
 
 # 欧氏距离和汉明距离
-def NC_HM_dissim(a, b, w1, w2, **_):
-    """Euclidean distance dissimilarity function"""
-    D1 = np.sum((a - b) ** 2, axis=1)
-    # print(D1)
-    # HM距离
-    D2 = np.sum(a != b, axis=1)
-    # print(D2)
-    # if np.isnan(a).any() or np.isnan(b).any():
-    #     raise ValueError("Missing values detected in numerical columns.")
-    D = w1 * D1 + w2 * D2
-    return D1, D2, D
-
-
-# def NC_HM_dissim(centroids, df, w1, w2, **_):
-#     D1 = matching_dissim(centroids, df)
-#     D2 = euclidean_dissim(centroids, df)
-#     D3 = w1 * D1 + w2 * D2
-#     return D3
+# def NC_HM_dissim(a, b, w1, w2, **_):
+#     """Euclidean distance dissimilarity function"""
+#     D1 = np.sum((a - b) ** 2, axis=1)
+#     # print(D1)
+#     # HM距离
+#     D2 = np.sum(a != b, axis=1)
+#     # print(D2)
+#     # if np.isnan(a).any() or np.isnan(b).any():
+#     #     raise ValueError("Missing values detected in numerical columns.")
+#     D = w1 * D1 + w2 * D2
+#     return D1, D2, D
+def NC_HM_dissim(centroids, df, w1, w2, **_):
+    D1 = matching_dissim(centroids, df)
+    D2 = euclidean_dissim(centroids, df)
+    D3 = w1 * D1 + w2 * D2
+    return D3
 
 
 def contextSUmatrix(data_final):
@@ -238,37 +243,37 @@ def Context_Dict(datafinal):
     return dict_distance
 
 
-def context_dissm(a, b, Dict_Distance, **_):
-    """
-    a : centroid
-    b : curpoint
-    """
-    Distance = np.array([])
-    for cur in a:
-        distance = 0
-        for col in range(len(cur)):
-            distance += Dict_Distance[col][cur[col], b[col]]
-        Distance = np.append(Distance, distance)
-    # print(Distance)
-    return Distance
+# def context_dissm(a, b, Dict_Distance, **_):
+#     """
+#     a : centroid
+#     b : curpoint
+#     """
+#     Distance = np.array([])
+#     for cur in a:
+#         distance = 0
+#         for col in range(len(cur)):
+#             distance += Dict_Distance[col][cur[col], b[col]]
+#         Distance = np.append(Distance, distance)
+#     # print(Distance)
+#     return Distance
 
-
-# def context_dissim(centroids, df, Dict_Distance, **_):
-#     tp = np.zeros((len(df), len(centroids)))
-#     for ipoint, curpoint in enumerate(df):
-#         Distance = np.array([])
-#         for cur in centroids:
-#             distance = 0
-#             for col in range(len(cur)):
-#                 distance += Dict_Distance[col][cur[col], b[col]]
-#             Distance = np.append(Distance, distance)
-#         tp[ipoint] = Distance
-#     return tp
+def context_dissim(centroids, df, Dict_Distance, **_):
+    tp = np.zeros((len(df), len(centroids)))
+    for ipoint, curpoint in enumerate(df):
+        Distance = np.array([])
+        for cur in centroids:
+            distance = 0
+            for col in range(len(cur)):
+                distance += Dict_Distance[col][cur[col], curpoint[col]]
+            Distance = np.append(Distance, distance)
+        tp[ipoint] = Distance
+    return tp
 
 
 def NC_HM_Context_dissim(centroids, df, w1, w2, w3, Dict_Distance, **_):
-    D1 = euclidean_dissim(centroids, df)
-    D2 = matching_dissim(centroids, df)
-    D3 = context_dissm(centroids, df, Dict_Distance)
-    D_final = w2 * D2 + w3 * D3
-    return D1, D2, D3, D_final
+    D1 = matching_dissim(centroids, df)
+    D2 = euclidean_dissim(centroids, df)
+    D3 = context_dissim(centroids, df, Dict_Distance)
+    D_final = w2 * normalize(D2) + w3 * normalize(D3)
+    # print(f"D2 = {np.sum(normalize(D2))}  D3 = {np.sum(normalize(D3))}  D_final = {np.sum(D_final)}")
+    return D1, normalize(D2), normalize(D3), D_final

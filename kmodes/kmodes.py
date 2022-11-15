@@ -15,13 +15,10 @@ from sklearn.utils.validation import check_array
 
 from .util import get_max_value_key, encode_features, get_unique_rows, \
     decode_centroids, pandas_to_numpy
-from .util.dissim import matching_dissim, ng_dissim, euclidean_dissim, NC_HM_dissim, context_dissm, Context_Dict, \
-    NC_HM_Context_dissim
+from .util.dissim import matching_dissim, ng_dissim, euclidean_dissim, NC_HM_dissim, context_dissim, Context_Dict, \
+    NC_HM_Context_dissim, matching_dissim_init
 from .util.init_methods import init_cao, init_huang
 import matplotlib.pyplot as plt
-
-
-# import plotly.graph_objects as go
 
 
 class KModes(BaseEstimator, ClusterMixin):
@@ -238,25 +235,15 @@ class KModes(BaseEstimator, ClusterMixin):
                              "because the model is not yet fitted.")
 
 
-def normalize(D):
-    # 先计算每个的exp(-0.5*distance)
-    D = np.array(D, dtype=float)
-    # d = np.exp(-0.5 * D)
-    # 求和
-    Sum = np.sum(D)
-    # 归一化
-    return D / Sum
-
-
 # mu = 0.0001 for small soybean
 # mu = 0.000001 for large soybean
 # mu = 0.0000001 for Mushroom
-mu = 10
+mu = 5
 
 
 def updateW(d1, d2, d3, w1, w2, w3):
     D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
-    # print(f"D = {D}")
+    print(f"D = {D}")
     # print(f"d1 = {D[0]}\nd2 = {D[1]} \nd3 = {D[2]}")
     # print(f"d2 = {D[0]}\nd3 = {D[1]}")
     # D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
@@ -305,22 +292,32 @@ def labels_cost(Dict_Distance, X, centroids, dissim, w1, w2, w3, membship=None, 
     # 计算标签和损失函数
     X = check_array(X)
 
-    n_points = X.shape[0]
-    cost = 0.
-    labels = np.empty(n_points, dtype=np.uint16)
+    # n_points = X.shape[0]
+    # cost = 0.
+    # labels = np.empty(n_points, dtype=np.uint16)
 
-    for ipoint, curpoint in enumerate(X):
-        weight = sample_weight[ipoint] if sample_weight is not None else 1
-        # 计算当前点与所有簇心之间的距离
-        dd1, dd2, dd3, diss = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
+    # for ipoint, curpoint in enumerate(X):
+    #     weight = sample_weight[ipoint] if sample_weight is not None else 1
+    #     # 计算当前点与所有簇心之间的距离
+    #     dd1, dd2, dd3, diss = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
 
-        # 返回最小值的索引。也就是该点属于哪一个簇心
-        diss = normalize(diss)
-        clust = np.argmin(diss)
-        # 给每个点贴上标签
-        labels[ipoint] = clust
-        # 计算每个簇中簇成员到簇心的和并相加 也就是紧密度 如果给每个权重人为赋值，则还需要乘以赋权
-        cost += diss[clust] * weight
+    #     # 返回最小值的索引。也就是该点属于哪一个簇心
+    #     # diss = normalize(diss)
+    #     clust = np.argmin(diss)
+    #     # 给每个点贴上标签
+    #     labels[ipoint] = clust
+    #     # 计算每个簇中簇成员到簇心的和并相加 也就是紧密度 如果给每个权重人为赋值，则还需要乘以赋权
+    #     cost += diss[clust] * weight
+    d1, d2, d3, clust = dissim(centroids, X, w1, w2, w3, Dict_Distance, X=X, membship=membship)
+    # 对每个值进行归一化处理
+    # d1 = normalize(d1)
+    # d2 = normalize(d2)
+    # d3 = normalize(d3)
+    # clust = w1 * d1 + w2 * d2 + w3 * d3
+    # 找到每个值属于什么
+    clust_min = np.argmin(clust.T, axis=0)
+    labels = clust_min.astype(np.uint16)
+    cost = np.sum(np.min(clust, axis=1)).astype(float)
 
     return labels, cost
 
@@ -398,7 +395,7 @@ def _k_modes_single(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, d
     # 返回簇中心
     # _____ INIT _____
     # 这里强制设置dissim的原因是因为使用Cao的方法必须得基于欧几里得方法，不过后期可以考虑修改一下
-    dissim = matching_dissim
+    dissim = matching_dissim_init
 
     if verbose:
         print("Init: initializing centroids")
@@ -435,33 +432,58 @@ def _k_modes_single(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, d
     # enumerate 同时遍历索引和遍历元素 ipoint这里相当于索引， curpoint相当于元素
     # dissim = NC_HM_dissim
     dissim = NC_HM_Context_dissim
-    D1 = []
-    D2 = []
-    D3 = []
+
     w1 = 1 / 3
-    w2 = 1 / 2
-    w3 = 1 / 2
+    w2 = 1 / 3
+    w3 = 1 / 3
+    # for ipoint, curpoint in enumerate(X):
+    #     weight = sample_weight[ipoint] if sample_weight is not None else 1
+    #     # Initial assignment to clusters
+    #     # 初始化分配到群组
+    #     # 这样处理太高级了吧 求距离，找到相应最小的索引，然后根据memship矩阵一一填写数据点属于那一类 在这里对相似矩阵进行归一化
+    #     d1, d2, d3, clust = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
+    #     # 对原本的距离进行归一化：并且所有的计算方式如这个所示
+    #     # normalize(d1)
+    #     # D1.append(normalize(d1))
+    #     # D2.append(normalize(d2))
+    #     d1 = normalize(d1)
+    #     d2 = normalize(d2)
+    #     d3 = normalize(d3)
+    #     clust = normalize(clust)
+    #     clust = np.argmin(clust)
+    #     D1.append(d1[clust])
+    #     D2.append(d2[clust])
+    #     D3.append(d3[clust])
+    #     membship[clust, ipoint] = 1
+    #     # Count attribute values per cluster.
+    #     # 计算 每个data的属性值
+    #     for iattr, curattr in enumerate(curpoint):
+    #         cl_attr_freq[clust][iattr][curattr] += weight
+    d1, d2, d3, clust = dissim(centroids, X, w1, w2, w3, Dict_Distance, X=X, membship=membship)
+    # 对每个值进行归一化处理
+    # d1 = normalize(d1)
+    # d2 = normalize(d2)
+    # d3 = normalize(d3)
+    # clust = w1 * d1 + w2 * d2 + w3 * d3
+    # 找到每个值属于什么
+    clust = np.argmin(clust, axis=1)
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
-        # Initial assignment to clusters
-        # 初始化分配到群组
-        # 这样处理太高级了吧 求距离，找到相应最小的索引，然后根据memship矩阵一一填写数据点属于那一类 在这里对相似矩阵进行归一化
-        d1, d2, d3, clust = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
-        # 对原本的距离进行归一化：并且所有的计算方式如这个所示
-        d1 = normalize(d1)
-        d2 = normalize(d2)
-        d3 = normalize(d3)
-        clust = normalize(clust)
-        clust = np.argmin(clust)
-        D1.append(d1[clust])
-        D2.append(d2[clust])
-        D3.append(d3[clust])
-        membship[clust, ipoint] = 1
-        # Count attribute values per cluster.
-        # 计算 每个data的属性值
+        membship[clust[ipoint], ipoint] += 1
         for iattr, curattr in enumerate(curpoint):
-            cl_attr_freq[clust][iattr][curattr] += weight
-
+            cl_attr_freq[clust[ipoint]][iattr][curattr] += weight
+    # d1 = np.min(d1, axis=1)
+    # d2 = np.min(d2, axis=1)
+    # d3 = np.min(d3, axis=1)
+    D1 = np.zeros(len(clust))
+    D2 = np.zeros(len(clust))
+    D3 = np.zeros(len(clust))
+    for i in range(len(clust)):
+        D1[i] = d1[i, :][clust[i]]
+        D2[i] = d2[i, :][clust[i]]
+        D3[i] = d3[i, :][clust[i]]
+    # print(f"D2 = {D2}  D3 = {D3}\n")
+    # Perform an initial centroid update.
     # 初始中心点更新
     for ik in range(n_clusters):
         for iattr in range(n_attrs):
@@ -498,8 +520,10 @@ def _k_modes_single(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, d
         single_cost = []
         converged = False
         while itr1 < max_iter and not converged:
+            # print(f"D1 ={D1}, D2 = {D2}, D3 = {D3}")
             itr1 += 1
             # 这里应该对w进行更新
+            print(f"w1 = {w1}, HM = {w2}, Context = {w3}")
             centroids, cl_attr_freq, membship, moves, D1, D2, D3 = _k_modes_iter(
                 Dict_Distance,
                 X,
@@ -513,15 +537,26 @@ def _k_modes_single(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, d
                 random_state,
                 sample_weight
             )
+            # print(f"move = {moves}")
             # 添加每一次的D
             epoch_D.append([D1, D2, D3])
+            # print(f"epoch_D: {[D1, D2, D3]}")
+            # print(f"w1 = {w1}, w2 = {w2}, w3 = {w3}")
             labels, ncost = labels_cost(Dict_Distance, X, centroids, dissim, w1, w2, w3, membship, sample_weight)
             single_cost.append(ncost)
+            # print(ncost)
             # 迭代停止条件，1. 点不再移动； 2. 损失函数变大
             converged = (moves == 0) or (np.around(ncost, 1) >= np.around(cost, 1))
             cost = ncost
-        epoch_costs[w2, w3] = single_cost
+            # if verbose:
+            # print(f"Run {init_no + 1}, iteration: {itr1}/{max_iter}, "
+            #       f"moves: {moves}, cost: {cost}")
+        # print(f"single_cost = {single_cost}")
+        epoch_costs[w1, w2, w3] = single_cost
+        # print(f"epoch_cost:{epoch_costs}")
+        # print(f"cost = {cost}")
         [D1, D2, D3] = epoch_D[-1]
+        # print(_d1, _d2)
         _w1, _w2, _w3 = updateW(D1, D2, D3, w1, w2, w3)
         if np.around(_w2, 2) == np.around(w2, 2):
             converged1 = True
@@ -530,6 +565,7 @@ def _k_modes_single(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, d
         w1 = _w1
         w2 = _w2
         w3 = _w3
+        # print(f"w1 = {w1}, w2 = {w2}, w3 = {w3}")
         if verbose:
             print(f"Run {init_no + 1}, iteration: {itr2}/{max_iter}, cost: {single_cost}")
     return centroids, labels, cost, itr2, epoch_costs, epoch_w, membship
@@ -554,41 +590,68 @@ def _k_modes_iter(Dict_Distance, X, centroids, cl_attr_freq, membship, dissim, w
     # 单次迭代的 kmodes 聚类算法
     moves = 0
     # 在单次迭代的时候需要传递w
-    D1 = []
-    D2 = []
-    D3 = []
+    # D1 = []
+    # D2 = []
+    # D3 = []
+    # for ipoint, curpoint in enumerate(X):
+    #     weight = sample_weight[ipoint] if sample_weight is not None else 1
+    #     # print(f"w{w1, w2, w3}")
+    #     # 计算该点与所有簇心的距离 # 这里应该是传入w
+    #     d1, d2, d3, clust = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
+    #     d1 = normalize(d1)
+    #     d2 = normalize(d2)
+    #     d3 = normalize(d3)
+    #     clust = normalize(clust)
+    #     clust = np.argmin(clust)
+    #     D1.append(d1[clust])
+    #     D2.append(d2[clust])
+    #     D3.append(d3[clust])
+    #
+    #     if membship[clust, ipoint]:
+    #         # 成员本来就在应当的位置，则不用进行更新.
+    #         continue
+    #
+    #     # Move point, and update old/new cluster frequencies and centroids.
+    #     # 移动点，并更新旧 / 新集群频率和中心点
+    #
+    #     moves += 1
+    #     # 之前的每个点属于的类
+    #     old_clust = np.argwhere(membship[:, ipoint])[0][0]
+    #     cl_attr_freq, membship, centroids = _move_point_cat(
+    #         curpoint, ipoint, clust, old_clust, cl_attr_freq, membship, centroids,
+    #         weight
+    #     )
+    #
+    #     # In case of an empty cluster, reinitialize with a random point
+    #     # from the largest cluster.
+    #     # 如果有一个空的cluster， 那么用一个随机点重新初始化，初始化于最大的群集
+    #     if not membship[old_clust, :].any():
+    #         from_clust = membship.sum(axis=1).argmax()
+    #         choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
+    #         rindx = random_state.choice(choices)
+    #
+    #         cl_attr_freq, membship, centroids = _move_point_cat(
+    #             X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship,
+    #             centroids, weight
+    #         )
+    d1, d2, d3, clust = dissim(centroids, X, w1, w2, w3, Dict_Distance, X=X, membship=membship)
+    # 对每个值进行归一化处理
+    # d1 = normalize(d1)
+    # d2 = normalize(d2)
+    # d3 = normalize(d3)
+    # clust = w1 * d1 + w2 * d2 + w3 * d3
+    # 找到每个值属于什么
+    clust = np.argmin(clust, axis=1)
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
-        # print(f"w{w1, w2, w3}")
-        # 计算该点与所有簇心的距离 # 这里应该是传入w
-        d1, d2, d3, clust = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
-        d1 = normalize(d1)
-        d2 = normalize(d2)
-        d3 = normalize(d3)
-        clust = normalize(clust)
-        clust = np.argmin(clust)
-        D1.append(d1[clust])
-        D2.append(d2[clust])
-        D3.append(d3[clust])
-
-        if membship[clust, ipoint]:
-            # 成员本来就在应当的位置，则不用进行更新.
+        if membship[clust[ipoint], ipoint]:
             continue
-
-        # Move point, and update old/new cluster frequencies and centroids.
-        # 移动点，并更新旧 / 新集群频率和中心点
-
         moves += 1
-        # 之前的每个点属于的类
         old_clust = np.argwhere(membship[:, ipoint])[0][0]
         cl_attr_freq, membship, centroids = _move_point_cat(
-            curpoint, ipoint, clust, old_clust, cl_attr_freq, membship, centroids,
+            curpoint, ipoint, clust[ipoint], old_clust, cl_attr_freq, membship, centroids,
             weight
         )
-
-        # In case of an empty cluster, reinitialize with a random point
-        # from the largest cluster.
-        # 如果有一个空的cluster， 那么用一个随机点重新初始化，初始化于最大的群集
         if not membship[old_clust, :].any():
             from_clust = membship.sum(axis=1).argmax()
             choices = [ii for ii, ch in enumerate(membship[from_clust, :]) if ch]
@@ -599,6 +662,13 @@ def _k_modes_iter(Dict_Distance, X, centroids, cl_attr_freq, membship, dissim, w
                 centroids, weight
             )
 
+    D1 = np.zeros(len(clust))
+    D2 = np.zeros(len(clust))
+    D3 = np.zeros(len(clust))
+    for i in range(len(clust)):
+        D1[i] = d1[i, :][clust[i]]
+        D2[i] = d2[i, :][clust[i]]
+        D3[i] = d3[i, :][clust[i]]
     return centroids, cl_attr_freq, membship, moves, D1, D2, D3
 
 
