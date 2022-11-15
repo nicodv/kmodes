@@ -15,7 +15,8 @@ from sklearn.utils.validation import check_array
 
 from .util import get_max_value_key, encode_features, get_unique_rows, \
     decode_centroids, pandas_to_numpy
-from .util.dissim import matching_dissim, ng_dissim, euclidean_dissim, NC_HM_dissim, context_dissm, Context_Dict
+from .util.dissim import matching_dissim, ng_dissim, euclidean_dissim, NC_HM_dissim, context_dissm, Context_Dict, \
+    NC_HM_Context_dissim
 from .util.init_methods import init_cao, init_huang
 import matplotlib.pyplot as plt
 
@@ -98,7 +99,7 @@ class KModes(BaseEstimator, ClusterMixin):
 
     """
 
-    def __init__(self, n_clusters=8, max_iter=100, cat_dissim=matching_dissim,
+    def __init__(self, n_clusters=8, max_iter=1000, cat_dissim=NC_HM_Context_dissim,
                  init='Cao', n_init=10, verbose=0, random_state=None, n_jobs=1):
         # 要形成聚类的数量 以及要生成的中心点得数量
         self.n_clusters = n_clusters
@@ -144,11 +145,12 @@ class KModes(BaseEstimator, ClusterMixin):
         _validate_sample_weight(sample_weight, n_samples=X.shape[0],
                                 n_clusters=self.n_clusters)
 
-        if self.cat_dissim == context_dissm:
-            self.Dict_Distance = Context_Dict(X)
+        # if self.cat_dissim == context_dissm:
+        self.Dict_Distance = Context_Dict(X)
 
         self._enc_cluster_centroids, self._enc_map, self.labels_, self.cost_, \
-        self.n_iter_, self.epoch_costs_, self.epoch_w, self.membship = k_modes(
+        self.n_iter_, self.epoch_costs_, self.epoch_w, self.membship, self.all_labels = k_modes(
+            self.Dict_Distance,
             X,
             self.n_clusters,
             self.max_iter,
@@ -160,7 +162,7 @@ class KModes(BaseEstimator, ClusterMixin):
             self.n_jobs,
             sample_weight
         )
-        print(f"epoch_costs: {self.epoch_costs_}, \nepoch_w = {self.epoch_w}\n")
+        # print(f"epoch_costs: {self.epoch_costs_}, \nepoch_w = {self.epoch_w}\n")
         self.plot(self.epoch_costs_)
         return self
 
@@ -181,7 +183,7 @@ class KModes(BaseEstimator, ClusterMixin):
         Sum = 0
         for i in range(len(Keys)):
             Sum += len(Values[i])
-            plt.annotate(f"w = {np.round(Keys[i], 3)}\n ncost={np.round(Values[i][-1], 3)}",
+            plt.annotate(f"w = {np.round(Keys[i], 2)}\n ncost={np.round(Values[i][-1], 2)}",
                          xy=(x[Sum - 1], Values[i][-1]),
                          xytext=(-20, 10),
                          textcoords='offset points')
@@ -236,35 +238,6 @@ class KModes(BaseEstimator, ClusterMixin):
                              "because the model is not yet fitted.")
 
 
-# mu = 0.0001 for small soybean
-# mu = 0.000001 for large soybean
-# mu = 0.0000001 for Mushroom
-mu = 0.01
-
-
-def updateW(d1, d2, w1, w2):
-    print(f"d1 = {np.sum(d1)} \n d2 = {np.sum(d2)}")
-    if np.sum(d1) > np.sum(d2):
-        w1 = w1 - mu * np.sum(d1)
-        if w1 < 0:
-            w1 = 0
-        w2 = w2 + mu * np.sum(d2)
-        if w2 > 1:
-            w2 = 1
-    else:
-        w1 = w1 + mu * np.sum(d1)
-        if w1 > 1:
-            w1 = 1
-        w2 = w2 - mu * np.sum(d2)
-        if w2 < 0:
-            w2 = 0
-    # 对 w 进行归一化
-    w1 = w1 / (w1 + w2)
-    w2 = w2 / (w1 + w2)
-    print(f"w1:{w1}  w2:{w2}")
-    return w1, w2
-
-
 def normalize(D):
     # 先计算每个的exp(-0.5*distance)
     D = np.array(D, dtype=float)
@@ -275,9 +248,58 @@ def normalize(D):
     return D / Sum
 
 
-# def labels_cost(X, centroids, dissim, membship=None, sample_weight=None):
-def labels_cost(X, centroids, dissim, w1, w2, membship=None, sample_weight=None):
-    """Calculate labels and cost function given a matrix of points and
+# mu = 0.0001 for small soybean
+# mu = 0.000001 for large soybean
+# mu = 0.0000001 for Mushroom
+mu = 10
+
+
+def updateW(d1, d2, d3, w1, w2, w3):
+    D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
+    # print(f"D = {D}")
+    # print(f"d1 = {D[0]}\nd2 = {D[1]} \nd3 = {D[2]}")
+    # print(f"d2 = {D[0]}\nd3 = {D[1]}")
+    # D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
+    # if np.sum(d1) > np.sum(d2):
+    #     w1 = w1 - mu * np.sum(d1)
+    #     if w1 < 0:
+    #         w1 = 0
+    #     w2 = w2 + mu * np.sum(d2)
+    #     if w2 > 1:
+    #         w2 = 1
+    # else:
+    #     w1 = w1 + mu * np.sum(d1)
+    #     if w1 > 1:
+    #         w1 = 1
+    #     w2 = w2 - mu * np.sum(d2)
+    #     if w2 < 0:
+    #         w2 = 0
+    # 更新
+    # 找到最小的值
+    # W = np.array([w1, w2, w3], dtype=float)
+    W = np.array([w2, w3], dtype=float)
+    Min = np.argmin(D, axis=0)
+    Max = np.argmax(D, axis=0)
+    # Medium = np.argsort(D, axis=0)[-2]
+    text = len(str(D[Min]))
+    W[Min] = W[Min] + mu * text * 1.0 / D[Min]
+    # W[Medium] = W[Medium] + (mu / 2) * text * 0.1 / D[Medium]
+    W[Max] = W[Max] + text * 0.1 / D[Max]
+    W[W < 0] = 0
+    # w1 = w1 + mu * 1.0 / np.sum(d1)
+    # w2 = w2 + mu * 1.0 / np.sum(d2)
+    # w3 = w3 + mu * 1.0 / np.sum(d3)
+    # 对 w 进行归一化
+    # w1 = W[0] / np.sum(W)
+    w2 = W[0] / np.sum(W)
+    w3 = W[1] / np.sum(W)
+    # w3 = W[2] / np.sum(W)
+    return w1, w2, w3
+
+
+def labels_cost(Dict_Distance, X, centroids, dissim, w1, w2, w3, membship=None, sample_weight=None):
+    """
+    Calculate labels and cost function given a matrix of points and
     a list of centroids for the k-modes algorithm.
     """
     # 计算标签和损失函数
@@ -290,10 +312,8 @@ def labels_cost(X, centroids, dissim, w1, w2, membship=None, sample_weight=None)
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
         # 计算当前点与所有簇心之间的距离
-        dd1, dd2, diss = dissim(centroids, curpoint, w1, w2, X=X, membship=membship)
-        # diss = dissim(centroids, curpoint, X=X, membship=membship)
-        # 归一化
-        # diss = normalize(diss)
+        dd1, dd2, dd3, diss = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
+
         # 返回最小值的索引。也就是该点属于哪一个簇心
         diss = normalize(diss)
         clust = np.argmin(diss)
@@ -301,10 +321,11 @@ def labels_cost(X, centroids, dissim, w1, w2, membship=None, sample_weight=None)
         labels[ipoint] = clust
         # 计算每个簇中簇成员到簇心的和并相加 也就是紧密度 如果给每个权重人为赋值，则还需要乘以赋权
         cost += diss[clust] * weight
+
     return labels, cost
 
 
-def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs,
+def k_modes(Dict_Distance, X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state, n_jobs,
             sample_weight=None):
     """k-modes algorithm"""
     random_state = check_random_state(random_state)
@@ -343,31 +364,35 @@ def k_modes(X, n_clusters, max_iter, dissim, init, n_init, verbose, random_state
     if n_jobs == 1:
         for init_no in range(n_init):
             results.append(_k_modes_single(
-                X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
+                Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
                 verbose, seeds[init_no], sample_weight
             ))
 
     else:
         results = Parallel(n_jobs=n_jobs, verbose=0)(
-            delayed(_k_modes_single)(X, n_clusters, n_points, n_attrs, max_iter,
+            delayed(_k_modes_single)(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter,
                                      dissim, init, init_no, verbose, seed, sample_weight)
             for init_no, seed in enumerate(seeds))
     all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs, all_epoch_w, all_membship = zip(*results)
     # all_centroids, all_labels, all_costs, all_n_iters, all_epoch_costs = zip(*results)
 
     best = np.argmin(all_costs)
+    average = np.mean(all_costs)
+    std = np.std(all_costs)
+    # print(f"all_epoch_cost = {all_epoch_costs}")
+    # print(f"all_cost = {all_costs}")
+    # print(f"all_cost_best = {all_costs[best]}")
     if n_init > 1 and verbose:
         print(f"Best run was number {best + 1}")
+        print(f"average cost = {average}")
+        print(f"std cost = {std}")
 
     # 迭代n_init次数，找最好的
     return all_centroids[best], enc_map, all_labels[best], \
-           all_costs[best], all_n_iters[best], all_epoch_costs[best], all_epoch_w[best], all_membship[best]
-
-    # return all_centroids[best], enc_map, all_labels[best], \
-    #        all_costs[best], all_n_iters[best], all_epoch_costs[best]
+           all_costs[best], all_n_iters[best], all_epoch_costs[best], all_epoch_w[best], all_membship[best], all_labels
 
 
-def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
+def _k_modes_single(Dict_Distance, X, n_clusters, n_points, n_attrs, max_iter, dissim, init, init_no,
                     verbose, random_state, sample_weight=None):
     random_state = check_random_state(random_state)
     # 返回簇中心
@@ -404,40 +429,39 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
         print("Init: initializing clusters")
     # 成员矩阵
     membship = np.zeros((n_clusters, n_points), dtype=np.bool_)
-    # cl_attr_freq is a list of lists with dictionaries that contain the
-    # frequencies of values per cluster and attribute.
     # 每个群组和属性的值得频率
     cl_attr_freq = [[defaultdict(int) for _ in range(n_attrs)]
                     for _ in range(n_clusters)]
     # enumerate 同时遍历索引和遍历元素 ipoint这里相当于索引， curpoint相当于元素
-    # 初始化w
-    dissim = NC_HM_dissim
+    # dissim = NC_HM_dissim
+    dissim = NC_HM_Context_dissim
     D1 = []
     D2 = []
-    w1 = 0.5
-    w2 = 0.5
+    D3 = []
+    w1 = 1 / 3
+    w2 = 1 / 2
+    w3 = 1 / 2
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
         # Initial assignment to clusters
         # 初始化分配到群组
         # 这样处理太高级了吧 求距离，找到相应最小的索引，然后根据memship矩阵一一填写数据点属于那一类 在这里对相似矩阵进行归一化
-        d1, d2, clust = dissim(centroids, curpoint, w1, w2, X=X, membship=membship)
+        d1, d2, d3, clust = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
         # 对原本的距离进行归一化：并且所有的计算方式如这个所示
-        # normalize(d1)
-        # D1.append(normalize(d1))
-        # D2.append(normalize(d2))
         d1 = normalize(d1)
         d2 = normalize(d2)
+        d3 = normalize(d3)
         clust = normalize(clust)
         clust = np.argmin(clust)
         D1.append(d1[clust])
         D2.append(d2[clust])
+        D3.append(d3[clust])
         membship[clust, ipoint] = 1
         # Count attribute values per cluster.
         # 计算 每个data的属性值
         for iattr, curattr in enumerate(curpoint):
             cl_attr_freq[clust][iattr][curattr] += weight
-    # Perform an initial centroid update.
+
     # 初始中心点更新
     for ik in range(n_clusters):
         for iattr in range(n_attrs):
@@ -454,31 +478,30 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
         print("Starting iterations...")
     itr1 = 0
     labels = None
-    converged = False
 
     # 返回标签和损失函数（即紧密度）
-    # print(D1)
-    # w1, w2 = updateW(D1, D2, w1, w2)
-    _, cost = labels_cost(X, centroids, dissim, w1, w2, membship, sample_weight)
-    # _, cost = labels_cost(X, centroids, dissim, membship, sample_weight)
+    _, cost = labels_cost(Dict_Distance, X, centroids, dissim, w1, w2, w3, membship, sample_weight)
     # 记录 cost
     epoch_costs = {}
     # 记录 D
-    epoch_D = [[D1, D2]]
+    epoch_D = [[D1, D2, D3]]
     itr2 = 0
     converged1 = False
     # 这里是当前w下完成了最后的聚类，那么需要根据此时的D进行计算，从而决定是否要停止。
     # 当w不再变化的时候，就不需要更新了
     # 记录w
-    epoch_w = [[w1, w2]]
+    epoch_w = [[w1, w2, w3]]
     # w1, w2 = updateW(D1, D2, w1, w2)
     # 更新w 从而更新cost
     while itr2 < max_iter and not converged1:
+        itr2 += 1
         single_cost = []
+        converged = False
         while itr1 < max_iter and not converged:
             itr1 += 1
             # 这里应该对w进行更新
-            centroids, cl_attr_freq, membship, moves, D1, D2 = _k_modes_iter(
+            centroids, cl_attr_freq, membship, moves, D1, D2, D3 = _k_modes_iter(
+                Dict_Distance,
                 X,
                 centroids,
                 cl_attr_freq,
@@ -486,50 +509,33 @@ def _k_modes_single(X, n_clusters, n_points, n_attrs, max_iter, dissim, init, in
                 dissim,
                 w1,
                 w2,
+                w3,
                 random_state,
                 sample_weight
             )
             # 添加每一次的D
-            epoch_D.append([D1, D2])
-            # centroids, cl_attr_freq, membship, moves = _k_modes_iter(
-            #     X,
-            #     centroids,
-            #     cl_attr_freq,
-            #     membship,
-            #     dissim,
-            #     random_state,
-            #     sample_weight
-            # )
-            # All points seen in this iteration
-            # _, cost = labels_cost(X, centroids, dissim,w1,w2, membship, sample_weight)
-            # print(f"test{w1,w2}")
-            labels, ncost = labels_cost(X, centroids, dissim, w1, w2, membship, sample_weight)
+            epoch_D.append([D1, D2, D3])
+            labels, ncost = labels_cost(Dict_Distance, X, centroids, dissim, w1, w2, w3, membship, sample_weight)
             single_cost.append(ncost)
             # 迭代停止条件，1. 点不再移动； 2. 损失函数变大
-            converged = (moves == 0) or (ncost >= cost)
-            # epoch_costs.append(ncost)
+            converged = (moves == 0) or (np.around(ncost, 1) >= np.around(cost, 1))
             cost = ncost
-            if verbose:
-                print(f"Run {init_no + 1}, iteration: {itr1}/{max_iter}, "
-                      f"moves: {moves}, cost: {cost}")
-        epoch_costs[w1, w2] = single_cost
-        # print(f"cost = {cost}")
-        [_d1, _d2] = epoch_D[-1]
-        # print(_d1, _d2)
-        _w1, _w2 = updateW(_d1, _d2, w1, w2)
-        if _w1 == w1:
+        epoch_costs[w2, w3] = single_cost
+        [D1, D2, D3] = epoch_D[-1]
+        _w1, _w2, _w3 = updateW(D1, D2, D3, w1, w2, w3)
+        if np.around(_w2, 2) == np.around(w2, 2):
             converged1 = True
-        if _w1 != w1:
-            epoch_w.append([_w1, _w2])
+        if _w2 != w2:
+            epoch_w.append([_w1, _w2, _w3])
         w1 = _w1
         w2 = _w2
-        converged = False
-    return centroids, labels, cost, itr1, epoch_costs, epoch_w, membship
+        w3 = _w3
+        if verbose:
+            print(f"Run {init_no + 1}, iteration: {itr2}/{max_iter}, cost: {single_cost}")
+    return centroids, labels, cost, itr2, epoch_costs, epoch_w, membship
 
 
-# def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, random_state,
-#                   sample_weight):
-def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, w1, w2, random_state,
+def _k_modes_iter(Dict_Distance, X, centroids, cl_attr_freq, membship, dissim, w1, w2, w3, random_state,
                   sample_weight):
     """
         :param X: 数据集
@@ -550,17 +556,20 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, w1, w2, random_s
     # 在单次迭代的时候需要传递w
     D1 = []
     D2 = []
+    D3 = []
     for ipoint, curpoint in enumerate(X):
         weight = sample_weight[ipoint] if sample_weight is not None else 1
-
+        # print(f"w{w1, w2, w3}")
         # 计算该点与所有簇心的距离 # 这里应该是传入w
-        d1, d2, clust = dissim(centroids, curpoint, w1, w2, X=X, membship=membship)
+        d1, d2, d3, clust = dissim(centroids, curpoint, w1, w2, w3, Dict_Distance, X=X, membship=membship)
         d1 = normalize(d1)
         d2 = normalize(d2)
+        d3 = normalize(d3)
         clust = normalize(clust)
         clust = np.argmin(clust)
         D1.append(d1[clust])
         D2.append(d2[clust])
+        D3.append(d3[clust])
 
         if membship[clust, ipoint]:
             # 成员本来就在应当的位置，则不用进行更新.
@@ -589,9 +598,8 @@ def _k_modes_iter(X, centroids, cl_attr_freq, membship, dissim, w1, w2, random_s
                 X[rindx], rindx, old_clust, from_clust, cl_attr_freq, membship,
                 centroids, weight
             )
-    # w1, w2 = updateW(D1, D2, w1, w2)
-    return centroids, cl_attr_freq, membship, moves, D1, D2
-    # return centroids, cl_attr_freq, membship, moves
+
+    return centroids, cl_attr_freq, membship, moves, D1, D2, D3
 
 
 def _move_point_cat(point, ipoint, to_clust, from_clust, cl_attr_freq,

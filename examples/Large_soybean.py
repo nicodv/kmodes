@@ -9,7 +9,7 @@
 
 import numpy as np
 import pandas as pd
-
+from kmodes.Estimate import NMI_sklearn, purity, ARI
 from kmodes.kmodes import KModes
 
 # reproduce results on small soybean data set
@@ -23,6 +23,26 @@ kmodes_huang.fit(x)
 #
 # # Print cluster centroids of the trained model.
 print(f'k-modes (Huang) centroids:\n{kmodes_huang.cluster_centroids_}')
+number = 0
+ARI_ = []
+NMI_ = []
+Purity_ = []
+for pre in kmodes_huang.all_labels:
+    number += 1
+    # print(f"number1 run: {number}\n")
+    ri, ari, f_beta = ARI(kmodes_huang.labels_, y)
+    # print(f"\nRI = {ri}\nARI = {ari}\nF_beta = {f_beta}\n")
+    nmi = NMI_sklearn(kmodes_huang.labels_, y)
+    # print(f"NMI = {nmi}\n")
+    Purity = purity(kmodes_huang.labels_, y)
+    # print(f"Purity = {Purity}")
+    ARI_.append(ari)
+    NMI_.append(nmi)
+    Purity_.append(Purity)
+print("Sum of all run:\n")
+print(f"ARI_std: {np.std(ARI_)}\nNMI_std: {np.std(NMI_)}\nPurity_std: {np.std(Purity_)}")
+print(f"ARI_mean: {np.mean(ARI_)}\nNMI_mean: {np.mean(NMI_)}\nPurity_mean: {np.mean(Purity_)}")
+
 # for i in range(k):
 #     print(sum(kmodes_huang.membship[i]))
 
@@ -49,5 +69,5 @@ for ii, _ in enumerate(y):
     classTable[_, kmodes_huang.labels_[ii]] += 1
 
 classTable = pd.DataFrame(classTable)
-print(classTable)
+print(classTable.astype(int))
 # classTable.to_csv('test2.csv')
