@@ -10,6 +10,8 @@
 import numpy as np
 import pandas as pd
 
+
+from kmodes.kmodes import KModes
 from kmodes.kmodes import KModes
 from kmodes.Estimate import NMI_sklearn, purity, ARI, AC
 # reproduce results on small soybean data set
@@ -23,6 +25,7 @@ kmodes_huang.fit(x)
 #
 # # Print cluster centroids of the trained model.
 print(f'k-modes (Huang) centroids:\n{kmodes_huang.cluster_centroids_}')
+
 number = 0
 ARI_ = []
 NMI_ = []
@@ -45,6 +48,7 @@ for pre in kmodes_huang.all_labels:
 print("Sum of all run:\n")
 print(f"ARI_std: {np.std(ARI_)}\nNMI_std: {np.std(NMI_)}\nPurity_std: {np.std(Purity_)}\nACC_std: {np.std(AC_)}")
 print(f"ARI_mean: {np.mean(ARI_)}\nNMI_mean: {np.mean(NMI_)}\nPurity_mean: {np.mean(Purity_)}\nACC_mean: {np.mean(AC_)}")
+
 # for i in range(k):
 #     print(sum(kmodes_huang.membship[i]))
 

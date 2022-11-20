@@ -10,15 +10,18 @@
 
 import numpy as np
 from kmodes.kmodes import KModes
+
 from kmodes.Estimate import NMI_sklearn, purity, ARI, AC
+
 
 # reproduce results on small soybean data set
 x = np.genfromtxt('Encode_mushroom.csv', dtype=int, delimiter=',')[:, 1:]
 y = np.genfromtxt('Encode_mushroom.csv', dtype=int, delimiter=',')[:, 0]
 # print(len(x))
-k = 2
+k = 3
 kmodes_huang = KModes(n_clusters=k, init='Huang', verbose=1)
 kmodes_huang.fit(x)
+
 number = 0
 ARI_ = []
 NMI_ = []
@@ -41,6 +44,7 @@ for pre in kmodes_huang.all_labels:
 print("Sum of all run:\n")
 print(f"ARI_std: {np.std(ARI_)}\nNMI_std: {np.std(NMI_)}\nPurity_std: {np.std(Purity_)}\nACC_std: {np.std(AC_)}")
 print(f"ARI_mean: {np.mean(ARI_)}\nNMI_mean: {np.mean(NMI_)}\nPurity_mean: {np.mean(Purity_)}\nACC_mean: {np.mean(AC_)}")
+
 #
 # # Print cluster centroids of the trained model.
 # print('k-modes (Huang) centroids:')

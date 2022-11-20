@@ -15,7 +15,7 @@ from sklearn.utils.validation import check_array
 
 from .util import get_max_value_key, encode_features, get_unique_rows, \
     decode_centroids, pandas_to_numpy
-from .util.dissim import matching_dissim, ng_dissim, euclidean_dissim, NC_HM_dissim, context_dissim, Context_Dict, \
+from .util.dissim import matching_dissim, ng_dissim, euclidean_dissim, context_dissim, Context_Dict, \
     NC_HM_Context_dissim, matching_dissim_init
 from .util.init_methods import init_cao, init_huang
 import matplotlib.pyplot as plt
