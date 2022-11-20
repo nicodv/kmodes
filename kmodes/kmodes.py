@@ -21,9 +21,6 @@ from .util.init_methods import init_cao, init_huang
 import matplotlib.pyplot as plt
 
 
-# import plotly.graph_objects as go
-
-
 class KModes(BaseEstimator, ClusterMixin):
     """k-modes clustering algorithm for categorical data.
 
