@@ -100,7 +100,7 @@ class KModes(BaseEstimator, ClusterMixin):
     """
 
     def __init__(self, n_clusters=8, max_iter=1000, cat_dissim=NC_HM_Context_dissim,
-                 init='Cao', n_init=10, verbose=0, random_state=None, n_jobs=1):
+                 init='Cao', n_init=3, verbose=0, random_state=None, n_jobs=1):
         # 要形成聚类的数量 以及要生成的中心点得数量
         self.n_clusters = n_clusters
         # kmodes在依次运行中最大迭代次数，单次运行的最大迭代次数
@@ -241,15 +241,16 @@ class KModes(BaseEstimator, ClusterMixin):
 # mu = 0.0001 for small soybean
 # mu = 0.000001 for large soybean
 # mu = 0.0000001 for Mushroom
-mu = 10
+mu = 4
 
 
 def updateW(d1, d2, d3, w1, w2, w3):
-    D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
+    # D = np.array([np.sum(d1), np.sum(d2), np.sum(d3)], dtype=float)
     # print(f"D = {D}")
     # print(f"d1 = {D[0]}\nd2 = {D[1]} \nd3 = {D[2]}")
-    # print(f"d2 = {D[0]}\nd3 = {D[1]}")
-    # D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
+
+    D = np.array([np.sum(d2), np.sum(d3)], dtype=float)
+    print(f"d2 = {D[0]}\nd3 = {D[1]}")
     # if np.sum(d1) > np.sum(d2):
     #     w1 = w1 - mu * np.sum(d1)
     #     if w1 < 0:
@@ -271,10 +272,15 @@ def updateW(d1, d2, d3, w1, w2, w3):
     Min = np.argmin(D, axis=0)
     Max = np.argmax(D, axis=0)
     # Medium = np.argsort(D, axis=0)[-2]
-    text = len(str(D[Min]))
-    W[Min] = W[Min] + mu * text * 1.0 / D[Min]
+    # text = len(str(D[Min]))
+    text = D[Min] / 5
+    print(f"text:{text}\nD[Min]={D[Min]}")
+    # W[Min] = W[Min] + mu * text * 1.0 / D[Min]
     # W[Medium] = W[Medium] + (mu / 2) * text * 0.1 / D[Medium]
-    W[Max] = W[Max] + text * 0.1 / D[Max]
+    # W[Max] = W[Max] + text * 0.1 / D[Max]
+    W[Min] = W[Min] + mu * text / D[Min]
+    # W[Medium] = W[Medium] + (mu / 2) * text / D[Medium]
+    W[Max] = W[Max] + text / D[Max]
     W[W < 0] = 0
     # w1 = w1 + mu * 1.0 / np.sum(d1)
     # w2 = w2 + mu * 1.0 / np.sum(d2)

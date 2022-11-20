@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from kmodes.kmodes import KModes
-from kmodes.Estimate import NMI_sklearn, purity, ARI
+from kmodes.Estimate import NMI_sklearn, purity, ARI, AC
 # reproduce results on small soybean data set
 x = np.genfromtxt('Encode_soybean_large.csv', dtype=int, delimiter=',')[:, 1:]
 y = np.genfromtxt('Encode_soybean_large.csv', dtype=int, delimiter=',')[:, 0]
@@ -27,6 +27,7 @@ number = 0
 ARI_ = []
 NMI_ = []
 Purity_ = []
+AC_ = []
 for pre in kmodes_huang.all_labels:
     number += 1
     # print(f"number1 run: {number}\n")
@@ -36,12 +37,14 @@ for pre in kmodes_huang.all_labels:
     # print(f"NMI = {nmi}\n")
     Purity = purity(kmodes_huang.labels_, y)
     # print(f"Purity = {Purity}")
+    Acc = AC(kmodes_huang.labels_, y)
     ARI_.append(ari)
     NMI_.append(nmi)
     Purity_.append(Purity)
+    AC_.append(Acc)
 print("Sum of all run:\n")
-print(f"ARI_std: {np.std(ARI_)}\nNMI_std: {np.std(NMI_)}\nPurity_std: {np.std(Purity_)}")
-print(f"ARI_mean: {np.mean(ARI_)}\nNMI_mean: {np.mean(NMI_)}\nPurity_mean: {np.mean(Purity_)}")
+print(f"ARI_std: {np.std(ARI_)}\nNMI_std: {np.std(NMI_)}\nPurity_std: {np.std(Purity_)}\nACC_std: {np.std(AC_)}")
+print(f"ARI_mean: {np.mean(ARI_)}\nNMI_mean: {np.mean(NMI_)}\nPurity_mean: {np.mean(Purity_)}\nACC_mean: {np.mean(AC_)}")
 # for i in range(k):
 #     print(sum(kmodes_huang.membship[i]))
 

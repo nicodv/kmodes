@@ -11,6 +11,7 @@ import math
 import numpy as np
 from sklearn import metrics
 from sklearn.metrics import pair_confusion_matrix
+from sklearn.metrics import accuracy_score
 import collections
 
 
@@ -97,7 +98,7 @@ def ARI(labels_true, labels_pred, beta=1.):
 
 
 def AC(labels_true, labels_pre):
-    acc = np.sum(labels_pre == labels_true) / len(labels_true)
+    acc = accuracy_score(labels_true, labels_pre)
     return acc
 
 

@@ -256,7 +256,6 @@ def Context_Dict(datafinal):
 #         Distance = np.append(Distance, distance)
 #     # print(Distance)
 #     return Distance
-
 def context_dissim(centroids, df, Dict_Distance, **_):
     tp = np.zeros((len(df), len(centroids)))
     for ipoint, curpoint in enumerate(df):
@@ -267,13 +266,48 @@ def context_dissim(centroids, df, Dict_Distance, **_):
                 distance += Dict_Distance[col][cur[col], curpoint[col]]
             Distance = np.append(Distance, distance)
         tp[ipoint] = Distance
+        # print(f"tp[ipoint] = {tp[ipoint]}")
     return tp
 
 
 def NC_HM_Context_dissim(centroids, df, w1, w2, w3, Dict_Distance, **_):
-    D1 = matching_dissim(centroids, df)
-    D2 = euclidean_dissim(centroids, df)
+    D1 = euclidean_dissim(centroids, df)
+    D2 = matching_dissim(centroids, df)
     D3 = context_dissim(centroids, df, Dict_Distance)
     D_final = w2 * normalize(D2) + w3 * normalize(D3)
     # print(f"D2 = {np.sum(normalize(D2))}  D3 = {np.sum(normalize(D3))}  D_final = {np.sum(D_final)}")
-    return D1, normalize(D2), normalize(D3), D_final
+    return normalize(D1), normalize(D2), normalize(D3), D_final
+
+
+if __name__ == '__main__':
+    # test data with categorical variables that have been label encoded
+    TEST_DATA = np.array([
+        [2, 13, 0, 25, 1, 0, 2, 2, 2],
+        [2, 23, 15, 36, 3, 3, 3, 2, 0],
+        [2, 25, 10, 2, 1, 0, 2, 2, 5],
+        [2, 21, 7, 4, 1, 0, 2, 2, 1],
+        [1, 18, 17, 41, 3, 3, 3, 2, 0],
+        [2, 18, 17, 41, 3, 3, 3, 2, 0],
+        [6, 9, 1, 0, 3, 3, 3, 2, 0],
+        [1, 7, 20, 47, 3, 3, 3, 2, 0],
+        [2, 25, 10, 7, 0, 1, 2, 2, 2],
+        [7, 0, 4, 32, 1, 2, 0, 2, 5],
+        [1, 12, 12, 15, 0, 1, 2, 3, 3],
+        [2, 26, 15, 25, 0, 1, 2, 0, 5],
+        [2, 20, 15, 19, 0, 1, 2, 2, 1],
+        [4, 6, 9, 11, 2, 0, 1, 1, 4],
+        [2, 13, 15, 42, 0, 2, 1, 2, 2],
+        [3, 5, 21, 31, 0, 1, 2, 3, 5],
+        [2, 13, 19, 33, 0, 2, 1, 2, 2],
+        [1, 11, 10, 0, 0, 2, 1, 0, 2]
+    ])
+    TEXT_CENTROIDS = np.array([[2, 26, 5, 30, 0, 1, 2, 3, 3],
+                               [4, 6, 9, 11, 2, 0, 1, 1, 4]])
+
+    print(f"euclidean_dissim:{euclidean_dissim(TEXT_CENTROIDS,TEST_DATA)}")
+    print(f"euclidean_dissim_normalise:{normalize(euclidean_dissim(TEXT_CENTROIDS, TEST_DATA))}")
+    print(f"matching_dissim:{matching_dissim(TEXT_CENTROIDS,TEST_DATA)}")
+    print(f"matching_dissim_normalise:{normalize(matching_dissim(TEXT_CENTROIDS, TEST_DATA))}")
+    # distance = Context_Dict(TEST_DATA)
+    # print(f"distance:{distance}")
+    # print(f"context_dissim: {context_dissim(TEXT_CENTROIDS, TEST_DATA, distance)}")
