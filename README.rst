@@ -1,7 +1,7 @@
 .. image:: https://img.shields.io/pypi/v/kmodes.svg
     :target: https://pypi.python.org/pypi/kmodes/
     :alt: Version
-.. image:: https://anaconda.org/conda-forge/kmodes/badges/installer/conda.svg
+.. image:: https://anaconda.org/conda-forge/kmodes/badges/version.svg
     :target: https://anaconda.org/conda-forge/kmodes
     :alt: Conda forge page
 .. image:: https://github.com/nicodv/kmodes/actions/workflows/python-package.yml/badge.svg?branch=master
