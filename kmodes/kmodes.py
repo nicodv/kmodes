@@ -102,16 +102,17 @@ class KModes(BaseEstimator, ClusterMixin):
         self.max_iter = max_iter
         self.cat_dissim = cat_dissim
         self.init = init
-        self.n_init = n_init
         self.verbose = verbose
         self.random_state = random_state
         self.n_jobs = n_jobs
-        if ((isinstance(self.init, str) and self.init == 'Cao') or
-                hasattr(self.init, '__array__')) and self.n_init > 1:
-            if self.verbose:
-                print("Initialization method and algorithm are deterministic. "
-                      "Setting n_init to 1.")
-            self.n_init = 1
+        if self.__class__ == KModes:
+            self.n_init = n_init
+            if ((isinstance(self.init, str) and self.init == 'Cao') or
+                    hasattr(self.init, '__array__')) and self.n_init > 1:
+                if self.verbose:
+                    print("Initialization method and algorithm are deterministic. "
+                        "Setting n_init to 1.")
+                self.n_init = 1
 
     def fit(self, X, y=None, sample_weight=None, **kwargs):
         """Compute k-modes clustering.
