@@ -37,7 +37,7 @@ setup(
             'pandas'
         ]
     },
-    classifiers=['Development Status :: 3 - Alpha',
+    classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Science/Research',
                  'License :: OSI Approved :: MIT License',
                  'Operating System :: Microsoft :: Windows',
