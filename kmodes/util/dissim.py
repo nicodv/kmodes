@@ -4,11 +4,32 @@ Dissimilarity measures for clustering
 
 import numpy as np
 
+def matching_dissim(a: np.array, b: np.array, weights: list = False, **_):
+    """
+    simple matching dissimilarity function as expressed at
+    https://dergipark.org.tr/tr/download/article-file/714584.
 
-def matching_dissim(a, b, **_):
-    """Simple matching dissimilarity function"""
-    return np.sum(a != b, axis=1)
+    Parameters
+    ----------
+    - a (numpy.ndarray): The first input array.
+    - b (numpy.ndarray): The second input array.
+    - weights (list, optional): A list of weights to apply to the dissimilarity calculation. Default is False.
+    - **_ (dict): Additional keyword arguments. (Unused in the function)
 
+    Returns
+    -------
+    - numpy.ndarray: An array containing the distance Manhattan dissimilarity between corresponding elements of `a` and `b`.
+
+    Note:
+    - This distance counts the number of categorical variables matches between both vectors
+    - If `weights` is provided, it is used to weigh the dissimilarity for each element in the arrays.
+      The length of `weights` should match the number of elements in the arrays.
+    """  # noqa: D205, D401
+    if weights:
+        distance = np.sum((a != b).astype(int) * weights, axis=1)
+    else:
+        distance = np.sum(a != b, axis=1)
+    return distance
 
 def jaccard_dissim_binary(a, b, **__):
     """Jaccard dissimilarity function for binary encoded variables"""
@@ -37,14 +58,44 @@ def jaccard_dissim_label(a, b, **__):
     return 1 - intersect_len / union_len
 
 
-def euclidean_dissim(a, b, **_):
-    """Euclidean distance dissimilarity function"""
+
+def euclidean_dissim(a: np.array, b: np.array, weights: list = None, **_):
+    """
+    Calculate the Euclidean squared distance (no square root) dissimilarity between two arrays.
+
+    Parameters
+    ----------
+    - a (numpy.ndarray): The first input array.
+    - b (numpy.ndarray): The second input array.
+    - weights (list, optional): A list of weights to apply to the dissimilarity calculation. Default is None.
+    - **_ (dict): Additional keyword arguments. (Unused in the function)
+
+    Returns
+    -------
+    - numpy.ndarray: An array containing the Euclidean squared distance dissimilarity between corresponding
+      elements of `a` and `b`.
+
+    Raises
+    ------
+    - ValueError: If missing values (NaN) are detected in numerical columns of either input array.
+
+    Note:
+    - The Euclidean distance dissimilarity is computed as the square root of the sum of squared differences
+    between the two arrays.
+    - If `weights` is provided, it is used to weigh the dissimilarity for each element in the arrays.
+      The length of `weights` should match the number of elements in the arrays.
+
+    """
     if np.isnan(a).any() or np.isnan(b).any():
         raise ValueError("Missing values detected in numerical columns.")
-    return np.sum((a - b) ** 2, axis=1)
+    elif weights:
+        distance = np.sum(((a - b) ** 2) * weights, axis=1)
+    else:
+        distance = np.sum((a - b) ** 2, axis=1)
+    return distance
 
 
-def ng_dissim(a, b, X=None, membship=None):
+def ng_dissim(a, b, X=None, membship=None, **_):
     """Ng et al.'s dissimilarity measure, as presented in
     Michael K. Ng, Mark Junjie Li, Joshua Zhexue Huang, and Zengyou He, "On the
     Impact of Dissimilarity Measure in k-Modes Clustering Algorithm", IEEE
