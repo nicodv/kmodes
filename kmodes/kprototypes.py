@@ -250,14 +250,14 @@ def k_prototypes(X, categorical, n_clusters, max_iter, num_dissim, cat_dissim,
     if sparse.issparse(X):
         raise TypeError("k-prototypes does not support sparse data.")
 
+    if isinstance(categorical, int):
+        categorical = [categorical]
     if categorical is None or not categorical:
         raise NotImplementedError(
             "No categorical data selected, effectively doing k-means. "
             "Present a list of categorical columns, or use scikit-learn's "
             "KMeans instead."
         )
-    if isinstance(categorical, int):
-        categorical = [categorical]
     assert len(categorical) != X.shape[1], \
         "All columns are categorical, use k-modes instead of k-prototypes."
     assert max(categorical) < X.shape[1], \
@@ -526,6 +526,8 @@ def _split_num_cat(X, categorical):
     :param X: Feature matrix
     :param categorical: Indices of categorical columns
     """
+    if isinstance(categorical, int):
+        categorical = [categorical]
     Xnum = np.asanyarray(X[:, [ii for ii in range(X.shape[1])
                                if ii not in categorical]]).astype(np.float64)
     Xcat = np.asanyarray(X[:, categorical])

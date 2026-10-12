@@ -7,6 +7,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from kmodes import kprototypes
 from kmodes.tests.test_kmodes import assert_cluster_splits_equal
@@ -448,3 +449,44 @@ class TestKProtoTypes(unittest.TestCase):
         kproto = kprototypes.KPrototypes(n_clusters=4, init='Cao', random_state=42)
         kproto_fitted = kproto.fit(data, categorical=[2, 3])
         self.assertEqual(kproto_fitted.gamma, 35.33525036439546)
+
+
+@pytest.mark.parametrize("categorical", [0, 1, 2])
+@pytest.mark.parametrize("as_dataframe", [False, True])
+@pytest.mark.parametrize("method", ["fit", "predict", "fit_predict"])
+def test_integer_categorical(categorical, as_dataframe, method):
+    data = np.array([
+        ['red', 0.0, 1.0],
+        ['red', 1.0, 2.0],
+        ['red', 2.0, 3.0],
+        ['blue', 9.0, 10.0],
+        ['blue', 10.0, 11.0],
+        ['blue', 11.0, 12.0],
+    ], dtype=object)
+    columns = list(range(3))
+    columns.remove(0)
+    columns.insert(categorical, 0)
+    data = data[:, columns]
+    if as_dataframe:
+        data = pd.DataFrame(data)
+    original = data.copy()
+    reference = kprototypes.KPrototypes(n_clusters=2, n_init=1, random_state=42)
+    expected = reference.fit_predict(data, categorical=[categorical])
+    model = kprototypes.KPrototypes(n_clusters=2, n_init=1, random_state=42)
+    if method == "fit":
+        assert model.fit(data, categorical=categorical) is model
+        result = model.predict(data, categorical=[categorical])
+    elif method == "predict":
+        model.fit(data, categorical=[categorical])
+        result = model.predict(data, categorical=categorical)
+    else:
+        result = model.fit_predict(data, categorical=categorical)
+    np.testing.assert_array_equal(result, expected)
+    np.testing.assert_array_equal(model.labels_, reference.labels_)
+    np.testing.assert_array_equal(model.cluster_centroids_, reference.cluster_centroids_)
+    assert model.cost_ == reference.cost_
+    assert model.gamma == reference.gamma
+    if as_dataframe:
+        pd.testing.assert_frame_equal(data, original)
+    else:
+        np.testing.assert_array_equal(data, original)
