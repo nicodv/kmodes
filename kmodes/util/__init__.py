@@ -6,6 +6,8 @@ import numpy as np
 
 
 def pandas_to_numpy(x):
+    if isinstance(x, (list, tuple)):
+        return np.asarray(x)
     return x.values if 'pandas' in str(x.__class__) else x
 
 
