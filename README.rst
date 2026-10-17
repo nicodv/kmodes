@@ -104,6 +104,16 @@ Usage
 The examples directory showcases simple use cases of both k-modes
 ('soybean.py') and k-prototypes ('stocks.py').
 
+Documentation
+-------------
+
+The `documentation source <docs/index.rst>`_ contains installation instructions,
+`runnable quickstarts <docs/quickstart.rst>`_, a
+`parameter guide <docs/parameters.rst>`_ (including ``init`` and ``verbose``
+choices), and an `API reference <docs/api.rst>`_ generated from the estimator
+docstrings. See `Building the documentation <docs/contributing.rst>`_ for local
+build and validation commands.
+
 Parallel execution
 ------------------
 

@@ -27,70 +27,98 @@ RAISE_INIT_TRIES = 100
 
 
 class KPrototypes(kmodes.KModes):
-    """k-protoypes clustering algorithm for mixed numerical/categorical data.
+    """k-prototypes clustering for mixed numerical and categorical data.
 
     Parameters
-    -----------
-    n_clusters : int, optional, default: 8
+    ----------
+    n_clusters : int, default=8
         The number of clusters to form as well as the number of
-        centroids to generate.
+        centroids to generate. Must be positive and no greater than the number
+        of samples. If there are fewer distinct rows, one centroid is returned
+        per distinct row.
 
-    max_iter : int, default: 100
-        Maximum number of iterations of the k-modes algorithm for a
-        single run.
+    max_iter : int, default=100
+        Maximum number of k-prototypes iterations per run. Must be
+        nonnegative; 0 skips iterative refinement.
 
-    num_dissim : func, default: euclidian_dissim
-        Dissimilarity function used by the algorithm for numerical variables.
-        Defaults to the Euclidian dissimilarity function.
+    num_dissim : callable, default=euclidean_dissim
+        Numerical dissimilarity, defaulting to squared Euclidean distance.
+        Receives numerical centroids and one numerical row; returns one
+        distance per centroid.
 
-    cat_dissim : func, default: matching_dissim
-        Dissimilarity function used by the kmodes algorithm for categorical variables.
-        Defaults to the matching dissimilarity function.
+    cat_dissim : callable, default=matching_dissim
+        Categorical dissimilarity, defaulting to the number of mismatches.
+        Receives encoded centroids and one encoded row; returns one distance
+        per centroid. Must accept the keyword arguments ``X`` and ``membship``.
 
-    n_init : int, default: 10
-        Number of time the k-modes algorithm will be run with different
+    n_init : int, default=10
+        Positive number of times k-prototypes will run with different
         centroid seeds. The final results will be the best output of
-        n_init consecutive runs in terms of cost.
+        n_init consecutive runs in terms of cost. A list of custom initial
+        centroids sets this to 1. Named methods, including ``'Cao'``, retain
+        multiple runs because numerical initialization is random.
 
-    init : {'Huang', 'Cao', 'random' or a list of ndarrays}, default: 'Cao'
-        Method for initialization:
-        'Huang': Method in Huang [1997, 1998]
-        'Cao': Method in Cao et al. [2009]
-        'random': choose 'n_clusters' observations (rows) at random from
-        data for the initial centroids.
-        If a list of ndarrays is passed, it should be of length 2, with
-        shapes (n_clusters, n_features) for numerical and categorical
-        data respectively. These are the initial encoded centroids.
+    init : {'Huang', 'Cao', 'random'} or list of two ndarrays, default='Cao'
+        Initialization method for the categorical part:
 
-    gamma : float, default: None
+        * ``'Huang'``: sample category frequencies and select nearby rows
+          (Huang, 1997, 1998).
+        * ``'Cao'``: use category density and separation (Cao et al., 2009).
+        * ``'random'``: sample categorical rows with replacement.
+
+        Named methods are case-insensitive. For all named methods, numerical
+        centroids are drawn from normal distributions with the numerical
+        features' means and standard deviations.
+
+        Custom initialization is a list ``[numerical, categorical]`` of
+        ndarrays with shapes ``(n_clusters, n_numerical_features)`` and
+        ``(n_clusters, n_categorical_features)``. Within each block, columns
+        follow their input order. Categorical values must be encoded integers:
+        each column's sorted unique fitting categories map to 0, 1, etc.
+        Initialization with empty clusters is retried and may fall back to
+        random categorical initialization.
+
+    gamma : float or None, default=None
         Weighing factor that determines relative importance of numerical vs.
-        categorical attributes (see discussion in Huang [1997]). By default,
-        automatically calculated from data.
+        categorical attributes (see discussion in Huang [1997]). Supply a
+        nonnegative value or None. The default is half the mean population
+        standard deviation of the numerical columns. With default
+        dissimilarities the cost per row is squared numerical distance plus
+        ``gamma`` times the number of categorical mismatches. A larger gamma
+        gives categories more influence; 0 removes their cost contribution.
 
-    verbose : integer, optional
-        Verbosity mode.
+    verbose : int, default=0
+        Set to 0 for no output or 1 for initialization and iteration progress.
+        Any nonzero integer enables the same output; there are no additional
+        verbosity levels. Booleans also work as off/on.
 
-    random_state : int, RandomState instance or None, optional, default: None
+    random_state : int, numpy.random.RandomState or None, default=None
         If int, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used
         by `np.random`.
 
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the n_init runs in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
-        are used.
+        are used. Zero is invalid.
 
     Attributes
     ----------
-    cluster_centroids_ : array, [n_clusters, n_features]
-        Categories of cluster centroids
+    cluster_centroids_ : ``numpy.ndarray``
+        Array of shape ``(n_clusters, n_features)`` containing numerical means
+        followed by decoded categorical modes, regardless of the input column
+        order. Combining numbers and strings may coerce numerical entries
+        to strings.
 
-    labels_ :
-        Labels of each point
+    labels_ : ``numpy.ndarray`` or None
+        Cluster index for each training row, with shape ``(n_samples,)``;
+        indices are arbitrary identifiers.
+        None when refinement is skipped; use ``predict(X, categorical=...)``
+        to obtain labels.
 
     cost_ : float
         Clustering cost, defined as the sum distance of all points to
@@ -99,7 +127,7 @@ class KPrototypes(kmodes.KModes):
     n_iter_ : int
         The number of iterations the algorithm ran for.
 
-    epoch_costs_ :
+    epoch_costs_ : list of float
         The cost of the algorithm at each epoch from start to completion.
 
     gamma : float
@@ -135,12 +163,26 @@ class KPrototypes(kmodes.KModes):
 
         Parameters
         ----------
-        X : array-like, shape=[n_samples, n_features]
-        categorical : Index of columns that contain categorical data
+        X : array-like of shape (n_samples, n_features)
+            Mixed training data, with at least one numerical and one
+            categorical column. Numerical columns must convert to floats.
+            Missing values and sparse input are not supported.
+        y : object, default=None
+            Ignored; present for scikit-learn compatibility.
+        categorical : int, list of int or tuple of int, default=None
+            Zero-based indices of categorical columns. All other columns are
+            numerical. Specify these explicitly; None and an empty selection
+            are not supported. Use ``[0]`` for the first column, since bare 0
+            is treated as no selection. Reuse these indices for prediction.
+        sample_weight : sequence of length n_samples, default=None
+            Nonnegative Python int or float weights used for centroid updates
+            and cost. At least ``n_clusters`` weights must be positive.
+            None gives every row weight 1.
 
-        sample_weight : sequence, default: None
-        The weight that is assigned to each individual data point when
-        updating the centroids.
+        Returns
+        -------
+        self : KPrototypes
+            Fitted estimator.
 
         """
         if categorical is not None:
@@ -181,13 +223,17 @@ class KPrototypes(kmodes.KModes):
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
-            New data to predict.
-        categorical : Indices of columns that contain categorical data
+        X : array-like of shape (n_samples, n_features)
+            New mixed data with the same column order as fitting.
+        categorical : int, list of int or tuple of int, default=None
+            Same zero-based categorical indices used for fitting. Use a list
+            such as ``[0]`` for the first column. Must be supplied explicitly.
+        **kwargs : dict
+            Additional keyword arguments, ignored.
 
         Returns
         -------
-        labels : array, shape [n_samples,]
+        labels : ndarray of shape (n_samples,)
             Index of the cluster each sample belongs to.
         """
         assert hasattr(self, '_enc_cluster_centroids'), "Model not yet fitted."

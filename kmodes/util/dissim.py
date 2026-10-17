@@ -6,7 +6,22 @@ import numpy as np
 
 
 def matching_dissim(a, b, **_):
-    """Simple matching dissimilarity function"""
+    """Count categorical mismatches between each row of ``a`` and ``b``.
+
+    Parameters
+    ----------
+    a : ndarray of shape (n_centroids, n_categorical_features)
+        Encoded categorical centroids.
+    b : ndarray of shape (n_categorical_features,)
+        One encoded categorical row.
+    **_ : dict
+        Additional keyword arguments, ignored.
+
+    Returns
+    -------
+    distances : ndarray of shape (n_centroids,)
+        Number of mismatching features for each centroid.
+    """
     return np.sum(a != b, axis=1)
 
 
@@ -38,7 +53,22 @@ def jaccard_dissim_label(a, b, **__):
 
 
 def euclidean_dissim(a, b, **_):
-    """Euclidean distance dissimilarity function"""
+    """Compute squared Euclidean distances from each row of ``a`` to ``b``.
+
+    Parameters
+    ----------
+    a : ndarray of shape (n_centroids, n_numerical_features)
+        Numerical centroids.
+    b : ndarray of shape (n_numerical_features,)
+        One numerical row.
+    **_ : dict
+        Additional keyword arguments, ignored.
+
+    Returns
+    -------
+    distances : ndarray of shape (n_centroids,)
+        Sum of squared feature differences for each centroid.
+    """
     if np.isnan(a).any() or np.isnan(b).any():
         raise ValueError("Missing values detected in numerical columns.")
     return np.sum((a - b) ** 2, axis=1)
