@@ -1,0 +1,2 @@
+# Build with Python 3.12 locally, in CI, and on Read the Docs.
+Sphinx>=8.2,<9

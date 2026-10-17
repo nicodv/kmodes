@@ -24,57 +24,70 @@ class KModes(BaseEstimator, ClusterMixin):
     """k-modes clustering algorithm for categorical data.
 
     Parameters
-    -----------
-    n_clusters : int, optional, default: 8
+    ----------
+    n_clusters : int, default=8
         The number of clusters to form as well as the number of
-        centroids to generate.
+        centroids to generate. Must be positive and no greater than the number
+        of samples. If there are fewer distinct rows, one centroid is returned
+        per distinct row.
 
-    max_iter : int, default: 100
+    max_iter : int, default=100
         Maximum number of iterations of the k-modes algorithm for a
-        single run.
+        single run. Must be nonnegative; 0 skips iterative refinement.
 
-    cat_dissim : func, default: matching_dissim
-        Dissimilarity function used by the k-modes algorithm for categorical variables.
-        Defaults to the matching dissimilarity function.
+    cat_dissim : callable, default=matching_dissim
+        Categorical dissimilarity, defaulting to the number of mismatches.
+        Receives encoded centroids and one encoded row; returns one distance
+        per centroid. Must accept the keyword arguments ``X`` and ``membship``.
 
-    init : {'Huang', 'Cao', 'random' or an ndarray}, default: 'Cao'
-        Method for initialization:
-        'Huang': Method in Huang [1997, 1998]
-        'Cao': Method in Cao et al. [2009]
-        'random': choose 'n_clusters' observations (rows) at random from
-        data for the initial centroids.
-        If an ndarray is passed, it should be of shape (n_clusters, n_features)
-        for the initial encoded centroids.
+    init : {'Huang', 'Cao', 'random'} or ndarray, default='Cao'
+        Initialization method for categorical centroids:
 
-    n_init : int, default: 10
-        Number of time the k-modes algorithm will be run with different
+        * ``'Huang'``: sample category frequencies and select nearby rows
+          (Huang, 1997, 1998).
+        * ``'Cao'``: use category density and separation (Cao et al., 2009).
+        * ``'random'``: sample rows with replacement.
+
+        Named methods are case-insensitive. An ndarray must have shape
+        ``(n_clusters, n_features)`` and contain encoded category integers,
+        not original category labels. Each column's sorted unique categories
+        in the fitting data map to integers starting at 0.
+
+    n_init : int, default=10
+        Positive number of times the k-modes algorithm will run with different
         centroid seeds. The final results will be the best output of
-        n_init consecutive runs in terms of cost.
+        n_init consecutive runs in terms of cost. The constructor sets this
+        to 1 for ``init='Cao'`` (with that spelling) or an ndarray.
 
-    verbose : int, optional
-        Verbosity mode.
+    verbose : int, default=0
+        Set to 0 for no output or 1 for initialization and iteration progress.
+        Any nonzero integer enables the same output; there are no additional
+        verbosity levels. Booleans also work as off/on.
 
-    random_state : int, RandomState instance or None, optional, default: None
+    random_state : int, numpy.random.RandomState or None, default=None
         If int, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used
         by `np.random`.
 
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the n_init runs in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
-        are used.
+        are used. Zero is invalid.
 
     Attributes
     ----------
-    cluster_centroids_ : array, [n_clusters, n_features]
-        Categories of cluster centroids
+    cluster_centroids_ : ``numpy.ndarray``
+        Cluster modes decoded to the original categories, with shape
+        ``(n_clusters, n_features)``.
 
-    labels_ :
-        Labels of each point
+    labels_ : ``numpy.ndarray`` or None
+        Cluster index for each training row, with shape ``(n_samples,)``;
+        indices are arbitrary identifiers.
+        None when refinement is skipped; use ``predict(X)`` to obtain labels.
 
     cost_ : float
         Clustering cost, defined as the sum distance of all points to
@@ -83,7 +96,7 @@ class KModes(BaseEstimator, ClusterMixin):
     n_iter_ : int
         The number of iterations the algorithm ran for.
 
-    epoch_costs_ :
+    epoch_costs_ : list of float
         The cost of the algorithm at each epoch from start to completion.
 
     Notes
@@ -119,11 +132,22 @@ class KModes(BaseEstimator, ClusterMixin):
 
         Parameters
         ----------
-        X : array-like, shape=[n_samples, n_features]
+        X : array-like of shape (n_samples, n_features)
+            Categorical training data. Integer-valued columns are also treated
+            as categorical. Missing values and sparse input are not supported.
+        y : object, default=None
+            Ignored; present for scikit-learn compatibility.
+        sample_weight : sequence of length n_samples, default=None
+            Nonnegative Python int or float weights used for centroid updates
+            and cost. At least ``n_clusters`` weights must be positive.
+            None gives every row weight 1.
+        **kwargs : dict
+            Additional keyword arguments, ignored by KModes.
 
-        sample_weight : sequence, default: None
-        The weight that is assigned to each individual data point when
-        updating the centroids.
+        Returns
+        -------
+        self : KModes
+            Fitted estimator.
         """
         X = pandas_to_numpy(X)
 
@@ -151,6 +175,23 @@ class KModes(BaseEstimator, ClusterMixin):
 
         Convenience method; equivalent to calling fit(X) followed by
         predict(X).
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training data, as described in the estimator's ``fit`` method.
+        y : object, default=None
+            Ignored; present for scikit-learn compatibility.
+        **kwargs : dict
+            Arguments forwarded to ``fit`` and ``predict``. For either
+            estimator, ``sample_weight`` supplies fitting weights. For
+            KPrototypes, also pass ``categorical`` with the categorical column
+            indices, for example ``categorical=[0, 2]``.
+
+        Returns
+        -------
+        labels : ndarray of shape (n_samples,)
+            Cluster index for each training row.
         """
         return self.fit(X, **kwargs).predict(X, **kwargs)
 
@@ -159,12 +200,14 @@ class KModes(BaseEstimator, ClusterMixin):
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
-            New data to predict.
+        X : array-like of shape (n_samples, n_features)
+            New categorical data, with columns in the same order as fitting.
+        **kwargs : dict
+            Additional keyword arguments, ignored.
 
         Returns
         -------
-        labels : array, shape [n_samples,]
+        labels : ndarray of shape (n_samples,)
             Index of the cluster each sample belongs to.
         """
 
