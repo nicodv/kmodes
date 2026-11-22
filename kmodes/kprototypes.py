@@ -39,13 +39,21 @@ class KPrototypes(kmodes.KModes):
         Maximum number of iterations of the k-modes algorithm for a
         single run.
 
-    num_dissim : func, default: euclidian_dissim
+    num_dissim : func, default: euclidean_dissim
         Dissimilarity function used by the algorithm for numerical variables.
-        Defaults to the Euclidian dissimilarity function.
+        Defaults to the sum of squared numerical differences. A custom callable
+        receives a 2D array of candidate rows and a 1D point, containing only
+        numerical columns, and returns one cost per candidate row as a 1D array.
+        The callable does not change the mean-based centroid updates.
 
     cat_dissim : func, default: matching_dissim
         Dissimilarity function used by the kmodes algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
+        Follows the same callable contract as KModes.cat_dissim, using only
+        integer-encoded categorical columns. Accept optional X and membship
+        keyword arguments, or use ``**kwargs`` when they are not needed. The callable
+        does not change the mode-based centroid updates. Total dissimilarity is
+        num_dissim(...) + gamma * cat_dissim(...).
 
     n_init : int, default: 10
         Number of time the k-modes algorithm will be run with different

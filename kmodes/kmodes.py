@@ -36,6 +36,12 @@ class KModes(BaseEstimator, ClusterMixin):
     cat_dissim : func, default: matching_dissim
         Dissimilarity function used by the k-modes algorithm for categorical variables.
         Defaults to the matching dissimilarity function.
+        A custom callable receives a 2D array of candidate rows and a 1D point,
+        and returns one cost per candidate row as a 1D array. Categories are
+        integer encoded. Candidates may be data rows during initialization
+        or centroids during fitting and prediction. Accept optional X and
+        membship keyword arguments, or use ``**kwargs`` when they are not needed.
+        The callable does not change the mode-based centroid updates.
 
     init : {'Huang', 'Cao', 'random' or an ndarray}, default: 'Cao'
         Method for initialization:
