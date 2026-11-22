@@ -104,6 +104,56 @@ Usage
 The examples directory showcases simple use cases of both k-modes
 ('soybean.py') and k-prototypes ('stocks.py').
 
+Custom dissimilarity functions
+------------------------------
+
+Pass a callable as :code:`cat_dissim` to customize categorical dissimilarity
+in :code:`KModes` or :code:`KPrototypes`. The callable receives a 2D array
+:code:`a` and a 1D point :code:`b`, and must return a 1D array containing one
+cost for each row of :code:`a`. Smaller costs mean more similar points.
+The rows of :code:`a` may be observations during initialization or cluster
+centroids during fitting and prediction; do not assume a fixed number of rows.
+
+Categorical values are encoded as integers before the callable is invoked,
+so it should not depend on the original category labels. It must also accept
+the keyword arguments :code:`X` and :code:`membship`, which supply the encoded
+data and cluster membership during fitting. They may be absent or
+:code:`None` in other calls. Use :code:`**kwargs` if they are not needed.
+For example, this gives mismatches in the first categorical column twice the
+weight of mismatches in the second:
+
+.. code:: python
+
+    import numpy as np
+    from kmodes.kmodes import KModes
+    from kmodes.kprototypes import KPrototypes
+
+    def weighted_matching(a, b, **kwargs):
+        return np.sum((a != b) * np.array([2.0, 1.0]), axis=1)
+
+    data = np.array([
+        ['red', 'round'], ['red', 'square'], ['red', 'round'],
+        ['blue', 'square'], ['blue', 'round'], ['blue', 'square'],
+    ])
+    km = KModes(n_clusters=2, cat_dissim=weighted_matching,
+                init='Huang', n_init=1, random_state=0)
+    labels = km.fit_predict(data)
+    predictions = km.predict(data)
+
+    mixed = np.column_stack(([0.0, 0.2, 0.1, 9.8, 10.0, 10.2], data))
+    kp = KPrototypes(n_clusters=2, cat_dissim=weighted_matching,
+                     init='Huang', n_init=1, random_state=0)
+    mixed_labels = kp.fit_predict(mixed, categorical=[1, 2])
+    mixed_predictions = kp.predict(mixed, categorical=[1, 2])
+
+:code:`KPrototypes` also accepts :code:`num_dissim`. Its callable receives
+only the numerical columns, with the same 2D/1D input and 1D output shapes.
+The default is the sum of squared numerical differences, without a square
+root. Its cost is combined with :code:`gamma * cat_dissim(...)`.
+Changing dissimilarity does not change the centroid update rules: categorical
+centroids still use modes, and numerical centroids still use means. Choose a
+function compatible with these updates, such as the weighted mismatch above.
+
 Parallel execution
 ------------------
 
